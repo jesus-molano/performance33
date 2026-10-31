@@ -12,11 +12,13 @@ export const AUTO_FIT = {
   maxUnitPerHeight: 0.022,
   /** In a landscape 'full' layout, 2 columns win only if they make text at least this much bigger. */
   twoColumnGain: 1.15,
+  /** Below this unit (as a fraction of the height, 13 px on a 1080 px TV) text is hard to read from 3-4 m. */
+  readableUnitPerHeight: 0.012,
   /** Binary search iterations. */
   iterations: 9,
 } as const
 
-/** Manual A-/A+ multiplier on top of auto-fit. */
+/** Manual A-/A+ multiplier of the auto-fit maximum (A+ never pushes content off screen). */
 export const FONT_SCALE = { min: 0.7, max: 1.6, step: 0.1, initial: 1 } as const
 
 /** Overlay controls hide after this idle time. */

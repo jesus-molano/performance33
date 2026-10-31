@@ -1,7 +1,7 @@
-import { removeById, updateById } from '../../lib/arrays'
-import { newId } from '../../lib/ids'
-import type { CoachActions, SliceContext } from '../types'
-import { groupKey } from '../undoGroup'
+import { removeById, updateById } from '@/lib/arrays'
+import { newId } from '@/lib/ids'
+import type { CoachActions, SliceContext } from '@/store/types'
+import { groupKey } from '@/store/undoGroup'
 
 export function createCoachSlice({ commit, getData }: SliceContext): CoachActions {
   return {

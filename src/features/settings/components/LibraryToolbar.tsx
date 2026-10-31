@@ -1,8 +1,8 @@
 import { Search } from 'lucide-react'
-import { Input, SegmentedControl, Select } from '../../../components/ui'
-import { EXERCISE_CATEGORIES } from '../../../data/exercises'
-import type { LibraryBrowserApi } from '../hooks/useLibraryBrowser'
-import type { CategoryFilter, LibraryScope } from '../utils/libraryFilter'
+import { Input, SegmentedControl, Select } from '@/components/ui'
+import { EXERCISE_CATEGORIES } from '@/config/exerciseCategories'
+import type { LibraryBrowserApi } from '@/features/settings/hooks/useLibraryBrowser'
+import type { CategoryFilter, LibraryScope } from '@/features/settings/utils/libraryFilter'
 
 const CATEGORY_OPTIONS: ReadonlyArray<{ value: CategoryFilter; label: string }> = [
   { value: 'all', label: 'Todas las categorías' },

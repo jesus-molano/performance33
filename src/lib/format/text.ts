@@ -1,4 +1,4 @@
-import type { Day } from '../../types'
+import type { Day } from '@/types'
 
 /** 'Día 2 · Pierna' (or just 'Día 2'). */
 export function formatDayTitle(day: Pick<Day, 'name' | 'label'>): string {

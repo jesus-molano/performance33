@@ -1,10 +1,10 @@
 import { Archive, ArchiveRestore, CalendarDays, Lock, Pencil, Trash2 } from 'lucide-react'
-import { Avatar, Badge, Button, DropdownMenu, type MenuItem } from '../../../components/ui'
-import { formatDateShort } from '../../../lib/dates'
-import { formatFullName } from '../../../lib/format'
-import { planLabel } from '../../../lib/plans'
-import type { Client } from '../../../types'
-import { useClientActions } from '../hooks/useClientActions'
+import { Avatar, Badge, Button, DropdownMenu, type MenuItem } from '@/components/ui'
+import { formatDateShort } from '@/lib/dates'
+import { formatFullName } from '@/lib/format'
+import { planLabel } from '@/lib/plans'
+import type { Client } from '@/types'
+import { useClientActions } from '@/features/clients/hooks/useClientActions'
 
 export interface ClientProfileHeaderProps {
   client: Client
@@ -33,7 +33,7 @@ export function ClientProfileHeader({ client, onEdit }: ClientProfileHeaderProps
           {client.archived && <Badge tone="warning">Archivado</Badge>}
         </div>
         {client.goal && (
-          <p className="mt-3 flex items-start gap-1.5 text-[15px] text-fg-muted">
+          <p className="mt-3 flex items-start gap-1.5 text-md text-fg-muted">
             <Lock size={15} aria-label="Solo monitores" className="mt-1 shrink-0 text-private-icon" />
             <span>
               <span className="font-medium text-fg">Objetivo:</span> {client.goal}

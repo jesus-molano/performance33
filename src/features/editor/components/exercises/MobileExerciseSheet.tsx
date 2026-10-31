@@ -1,46 +1,30 @@
-import { Button, Modal } from '../../../../components/ui'
-import { useIsMobile } from '../../../../hooks'
-import { blockShowsSets } from '../../../../lib/blocks'
-import { getExerciseLabels } from '../../../../lib/format'
-import type { Program } from '../../../../types'
-import { useEditorUi } from '../../state/editorUiStore'
-import type { WeekContext } from '../../types'
-import { findRowInProgram } from '../../utils'
+import { Button, Modal } from '@/components/ui'
+import type { Program } from '@/types'
+import { useExpandedRowSheet } from '@/features/editor/hooks/useExpandedRowSheet'
 import { ExerciseEditor } from './ExerciseEditor'
 
-export interface MobileExerciseSheetProps {
-  program: Program
-  weeks: WeekContext
-}
-
 /** On phones the open row is edited in a bottom sheet with big inputs instead of inline. */
-export function MobileExerciseSheet({ program, weeks }: MobileExerciseSheetProps) {
-  const isMobile = useIsMobile()
-  const expandedId = useEditorUi((s) => s.expandedExerciseId)
-  const closeRow = useEditorUi((s) => s.closeRow)
-  const row = isMobile && expandedId ? findRowInProgram(program, expandedId) : null
-  if (!row) return null
-
-  const label = getExerciseLabels(row.day.blocks, row.blockIndex)[row.index]
-  const name = row.entry.name.trim() || 'Nuevo ejercicio'
+export function MobileExerciseSheet({ program }: { program: Program }) {
+  const sheet = useExpandedRowSheet(program)
+  if (!sheet) return null
   return (
     <Modal
       open
-      onClose={closeRow}
+      nativeUndo={false}
+      onClose={sheet.close}
       size="lg"
-      title={label ? `${label} · ${name}` : name}
+      title={sheet.title}
       footer={
-        <Button fullWidth size="lg" onClick={closeRow}>
+        <Button fullWidth size="lg" onClick={sheet.close}>
           Listo
         </Button>
       }
     >
       <ExerciseEditor
-        entry={row.entry}
-        blockId={row.block.id}
-        index={row.index}
-        showSets={blockShowsSets(row.block.type)}
-        weeks={weeks}
+        entry={sheet.row.exercise}
+        blockId={sheet.row.block.id}
+        index={sheet.row.exerciseIndex}
+        showSets={sheet.showSets}
       />
     </Modal>
   )

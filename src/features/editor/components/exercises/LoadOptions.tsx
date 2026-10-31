@@ -1,15 +1,15 @@
-import { Input, SegmentedControl } from '../../../../components/ui'
-import { LOAD_UNIT_META, LOAD_UNIT_ORDER } from '../../../../config/exerciseFields'
-import { formatLoad } from '../../../../lib/format'
-import { parseNumber } from '../../../../lib/numbers'
-import { breakUndoGroup, useAppActions } from '../../../../store'
-import type { ExerciseEntry } from '../../../../types'
+import { Input, SegmentedControl } from '@/components/ui'
+import { LOAD_UNIT_META, LOAD_UNIT_ORDER } from '@/config/exerciseFields'
+import { formatLoad } from '@/lib/format'
+import { parseNumber } from '@/lib/numbers'
+import { breakUndoGroup } from '@/store'
+import type { ExerciseEntry } from '@/types'
+import type { ExerciseFieldsApi } from '@/features/editor/hooks/useExerciseFields'
 
 const UNIT_OPTIONS = LOAD_UNIT_ORDER.map((value) => ({ value, label: LOAD_UNIT_META[value].label }))
 
 /** How the load is expressed (kg, % 1RM, RPE, RIR or free text) + optional client 1RM. */
-export function LoadOptions({ entry }: { entry: ExerciseEntry }) {
-  const { updateExercise } = useAppActions()
+export function LoadOptions({ entry, fields }: { entry: ExerciseEntry; fields: ExerciseFieldsApi }) {
   const meta = LOAD_UNIT_META[entry.loadUnit]
   const preview = formatLoad(entry)
 
@@ -22,7 +22,7 @@ export function LoadOptions({ entry }: { entry: ExerciseEntry }) {
           size="sm"
           options={UNIT_OPTIONS}
           value={entry.loadUnit}
-          onChange={(loadUnit) => updateExercise(entry.id, { loadUnit })}
+          onChange={(loadUnit) => fields.setField('loadUnit', loadUnit)}
         />
       </div>
       <p className="text-sm text-fg-muted">{meta.help}</p>
@@ -35,7 +35,7 @@ export function LoadOptions({ entry }: { entry: ExerciseEntry }) {
           value={entry.rmKg ?? ''}
           placeholder="80"
           onBlur={breakUndoGroup}
-          onChange={(e) => updateExercise(entry.id, { rmKg: parseNumber(e.target.value) })}
+          onChange={(e) => fields.setField('rmKg', parseNumber(e.target.value))}
           className="tabular"
         />
       )}

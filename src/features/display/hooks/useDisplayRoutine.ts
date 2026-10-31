@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { buildDisplayRoutine, clampDayNumber, type DisplayDay, type DisplayRoutine } from '../../../lib/display'
-import type { DisplayData } from '../../../types'
+import { buildDisplayRoutine, clampDayNumber, type DisplayDay, type DisplayRoutine } from '@/lib/display'
+import type { DisplayData } from '@/types'
 
 export interface DisplayRoutineState {
   routine: DisplayRoutine | null

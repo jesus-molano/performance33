@@ -1,10 +1,8 @@
-import { CoachPickerPage } from '../features/coaches'
-import { AppLayout } from '../features/shell'
-import { useBrandingStyles } from '../hooks/useBrandingStyles'
-import { useDashboardBootstrap } from '../hooks/useDashboardBootstrap'
-import { useUndoShortcuts } from '../hooks/useUndoShortcuts'
-import type { Route } from '../lib/routes'
-import { useBranding, useCurrentCoach } from '../store'
+import { CoachPickerPage } from '@/features/coaches'
+import { AppLayout } from '@/features/shell'
+import { useBrandingStyles, useDashboardBootstrap, useUndoShortcuts } from '@/hooks'
+import type { Route } from '@/lib/routes'
+import { useBranding, useCurrentCoach } from '@/store'
 import { DashboardPage } from './DashboardPage'
 
 /**

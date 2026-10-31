@@ -1,12 +1,12 @@
 import { useId } from 'react'
-import { Button, Input, Modal, Switch } from '../../../components/ui'
-import { TRAINING_DAY_OPTIONS } from '../../../config/plans'
-import { formatDateShort } from '../../../lib/dates'
-import { plural } from '../../../lib/format'
-import { getProgramDisplayName } from '../../../lib/program'
-import type { Client, Program } from '../../../types'
-import { PROGRAM_WEEK_CHOICES } from '../config'
-import { useNewProgramForm } from '../hooks/useNewProgramForm'
+import { Button, Input, Modal, Switch } from '@/components/ui'
+import { TRAINING_DAY_OPTIONS } from '@/config/plans'
+import { formatDateShort } from '@/lib/dates'
+import { plural } from '@/lib/format'
+import { getProgramDisplayName } from '@/lib/program'
+import type { Client, Program } from '@/types'
+import { PROGRAM_WEEK_CHOICES } from '@/features/clients/config'
+import { useNewProgramForm } from '@/features/clients/hooks/useNewProgramForm'
 import { NumberChoice } from './NumberChoice'
 
 export interface NewProgramModalProps {
@@ -48,7 +48,7 @@ export function NewProgramModal({ client, current, onClose }: NewProgramModalPro
           />
         )}
         {!copying && (
-          <Input label="Nombre (opcional)" placeholder="Ej.: Bloque fuerza otoño" value={values.name} onChange={(e) => setField('name', e.target.value)} />
+          <Input label="Nombre (opcional)" placeholder="Ej.: Fuerza otoño" value={values.name} onChange={(e) => setField('name', e.target.value)} />
         )}
         <Input
           type="date"

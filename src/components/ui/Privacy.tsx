@@ -1,6 +1,6 @@
 import { Eye, Lock } from 'lucide-react'
 import type { ComponentProps } from 'react'
-import { cn } from '../../lib/cn'
+import { cn } from '@/lib/cn'
 
 export type PrivacyKind = 'private' | 'visible'
 
@@ -15,12 +15,12 @@ export function PrivacyLabel({ kind, className }: { kind: PrivacyKind; className
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 text-xs font-semibold tracking-wide uppercase',
+        'inline-flex items-center gap-1 text-[0.8125rem] font-semibold tracking-wide uppercase',
         kind === 'private' ? 'text-private' : 'text-brand-strong',
         className,
       )}
     >
-      <Icon size={13} aria-hidden />
+      <Icon size={14} aria-hidden />
       {LABELS[kind]}
     </span>
   )

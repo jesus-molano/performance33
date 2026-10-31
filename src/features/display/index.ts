@@ -2,3 +2,5 @@ export { RoutineDisplay, type RoutineDisplayLayout, type RoutineDisplayProps } f
 export { RoutinePreview, type RoutinePreviewProps } from './components/RoutinePreview'
 export { DisplayPage, type DisplayPageProps } from './pages/DisplayPage'
 export { TvPage, type TvPageProps } from './pages/TvPage'
+export { initialTvSlots } from './utils/tvSlots'
+export type { FitStatus } from './utils/autoFit'

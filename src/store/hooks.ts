@@ -2,9 +2,9 @@
 
 import { useMemo } from 'react'
 import { useStore } from 'zustand'
-import { getClientPrograms, getCurrentProgram } from '../lib/program'
-import { getFullLibrary } from '../lib/search'
-import type { AnyLibraryExercise, AppData, Branding, Client, ClientNote, Coach, Program } from '../types'
+import { getClientPrograms, getCurrentProgram } from '@/lib/program'
+import { getFullLibrary } from '@/lib/search'
+import type { AnyLibraryExercise, AppData, Branding, Client, ClientNote, Coach, Program } from '@/types'
 import { useAppStore } from './appStore'
 import { countPinnedNotes, findClient, findCoach, findProgram, selectClientNotes, sortClients } from './selectors'
 import type { AppActions } from './types'

@@ -1,7 +1,9 @@
-import { cn } from '../../../lib/cn'
-import type { DisplayRoutine } from '../../../lib/display'
-import { useAutoFit } from '../hooks/useAutoFit'
-import { getDisplayTheme } from '../utils/theme'
+import { useEffect } from 'react'
+import { cn } from '@/lib/cn'
+import type { DisplayRoutine } from '@/lib/display'
+import { useAutoFit } from '@/features/display/hooks/useAutoFit'
+import type { FitStatus } from '@/features/display/utils/autoFit'
+import { getDisplayTheme } from '@/features/display/utils/theme'
 import { DisplayBlockList } from './routine/DisplayBlockList'
 import { DisplayEmptyDay } from './routine/DisplayEmptyDay'
 import { DisplayHeader } from './routine/DisplayHeader'
@@ -18,6 +20,8 @@ export interface RoutineDisplayProps {
   fontScale?: number
   /** Blocks to flash with the 'actualizado' highlight. */
   flashBlockIds?: ReadonlySet<string>
+  /** Reports when the day does not fit or gets too small to read (editor warning). */
+  onFitChange?: (status: FitStatus) => void
 }
 
 const NO_FLASH: ReadonlySet<string> = new Set()
@@ -32,14 +36,16 @@ export function RoutineDisplay({
   layout = 'column',
   fontScale = 1,
   flashBlockIds = NO_FLASH,
+  onFitChange,
 }: RoutineDisplayProps) {
   const day = routine.days[dayNumber - 1] ?? null
   const theme = getDisplayTheme(routine.branding.displayTheme)
-  const { containerRef, contentRef, style } = useAutoFit({
+  const { containerRef, contentRef, style, overflowing, tooSmall } = useAutoFit({
     maxColumns: layout === 'full' ? 2 : 1,
     fontScale,
     fitKey: day,
   })
+  useEffect(() => onFitChange?.({ overflowing, tooSmall }), [onFitChange, overflowing, tooSmall])
 
   return (
     <div ref={containerRef} className={cn('relative h-full w-full overflow-hidden font-sans', theme.root)}>
@@ -51,6 +57,11 @@ export function RoutineDisplay({
           <DisplayEmptyDay hasDays={routine.days.length > 0} theme={theme} />
         )}
       </div>
+      {overflowing && layout !== 'preview' && (
+        <span aria-hidden className={cn('absolute right-[0.6em] bottom-[0.2em] text-[2em] leading-none font-bold', theme.accentText)}>
+          …
+        </span>
+      )}
     </div>
   )
 }

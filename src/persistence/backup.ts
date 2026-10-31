@@ -1,8 +1,9 @@
 // JSON backup export / import (Ajustes → Datos).
 
-import { backupFilename, downloadJson } from '../lib/files'
-import type { AppData } from '../types'
+import { backupFilename, downloadJson } from '@/lib/files'
+import type { AppData } from '@/types'
 import { normalizeAppData } from './migrate'
+import { repository } from './repositoryInstance'
 
 export interface ExportEnvelope {
   app: 'performance33-rutinas'
@@ -30,4 +31,10 @@ export async function readBackupFile(file: File): Promise<AppData> {
   const data = normalizeAppData(parsed)
   if (!data) throw new Error('El archivo no contiene datos de Performance33.')
   return data
+}
+
+/** Emergency reset (error screen): wipes the stored data so the next load seeds the demo again. */
+export async function resetStoredDataAndReload(): Promise<void> {
+  await repository.clear()
+  window.location.reload()
 }

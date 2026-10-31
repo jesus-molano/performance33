@@ -1,9 +1,9 @@
-import { insertAt, moveItem, removeById } from '../../lib/arrays'
-import { cloneExercise, createExercise } from '../../lib/factories'
-import type { ExerciseEntry } from '../../types'
-import { blockAt, exerciseAt, locateBlock, locateExercise, sameBlock, withBlock, withExercise } from '../locate'
-import type { ExerciseActions, SliceContext } from '../types'
-import { groupKey } from '../undoGroup'
+import { insertAt, moveItem, removeById } from '@/lib/arrays'
+import { cloneExercise, createExercise } from '@/lib/factories'
+import type { ExerciseEntry } from '@/types'
+import { blockAt, exerciseAt, locateBlock, locateExercise, sameBlock, withBlock, withExercise } from '@/store/locate'
+import type { ExerciseActions, SliceContext } from '@/store/types'
+import { groupKey } from '@/store/undoGroup'
 
 /** Fields a new row copies from the row above (most rows in a block share sets × reps). */
 function inheritedFields(previous: ExerciseEntry | undefined): Partial<ExerciseEntry> {
@@ -11,7 +11,7 @@ function inheritedFields(previous: ExerciseEntry | undefined): Partial<ExerciseE
   return { sets: previous.sets, reps: previous.reps, restSec: previous.restSec, loadUnit: previous.loadUnit }
 }
 
-export function createExerciseSlice({ commit, getData }: SliceContext): ExerciseActions {
+export function createExerciseSlice({ commit, commitSilently, getData }: SliceContext): ExerciseActions {
   return {
     addExercise: (blockId, init = {}, opts = {}) => {
       const loc = locateBlock(getData(), blockId)
@@ -40,6 +40,12 @@ export function createExerciseSlice({ commit, getData }: SliceContext): Exercise
       const loc = locateExercise(getData(), exerciseId)
       if (!loc) return
       commit((d) => withBlock(d, loc, (b) => ({ ...b, exercises: removeById(b.exercises, exerciseId) })))
+    },
+    discardUnnamedExercise: (exerciseId) => {
+      const loc = locateExercise(getData(), exerciseId)
+      if (!loc || exerciseAt(getData(), loc).name.trim() !== '') return false
+      commitSilently((d) => withBlock(d, loc, (b) => ({ ...b, exercises: removeById(b.exercises, exerciseId) })))
+      return true
     },
     moveExercise: (exerciseId, toBlockId, toIndex) => {
       const data = getData()

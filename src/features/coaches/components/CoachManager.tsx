@@ -1,15 +1,15 @@
 import { Pencil, UserPlus } from 'lucide-react'
-import { Avatar, Badge, Button, Card } from '../../../components/ui'
-import { useCoaches, useCurrentCoachId } from '../../../store'
-import type { Coach } from '../../../types'
-import { editedItem, useEditTarget } from '../../shell'
+import { Avatar, Badge, Button, Card } from '@/components/ui'
+import { useCoaches, useCurrentCoachId } from '@/store'
+import type { Coach } from '@/types'
+import { editedItem, useEditTarget } from '@/features/shell'
 import { CoachFormModal } from './CoachFormModal'
 
 function CoachRow({ coach, isCurrent, onEdit }: { coach: Coach; isCurrent: boolean; onEdit: (coach: Coach) => void }) {
   return (
     <li className="flex items-center gap-3 px-4 py-3 sm:px-5">
       <Avatar firstName={coach.name} color={coach.color} />
-      <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-fg">{coach.name}</span>
+      <span className="min-w-0 flex-1 truncate text-md font-medium text-fg">{coach.name}</span>
       {isCurrent && <Badge tone="brand">Eres tú</Badge>}
       <Button variant="ghost" leftIcon={Pencil} onClick={() => onEdit(coach)}>
         Editar

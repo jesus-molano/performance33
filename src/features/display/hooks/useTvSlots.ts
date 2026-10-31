@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { paths, replaceRoute, type TvSlot } from '../../../lib/routes'
-import { isEmptySlotSet, loadStoredSlots, replaceSlot, storeSlots } from '../utils/tvSlots'
+import { paths, replaceRoute, type TvSlot } from '@/lib/routes'
+import { isEmptySlotSet, loadStoredSlots, replaceSlot, storeSlots } from '@/features/display/utils/tvSlots'
 
 export interface TvSlotsApi {
   setSlotClient: (index: number, clientId: string | null) => void

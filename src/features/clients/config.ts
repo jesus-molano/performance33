@@ -1,5 +1,5 @@
-import { PLANS } from '../../config/plans'
-import type { PlanId } from '../../types'
+import { PLANS } from '@/config/plans'
+import type { PlanId } from '@/types'
 
 export type PlanFilter = PlanId | 'all'
 

@@ -1,8 +1,8 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { cn } from '../../../lib/cn'
+import { cn } from '@/lib/cn'
 
-const ITEM_CLASSES = 'flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors'
+const ITEM_CLASSES = 'flex h-11 w-full items-center gap-3 rounded-xl px-3 text-md font-medium transition-colors'
 
 function itemTone(active: boolean): string {
   return active ? 'bg-white/10 text-white' : 'text-ink-muted hover:bg-white/5 hover:text-white'

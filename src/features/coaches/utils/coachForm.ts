@@ -1,6 +1,6 @@
-import { AVATAR_COLORS } from '../../../config/colors'
-import { normalizeText } from '../../../lib/search'
-import type { Coach } from '../../../types'
+import { AVATAR_COLORS } from '@/config/colors'
+import { normalizeText } from '@/lib/search'
+import type { Coach } from '@/types'
 
 export const COACH_NAME_MAX_LENGTH = 30
 

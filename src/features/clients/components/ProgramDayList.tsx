@@ -1,8 +1,8 @@
 import { MonitorPlay } from 'lucide-react'
-import { IconButton } from '../../../components/ui'
-import { formatDayTitle } from '../../../lib/format'
-import type { Program } from '../../../types'
-import { formatDayContent } from '../utils/programSummary'
+import { IconButton } from '@/components/ui'
+import { formatDayTitle } from '@/lib/format'
+import type { Program } from '@/types'
+import { formatDayContent } from '@/features/clients/utils/programSummary'
 
 export interface ProgramDayListProps {
   program: Program
@@ -20,7 +20,7 @@ export function ProgramDayList({ program, onShowDay }: ProgramDayListProps) {
             {index + 1}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-medium text-fg">{formatDayTitle(day)}</p>
+            <p className="truncate text-md font-medium text-fg">{formatDayTitle(day)}</p>
             <p className="truncate text-sm text-fg-muted">{formatDayContent(day)}</p>
           </div>
           <IconButton icon={MonitorPlay} label={`Abrir ${day.name} en pantalla`} onClick={() => onShowDay(index + 1)} />

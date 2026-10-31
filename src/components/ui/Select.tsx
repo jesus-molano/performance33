@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import { useId, type ComponentProps, type ReactNode } from 'react'
-import { cn } from '../../lib/cn'
+import { cn } from '@/lib/cn'
 import { Field } from './Field'
 import { controlClasses, describedBy } from './styles'
 

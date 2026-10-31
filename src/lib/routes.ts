@@ -8,7 +8,7 @@
 //   #/pantalla/:clientId?dia=2&programa=pid  → display (single client, no app chrome)
 //   #/tv?slots=cid:1,cid:2,                  → tv (3 columns, no app chrome)
 
-import { TV_SLOT_COUNT } from '../config/app'
+import { TV_SLOT_COUNT } from '@/config/app'
 
 export interface TvSlot {
   clientId: string | null

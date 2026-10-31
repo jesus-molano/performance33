@@ -1,8 +1,8 @@
 // Accent-insensitive fuzzy search over the exercise library, with Spanish/English synonyms.
 
-import { EXERCISE_LIBRARY } from '../data/exercises'
-import { SEARCH_SYNONYM_GROUPS } from '../config/synonyms'
-import type { AnyLibraryExercise, CustomExercise } from '../types'
+import { EXERCISE_LIBRARY } from '@/data/exercises'
+import { SEARCH_SYNONYM_GROUPS } from '@/config/synonyms'
+import type { AnyLibraryExercise, CustomExercise } from '@/types'
 
 /** Lowercase, strip accents/diacritics, collapse whitespace and punctuation. */
 export function normalizeText(s: string): string {

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react'
-import { useClickOutside } from '../../../hooks/useClickOutside'
-import { useDisclosure } from '../../../hooks/useDisclosure'
+import { useClickOutside, useDisclosure } from '@/hooks'
 
 export interface Popover {
   isOpen: boolean

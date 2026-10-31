@@ -1,7 +1,7 @@
-import { cn } from '../../../../lib/cn'
-import type { DisplayDay } from '../../../../lib/display'
-import type { PublicClient } from '../../../../types'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import { cn } from '@/lib/cn'
+import type { DisplayDay } from '@/lib/display'
+import type { PublicClient } from '@/types'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { OverlaySelect } from './OverlaySelect'
 
 const NO_CLIENT = ''

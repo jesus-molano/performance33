@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { TOAST_DURATION_MS } from '../config/app'
-import { newId } from '../lib/ids'
+import { TOAST_DURATION_MS } from '@/config/app'
+import { newId } from '@/lib/ids'
 
 export type ToastTone = 'neutral' | 'success' | 'error'
 

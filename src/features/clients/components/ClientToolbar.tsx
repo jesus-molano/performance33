@@ -1,7 +1,7 @@
 import { Archive, Search } from 'lucide-react'
-import { Chip, Input } from '../../../components/ui'
-import { PLAN_FILTER_OPTIONS, type PlanFilter } from '../config'
-import type { ClientFilters } from '../utils/filterClients'
+import { Chip, Input } from '@/components/ui'
+import { PLAN_FILTER_OPTIONS, type PlanFilter } from '@/features/clients/config'
+import type { ClientFilters } from '@/features/clients/utils/filterClients'
 
 export interface ClientToolbarProps {
   filters: ClientFilters

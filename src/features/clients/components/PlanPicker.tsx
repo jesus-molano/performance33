@@ -1,6 +1,6 @@
-import { PLANS } from '../../../config/plans'
-import { cn } from '../../../lib/cn'
-import type { PlanId } from '../../../types'
+import { PLANS } from '@/config/plans'
+import { cn } from '@/lib/cn'
+import type { PlanId } from '@/types'
 
 export interface PlanPickerProps {
   value: PlanId
@@ -27,7 +27,7 @@ export function PlanPicker({ value, onChange }: PlanPickerProps) {
                 selected ? 'border-brand-strong bg-brand-soft ring-1 ring-brand-strong' : 'border-line-strong hover:bg-canvas',
               )}
             >
-              <span className={cn('text-[15px] font-semibold', selected ? 'text-brand-strong' : 'text-fg')}>{plan.label}</span>
+              <span className={cn('text-md font-semibold', selected ? 'text-brand-strong' : 'text-fg')}>{plan.label}</span>
               <span className="text-sm text-fg-muted">{plan.description}</span>
             </button>
           )

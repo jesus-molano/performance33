@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { cn } from '../../lib/cn'
+import { cn } from '@/lib/cn'
 
 export interface ChipProps extends ComponentProps<'button'> {
   active?: boolean
@@ -12,7 +12,7 @@ export function Chip({ active = false, className, type = 'button', ...props }: C
       type={type}
       aria-pressed={active}
       className={cn(
-        'inline-flex h-9 min-w-11 items-center justify-center rounded-full border px-3 text-sm font-medium tabular transition-colors',
+        'inline-flex h-11 min-w-11 items-center md:h-9 justify-center rounded-full border px-3 text-sm font-medium tabular transition-colors',
         active
           ? 'border-brand-strong bg-brand-soft text-brand-strong'
           : 'border-line-strong bg-surface text-fg-muted hover:border-fg-subtle hover:text-fg',

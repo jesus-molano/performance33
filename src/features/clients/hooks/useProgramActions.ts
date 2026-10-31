@@ -1,16 +1,14 @@
 import { useCallback } from 'react'
-import { useConfirm } from '../../../hooks/useConfirm'
-import { useDisplayWindow } from '../../../hooks/useDisplayWindow'
-import { useToast } from '../../../hooks/useToast'
-import { getProgramDisplayName } from '../../../lib/program'
-import { navigate, paths } from '../../../lib/routes'
-import { useAppActions } from '../../../store'
-import type { CreateProgramOptions, ISODate, Program } from '../../../types'
+import { useConfirm, useDisplayWindow, useToast } from '@/hooks'
+import { getProgramDisplayName } from '@/lib/program'
+import { navigate, paths } from '@/lib/routes'
+import { useAppActions } from '@/store'
+import type { CreateProgramOptions, ISODate, Program } from '@/types'
 
 export interface ProgramActionsApi {
   open: (program: Program) => void
   create: (opts?: CreateProgramOptions) => void
-  /** 'Duplicar como nuevo bloque': copies days and exercises into a new current routine and opens it. */
+  /** 'Duplicar como nueva rutina': copies days and exercises into a new current routine and opens it. */
   duplicateAsNext: (program: Program, startDate?: ISODate) => void
   makeCurrent: (program: Program) => void
   remove: (program: Program) => Promise<void>
@@ -38,7 +36,7 @@ export function useProgramActions(clientId: string): ProgramActionsApi {
     (program: Program, startDate?: ISODate) => {
       const id = actions.duplicateProgram(program.id, { startDate })
       if (!id) return
-      toast({ message: 'Nuevo bloque creado a partir del anterior', tone: 'success' })
+      toast({ message: 'Nueva rutina creada a partir de la anterior', tone: 'success' })
       openEditor(id)
     },
     [actions, openEditor, toast],

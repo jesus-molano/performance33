@@ -1,12 +1,12 @@
 import { SearchX, UserPlus, Users } from 'lucide-react'
-import { Button, EmptyState } from '../../../components/ui'
-import { plural } from '../../../lib/format'
-import type { Client } from '../../../types'
-import { editedItem, PageContainer, PageHeader, useEditTarget } from '../../shell'
-import { ClientFormModal } from '../components/ClientFormModal'
-import { ClientGrid } from '../components/ClientGrid'
-import { ClientToolbar } from '../components/ClientToolbar'
-import { useClientList } from '../hooks/useClientList'
+import { Button, EmptyState } from '@/components/ui'
+import { plural } from '@/lib/format'
+import type { Client } from '@/types'
+import { editedItem, PageContainer, PageHeader, useEditTarget } from '@/features/shell'
+import { ClientFormModal } from '@/features/clients/components/ClientFormModal'
+import { ClientGrid } from '@/features/clients/components/ClientGrid'
+import { ClientToolbar } from '@/features/clients/components/ClientToolbar'
+import { useClientList } from '@/features/clients/hooks/useClientList'
 
 export function ClientsPage() {
   const list = useClientList()

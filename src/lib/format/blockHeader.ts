@@ -1,6 +1,6 @@
-import { BLOCK_TYPE_META } from '../../config/blockTypes'
-import type { Block, PublicBlock } from '../../types'
-import { getBlockTitle } from '../blocks'
+import { BLOCK_TYPE_META } from '@/config/blockTypes'
+import type { Block, PublicBlock } from '@/types'
+import { getBlockTitle } from '@/lib/blocks'
 import { formatMinutes, formatRest, formatSeconds, plural } from './units'
 
 type BlockLike = PublicBlock | Block

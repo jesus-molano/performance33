@@ -1,22 +1,10 @@
 import { useCallback, useState } from 'react'
-import { useMediaQuery } from '../../../hooks'
-import { PREVIEW_STORAGE_KEY, WIDE_MEDIA_QUERY } from '../config'
+import { useMediaQuery } from '@/hooks'
+import { readStorage, writeStorage } from '@/lib/safeStorage'
+import { PREVIEW_STORAGE_KEY, WIDE_MEDIA_QUERY } from '@/features/editor/config'
 
-function readStoredVisibility(): boolean {
-  try {
-    return window.localStorage.getItem(PREVIEW_STORAGE_KEY) !== 'hidden'
-  } catch {
-    return true
-  }
-}
-
-function storeVisibility(visible: boolean): void {
-  try {
-    window.localStorage.setItem(PREVIEW_STORAGE_KEY, visible ? 'visible' : 'hidden')
-  } catch {
-    // Storage blocked (private mode): the preference simply is not remembered.
-  }
-}
+const readStoredVisibility = (): boolean => readStorage(PREVIEW_STORAGE_KEY) !== 'hidden'
+const storeVisibility = (visible: boolean): void => writeStorage(PREVIEW_STORAGE_KEY, visible ? 'visible' : 'hidden')
 
 export interface PreviewPanelState {
   /** Wide screens show the preview as a side panel; narrow ones in a sheet. */
@@ -29,7 +17,7 @@ export interface PreviewPanelState {
   closeSheet: () => void
 }
 
-/** 'Vista pantalla': side panel on wide screens (remembered per browser), bottom sheet elsewhere. */
+/** Live preview: side panel on wide screens (remembered per browser), bottom sheet elsewhere. */
 export function usePreviewPanel(): PreviewPanelState {
   const isWide = useMediaQuery(WIDE_MEDIA_QUERY)
   const [asideVisible, setAsideVisible] = useState(readStoredVisibility)

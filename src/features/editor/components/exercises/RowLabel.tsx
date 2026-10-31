@@ -1,4 +1,4 @@
-import { cn } from '../../../../lib/cn'
+import { cn } from '@/lib/cn'
 
 /** Position label badge: superset letters (A1) in pink, numbers/minutes neutral. */
 export function RowLabel({ label }: { label: string }) {

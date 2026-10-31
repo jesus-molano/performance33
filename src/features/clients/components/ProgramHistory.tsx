@@ -1,9 +1,9 @@
 import { History, Plus } from 'lucide-react'
 import { useMemo } from 'react'
-import { Button, Card } from '../../../components/ui'
-import { useClientPrograms } from '../../../store'
-import type { Client } from '../../../types'
-import { useProgramActions } from '../hooks/useProgramActions'
+import { Button, Card } from '@/components/ui'
+import { useClientPrograms } from '@/store'
+import type { Client } from '@/types'
+import { useProgramActions } from '@/features/clients/hooks/useProgramActions'
 import { ProgramHistoryRow } from './ProgramHistoryRow'
 
 export interface ProgramHistoryProps {
@@ -33,8 +33,8 @@ export function ProgramHistory({ client, onNewProgram }: ProgramHistoryProps) {
           ))}
         </ul>
       ) : (
-        <p className="px-4 py-5 text-[15px] text-fg-muted sm:px-5">
-          Aquí aparecerán los bloques anteriores. Cuando termine este, usa «Duplicar como nuevo bloque» para empezar el siguiente.
+        <p className="px-4 py-5 text-md text-fg-muted sm:px-5">
+          Aquí aparecerán las rutinas anteriores. Cuando termine esta, usa «Duplicar como nueva rutina» para empezar el siguiente.
         </p>
       )}
     </Card>

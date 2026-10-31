@@ -1,6 +1,6 @@
-import { plural } from '../../../lib/format'
-import type { ProgramWeekInfo } from '../../../lib/program'
-import type { Day, Program } from '../../../types'
+import { plural } from '@/lib/format'
+import type { ProgramWeekInfo } from '@/lib/program'
+import type { Day, Program } from '@/types'
 
 export function countExercises(day: Day): number {
   return day.blocks.reduce((sum, block) => sum + block.exercises.length, 0)

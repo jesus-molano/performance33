@@ -1,13 +1,13 @@
 import { Archive, ArchiveRestore, MonitorPlay, Pencil } from 'lucide-react'
-import { Avatar, Badge, Card, DropdownMenu, type MenuItem } from '../../../components/ui'
-import { useDisplayWindow } from '../../../hooks/useDisplayWindow'
-import { formatFullName } from '../../../lib/format'
-import { getProgramDisplayName } from '../../../lib/program'
-import { planLabel } from '../../../lib/plans'
-import { paths } from '../../../lib/routes'
-import type { Client } from '../../../types'
-import { useClientActions } from '../hooks/useClientActions'
-import { useClientStatus } from '../hooks/useClientStatus'
+import { Avatar, Badge, Card, DropdownMenu, IconButton, type MenuItem } from '@/components/ui'
+import { useDisplayWindow } from '@/hooks'
+import { formatFullName } from '@/lib/format'
+import { getProgramDisplayName } from '@/lib/program'
+import { planLabel } from '@/lib/plans'
+import { paths } from '@/lib/routes'
+import type { Client } from '@/types'
+import { useClientActions } from '@/features/clients/hooks/useClientActions'
+import { useClientStatus } from '@/features/clients/hooks/useClientStatus'
 import { AlertBadge } from './AlertBadge'
 import { ProgramProgressBar } from './ProgramProgressBar'
 
@@ -55,8 +55,15 @@ export function ClientCard({ client, alertCount, onEdit }: ClientCardProps) {
           )}
         </div>
       </a>
-      <div className="absolute top-2 right-2">
+      <div className="absolute top-2 right-2 flex flex-col items-center gap-1">
         <DropdownMenu items={menu} label={`Opciones de ${client.firstName}`} />
+        {program && (
+          <IconButton
+            icon={MonitorPlay}
+            label={`Abrir la rutina de ${client.firstName} en pantalla`}
+            onClick={() => openDisplay(client.id)}
+          />
+        )}
       </div>
     </Card>
   )

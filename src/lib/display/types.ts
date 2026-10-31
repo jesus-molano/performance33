@@ -1,5 +1,5 @@
-import type { BlockType, Branding, ISODate } from '../../types'
-import type { ProgramPhase } from '../program'
+import type { BlockType, Branding, ISODate } from '@/types'
+import type { ProgramPhase } from '@/lib/program'
 
 /** One exercise row, already formatted for the screen. */
 export interface DisplayExerciseLine {
@@ -59,10 +59,10 @@ export interface DisplayRoutine {
   startDate: ISODate
   endDate: ISODate
   phase: ProgramPhase
-  /** Week used for progression values (1..totalWeeks). */
-  week: number
+  /** Week whose progression values apply (1..totalWeeks), null outside the program's dates. */
+  week: number | null
   totalWeeks: number
-  /** 'Semana 2 de 4'. */
+  /** 'Semana 2 de 4', 'Empieza el 3 nov' or 'Rutina terminada'. */
   weekLabel: string
   days: DisplayDay[]
 }

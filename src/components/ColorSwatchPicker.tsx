@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
-import { AVATAR_COLORS } from '../config/colors'
-import { cn } from '../lib/cn'
-import { readableTextOn } from '../lib/color'
+import { AVATAR_COLORS } from '@/config/colors'
+import { cn } from '@/lib/cn'
+import { readableTextOn } from '@/lib/color'
 
 export interface ColorSwatchPickerProps {
   /** Group label, e.g. 'Color del avatar'. */

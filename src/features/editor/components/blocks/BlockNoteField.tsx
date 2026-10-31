@@ -1,16 +1,18 @@
 import { MessageSquarePlus } from 'lucide-react'
-import { Button } from '../../../../components/ui'
-import { useDisclosure } from '../../../../hooks'
-import { useAppActions } from '../../../../store'
-import type { Block } from '../../../../types'
-import { VisibleTextField } from '../common/VisibleTextField'
+import { Button } from '@/components/ui'
+import { useDisclosure } from '@/hooks'
+import { VisibleTextField } from '@/features/editor/components/common/VisibleTextField'
+
+export interface BlockNoteFieldProps {
+  note: string
+  onChange: (note: string) => void
+}
 
 /** Optional client-visible note for the block ('Mantén técnica limpia'). Hidden behind a button when empty. */
-export function BlockNoteField({ block }: { block: Block }) {
-  const { updateBlock } = useAppActions()
+export function BlockNoteField({ note, onChange }: BlockNoteFieldProps) {
   const { isOpen, open } = useDisclosure()
 
-  if (!block.note && !isOpen) {
+  if (!note && !isOpen) {
     return (
       <Button variant="ghost" size="sm" leftIcon={MessageSquarePlus} onClick={open} className="self-start">
         Nota para el cliente
@@ -20,10 +22,10 @@ export function BlockNoteField({ block }: { block: Block }) {
   return (
     <VisibleTextField
       label="Nota del bloque"
-      value={block.note}
+      value={note}
       placeholder="Ej. Mantén la técnica limpia, sin prisa"
-      autoFocus={isOpen && !block.note}
-      onChange={(note) => updateBlock(block.id, { note })}
+      autoFocus={isOpen && !note}
+      onChange={onChange}
     />
   )
 }

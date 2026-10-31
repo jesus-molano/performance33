@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
-import { BLOCK_TYPE_META } from '../../../config/blockTypes'
-import { useAppActions } from '../../../store'
-import type { BlockType } from '../../../types'
-import { useEditorUi } from '../state/editorUiStore'
+import { BLOCK_TYPE_META } from '@/config/blockTypes'
+import { useAppActions } from '@/store'
+import type { BlockType } from '@/types'
+import { useEditorUi } from '@/features/editor/store/editorUiStore'
 
 /** Adds a block to a day and opens its first row (warm-up/mobility start as free text instead). */
 export function useAddBlock(dayId: string | null) {

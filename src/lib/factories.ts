@@ -1,10 +1,11 @@
 // Factories producing fully-populated domain objects with sensible defaults.
 // Used by the store and the seed. All return NEW objects with fresh ids.
 
-import { DEFAULT_BRANDING } from '../config/branding'
-import { SCHEMA_VERSION, type AnyLibraryExercise, type AppData, type Block, type BlockType, type Day, type ExerciseEntry } from '../types'
-import { BLOCK_TYPE_META } from '../config/blockTypes'
-import { DEFAULT_REPS, DEFAULT_SETS } from '../config/exerciseFields'
+import { DEFAULT_BRANDING } from '@/config/branding'
+import { SCHEMA_VERSION, type AnyLibraryExercise, type AppData, type Block, type BlockType, type Day, type ExerciseEntry } from '@/types'
+import { BLOCK_TYPE_META } from '@/config/blockTypes'
+import { DEFAULT_REPS, DEFAULT_SETS } from '@/config/exerciseFields'
+import { defaultDayName } from './days'
 import { newId } from './ids'
 
 export function createExercise(init: Partial<ExerciseEntry> = {}): ExerciseEntry {
@@ -73,7 +74,7 @@ export function cloneBlock(b: Block): Block {
 }
 
 export function createDay(index: number, init: Partial<Omit<Day, 'id'>> = {}): Day {
-  return { name: `Día ${index + 1}`, label: '', blocks: [], ...init, id: newId('day') }
+  return { name: defaultDayName(index), label: '', blocks: [], ...init, id: newId('day') }
 }
 
 /** Deep clone of a day (new ids everywhere). */

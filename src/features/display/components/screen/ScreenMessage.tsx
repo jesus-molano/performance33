@@ -1,9 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { cn } from '../../../../lib/cn'
-import type { Branding } from '../../../../types'
-import type { DisplayThemeClasses } from '../../utils/theme'
-import { DisplayLogo } from '../routine/DisplayLogo'
+import { cn } from '@/lib/cn'
+import type { Branding } from '@/types'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
+import { DisplayLogo } from '@/features/display/components/routine/DisplayLogo'
 
 interface ScreenMessageProps {
   branding: Branding

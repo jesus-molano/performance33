@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { useConfirm } from '../../../hooks/useConfirm'
-import { useToast } from '../../../hooks/useToast'
-import { useAppActions, useCoaches, useCurrentCoachId, useUiStore } from '../../../store'
-import type { Coach } from '../../../types'
-import { suggestCoachColor, validateCoachName } from '../utils/coachForm'
+import { useConfirm, useToast } from '@/hooks'
+import { useAppActions, useCoaches, useCurrentCoachId, useUiStore } from '@/store'
+import type { Coach } from '@/types'
+import { suggestCoachColor, validateCoachName } from '@/features/coaches/utils/coachForm'
 
 export interface CoachFormApi {
   isEdit: boolean

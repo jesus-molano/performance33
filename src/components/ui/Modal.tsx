@@ -1,9 +1,9 @@
 import { X } from 'lucide-react'
 import { useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { useModalBehavior } from '../../hooks/useModalBehavior'
-import { NATIVE_UNDO_ATTRIBUTE } from '../../hooks/useUndoShortcuts'
-import { cn } from '../../lib/cn'
+import { useModalBehavior } from '@/hooks/useModalBehavior'
+import { NATIVE_UNDO_ATTRIBUTE } from '@/hooks/useUndoShortcuts'
+import { cn } from '@/lib/cn'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
 
@@ -23,13 +23,15 @@ export interface ModalProps {
   footer?: ReactNode
   size?: ModalSize
   children?: ReactNode
+  /** Ctrl+Z stays native inside (default, for local-state forms). Pass false when the fields are bound to the store. */
+  nativeUndo?: boolean
 }
 
 /**
  * Centered dialog on desktop, bottom sheet on mobile (< 768 px). Escape / backdrop / X close it.
- * Its content keeps native Ctrl+Z (local-state forms), see NATIVE_UNDO_ATTRIBUTE.
+ * Its content keeps native Ctrl+Z unless nativeUndo is false, see NATIVE_UNDO_ATTRIBUTE.
  */
-export function Modal({ open, onClose, title, description, footer, size = 'md', children }: ModalProps) {
+export function Modal({ open, onClose, title, description, footer, size = 'md', children, nativeUndo = true }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   useModalBehavior(open, onClose, panelRef)
@@ -43,7 +45,7 @@ export function Modal({ open, onClose, title, description, footer, size = 'md', 
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        {...{ [NATIVE_UNDO_ATTRIBUTE]: '' }}
+        {...(nativeUndo ? { [NATIVE_UNDO_ATTRIBUTE]: '' } : {})}
         className={cn(
           'relative flex max-h-[92dvh] w-full flex-col bg-surface shadow-pop',
           'animate-slide-up rounded-t-3xl md:animate-pop-in md:rounded-2xl',
@@ -56,7 +58,7 @@ export function Modal({ open, onClose, title, description, footer, size = 'md', 
             <h2 id={titleId} className="text-lg font-semibold text-fg">
               {title}
             </h2>
-            {description && <p className="mt-1 text-[15px] text-fg-muted">{description}</p>}
+            {description && <p className="mt-1 text-md text-fg-muted">{description}</p>}
           </div>
           <button
             type="button"

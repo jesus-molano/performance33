@@ -1,5 +1,5 @@
-import { BLOCK_TYPE_META } from '../config/blockTypes'
-import type { Block, BlockType } from '../types'
+import { BLOCK_TYPE_META } from '@/config/blockTypes'
+import type { Block, BlockType } from '@/types'
 
 interface BlockShape {
   type: BlockType

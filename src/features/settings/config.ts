@@ -1,7 +1,7 @@
 import { Database, Dumbbell, Moon, Palette, Sun, Users, type LucideIcon } from 'lucide-react'
-import type { SettingsTab } from '../../lib/routes'
-import type { DisplayTheme, MeasureType } from '../../types'
-import { MEASURE_META, MEASURE_ORDER } from '../../config/exerciseFields'
+import type { SettingsTab } from '@/lib/routes'
+import type { DisplayTheme, MeasureType } from '@/types'
+import { MEASURE_META, MEASURE_ORDER } from '@/config/exerciseFields'
 
 export interface SettingsTabMeta {
   label: string
@@ -25,9 +25,6 @@ export const MEASURE_OPTIONS: ReadonlyArray<{ value: MeasureType; label: string 
   value: m,
   label: MEASURE_META[m].label,
 }))
-
-/** WCAG AA for large text / UI components: below this the accent is hard to read on white. */
-export const MIN_ACCENT_CONTRAST = 3
 
 /** Max rows rendered in the library list at once (the search narrows it down). */
 export const LIBRARY_VISIBLE_LIMIT = 60

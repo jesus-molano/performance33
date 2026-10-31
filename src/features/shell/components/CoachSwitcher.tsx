@@ -1,8 +1,8 @@
 import { ChevronDown } from 'lucide-react'
-import { Avatar } from '../../../components/ui'
-import type { Coach } from '../../../types'
-import { useCoachSwitcher } from '../hooks/useCoachSwitcher'
-import { usePopover } from '../hooks/usePopover'
+import { Avatar } from '@/components/ui'
+import type { Coach } from '@/types'
+import { useCoachSwitcher } from '@/features/shell/hooks/useCoachSwitcher'
+import { usePopover } from '@/features/shell/hooks/usePopover'
 import { CoachMenu } from './CoachMenu'
 
 /** Header button with the current coach; opens a menu to switch coach. */

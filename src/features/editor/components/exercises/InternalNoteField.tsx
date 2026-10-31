@@ -1,11 +1,14 @@
 import { useId } from 'react'
-import { PrivacyLabel, PrivateSurface } from '../../../../components/ui'
-import { breakUndoGroup, useAppActions } from '../../../../store'
-import type { ExerciseEntry } from '../../../../types'
+import { PrivacyLabel, PrivateSurface } from '@/components/ui'
+import { breakUndoGroup } from '@/store'
+
+export interface InternalNoteFieldProps {
+  value: string
+  onChange: (note: string) => void
+}
 
 /** PRIVATE per-exercise note (amber + lock). Never reaches the TV: toDisplayData drops it. */
-export function InternalNoteField({ entry }: { entry: ExerciseEntry }) {
-  const { updateExercise } = useAppActions()
+export function InternalNoteField({ value, onChange }: InternalNoteFieldProps) {
   const id = useId()
   return (
     <PrivateSurface className="flex flex-col gap-2 p-3">
@@ -18,11 +21,11 @@ export function InternalNoteField({ entry }: { entry: ExerciseEntry }) {
       <textarea
         id={id}
         rows={2}
-        value={entry.internalNote}
+        value={value}
         placeholder="Ej. Rodilla izq.: limitar profundidad. No se muestra en la pantalla."
         onBlur={breakUndoGroup}
-        onChange={(e) => updateExercise(entry.id, { internalNote: e.target.value })}
-        className="w-full resize-y rounded-lg border border-private-line bg-white/80 px-3 py-2 text-[15px] leading-relaxed text-fg placeholder:text-private/60 focus:border-private-icon focus:ring-3 focus:ring-private-icon/20 focus:outline-none"
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full resize-y rounded-lg border border-private-line bg-white/80 px-3 py-2 text-md leading-relaxed text-fg placeholder:text-private/60 focus:border-private-icon focus:ring-3 focus:ring-private-icon/20 focus:outline-none"
       />
     </PrivateSurface>
   )

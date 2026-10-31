@@ -1,25 +1,22 @@
 import { Plus } from 'lucide-react'
-import { blockShowsSets } from '../../../../lib/blocks'
-import { cn } from '../../../../lib/cn'
-import { getExerciseLabels } from '../../../../lib/format'
-import { useAppActions } from '../../../../store'
-import type { Block } from '../../../../types'
-import { useAddExercise } from '../../hooks/useAddExercise'
-import { useFirstRowFocus } from '../../hooks/useFirstRowFocus'
-import type { WeekContext } from '../../types'
-import { SortableList } from '../dnd/SortableList'
+import { blockShowsSets } from '@/lib/blocks'
+import { cn } from '@/lib/cn'
+import { getExerciseLabels } from '@/lib/format'
+import type { Block } from '@/types'
+import { useAddExercise, useSortActions } from '@/features/editor/hooks/useAddExercise'
+import { useFirstRowFocus } from '@/features/editor/hooks/useFirstRowFocus'
+import { SortableList } from '@/features/editor/components/dnd/SortableList'
 import { ExerciseRow } from './ExerciseRow'
 
 export interface ExerciseListProps {
   block: Block
   blockIndex: number
   dayBlocks: Block[]
-  weeks: WeekContext
 }
 
-/** Reorderable rows of a block + '+ Añadir ejercicio'. Superset rows are joined by a pink bracket. */
-export function ExerciseList({ block, blockIndex, dayBlocks, weeks }: ExerciseListProps) {
-  const { moveExercise } = useAppActions()
+/** Reorderable rows of a block + 'Añadir ejercicio'. Superset rows are joined by a pink bracket. */
+export function ExerciseList({ block, blockIndex, dayBlocks }: ExerciseListProps) {
+  const { moveExercise } = useSortActions()
   const addExercise = useAddExercise()
   useFirstRowFocus(block)
   const labels = getExerciseLabels(dayBlocks, blockIndex)
@@ -44,7 +41,6 @@ export function ExerciseList({ block, blockIndex, dayBlocks, weeks }: ExerciseLi
                 blockId={block.id}
                 label={labels[index] ?? null}
                 showSets={showSets}
-                weeks={weeks}
               />
             ))}
           </SortableList>
@@ -53,7 +49,7 @@ export function ExerciseList({ block, blockIndex, dayBlocks, weeks }: ExerciseLi
       <button
         type="button"
         onClick={() => addExercise(block.id)}
-        className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong text-[15px] font-medium text-fg-muted transition-colors hover:border-brand-strong hover:bg-brand-soft hover:text-brand-strong"
+        className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong text-md font-medium text-fg-muted transition-colors hover:border-brand-strong hover:bg-brand-soft hover:text-brand-strong"
       >
         <Plus size={18} aria-hidden />
         Añadir ejercicio

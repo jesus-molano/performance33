@@ -1,5 +1,5 @@
-import { paths } from '../../../lib/routes'
-import { useBranding } from '../../../store'
+import { paths } from '@/lib/routes'
+import { useBranding } from '@/store'
 import { CoachSwitcher } from './CoachSwitcher'
 import { SaveIndicator } from './SaveIndicator'
 import { UndoRedoButtons } from './UndoRedoButtons'

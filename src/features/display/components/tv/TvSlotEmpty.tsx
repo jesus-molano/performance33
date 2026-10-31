@@ -1,8 +1,8 @@
 import { CalendarX2, MousePointerClick, UserX } from 'lucide-react'
-import type { Branding, DisplayData } from '../../../../types'
-import { findClientFirstName } from '../../utils/tvSlots'
-import type { DisplayThemeClasses } from '../../utils/theme'
-import { ScreenMessage } from '../screen/ScreenMessage'
+import type { Branding, DisplayData } from '@/types'
+import { findClientFirstName } from '@/features/display/utils/tvSlots'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
+import { ScreenMessage } from '@/features/display/components/screen/ScreenMessage'
 
 interface TvSlotEmptyProps {
   data: DisplayData | null

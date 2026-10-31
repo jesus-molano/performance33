@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { DEFAULT_PROGRAM_WEEKS } from '../../../config/app'
-import { endDateFor, isValidISODate, todayISO } from '../../../lib/dates'
-import { nextBlockStart } from '../../../lib/programDates'
-import type { Client, ISODate, Program } from '../../../types'
+import { DEFAULT_PROGRAM_WEEKS } from '@/config/app'
+import { endDateFor, isValidISODate, todayISO } from '@/lib/dates'
+import { nextBlockStart } from '@/lib/programDates'
+import type { Client, ISODate, Program } from '@/types'
 import { useProgramActions } from './useProgramActions'
 
 export interface NewProgramValues {
@@ -10,7 +10,7 @@ export interface NewProgramValues {
   startDate: ISODate
   weeks: number
   dayCount: number
-  /** Start from a copy of the current routine ('Duplicar como nuevo bloque'). */
+  /** Start from a copy of the current routine ('Duplicar como nueva rutina'). */
   fromCurrent: boolean
 }
 

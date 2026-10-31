@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { cn } from '../../lib/cn'
+import { cn } from '@/lib/cn'
 
 export interface SegmentOption<T extends string> {
   value: T
@@ -45,7 +45,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(optionValue)}
             className={cn(
               'inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg font-medium whitespace-nowrap transition-all',
-              size === 'sm' ? 'h-8 px-2.5 text-sm' : 'h-10 px-3.5 text-[15px]',
+              size === 'sm' ? 'h-10 px-2.5 text-sm md:h-8' : 'h-10 px-3.5 text-md',
               selected ? 'bg-surface text-fg shadow-card' : 'text-fg-muted hover:text-fg',
             )}
           >

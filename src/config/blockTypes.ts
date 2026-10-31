@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { Dumbbell, Flame, Hourglass, Leaf, Link2, Repeat, Timer, TimerReset, Zap } from 'lucide-react'
-import type { BlockParams, BlockType } from '../types'
+import type { BlockParams, BlockType } from '@/types'
 
 export type BlockParamKey = keyof BlockParams
 

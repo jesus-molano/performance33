@@ -1,5 +1,16 @@
 export { useAppStore } from './appStore'
-export { applyRemoteData, breakUndoGroup, clearHistory, hydrateData, redo, undo } from './history'
+export {
+  applyRemoteData,
+  breakUndoGroup,
+  clearHistory,
+  currentDataVersion,
+  hydrateData,
+  isLatestData,
+  onDataChange,
+  redo,
+  undo,
+  withoutHistory,
+} from './history'
 export * from './hooks'
 export * from './selectors'
 export type * from './types'

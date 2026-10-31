@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Route } from '../../../lib/routes'
+import type { Route } from '@/lib/routes'
 import { AppHeader } from './AppHeader'
 import { BottomNav } from './BottomNav'
 import { Sidebar } from './Sidebar'

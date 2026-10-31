@@ -2,10 +2,11 @@
 // local change → broadcast immediately (live TV) + debounced save + 'Guardando…/Guardado';
 // remote change → applied without undo history and without re-saving (no echo loops).
 
-import { SAVE_DEBOUNCE_MS } from '../config/app'
-import { createSeedData } from '../data/seed'
-import { debounce } from '../lib/debounce'
-import { applyRemoteData, hydrateData, useAppStore, useUiStore } from '../store'
+import { SAVE_DEBOUNCE_MS } from '@/config/app'
+import { createSeedData } from '@/data/seed'
+import { debounce } from '@/lib/debounce'
+import { toDisplayData } from '@/lib/display'
+import { applyRemoteData, hydrateData, useAppStore, useUiStore } from '@/store'
 import { broadcastChange } from './channels'
 import type { ChangeMeta } from './repository'
 import { repository } from './repositoryInstance'
@@ -35,6 +36,8 @@ export function initDashboardData(): void {
   const stored = repository.loadSync()
   hydrateData(stored ?? createSeedData())
   if (!stored) void saveCurrent(nextMeta())
+  // Data saved by an older version has no display copy yet: write it so TV windows can load.
+  else repository.saveDisplay(toDisplayData(stored), nextMeta()).catch(() => setSaveStatus('error'))
 }
 
 /** Starts autosave + live sync. Returns a cleanup that flushes pending saves. */

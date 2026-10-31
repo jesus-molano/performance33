@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { cn } from '../../lib/cn'
-import type { StatusTone } from '../../lib/program'
+import { cn } from '@/lib/cn'
+import type { StatusTone } from '@/lib/program'
 
 export type BadgeTone = StatusTone | 'brand' | 'private'
 

@@ -1,6 +1,6 @@
 import { CircleAlert, CircleCheck, LoaderCircle, Settings, Users, type LucideIcon } from 'lucide-react'
-import { paths, type RouteName } from '../../lib/routes'
-import type { SaveStatus } from '../../store'
+import { paths, type RouteName } from '@/lib/routes'
+import type { SaveStatus } from '@/store'
 
 export interface NavLinkItem {
   id: string

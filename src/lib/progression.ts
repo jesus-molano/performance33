@@ -1,6 +1,6 @@
 // Weekly progression helpers (pure).
 
-import type { ExerciseEntry, Progression, ProgressionTarget } from '../types'
+import type { ExerciseEntry, Progression, ProgressionTarget } from '@/types'
 import { formatNumber, parseNumber } from './numbers'
 
 type EntryLike = Omit<ExerciseEntry, 'internalNote'> & { internalNote?: string }

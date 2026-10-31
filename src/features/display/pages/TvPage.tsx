@@ -1,11 +1,11 @@
-import type { TvSlot } from '../../../lib/routes'
-import { cn } from '../../../lib/cn'
-import { FadingOverlay } from '../components/screen/FadingOverlay'
-import { ScreenShell } from '../components/screen/ScreenShell'
-import { ScreenToolbar } from '../components/screen/ScreenToolbar'
-import { WindowHint } from '../components/screen/WindowHint'
-import { TvSlotView } from '../components/tv/TvSlotView'
-import { useTvScreen } from '../hooks/useTvScreen'
+import type { TvSlot } from '@/lib/routes'
+import { cn } from '@/lib/cn'
+import { FadingOverlay } from '@/features/display/components/screen/FadingOverlay'
+import { ScreenShell } from '@/features/display/components/screen/ScreenShell'
+import { ScreenToolbar } from '@/features/display/components/screen/ScreenToolbar'
+import { WindowHint } from '@/features/display/components/screen/WindowHint'
+import { TvSlotView } from '@/features/display/components/tv/TvSlotView'
+import { useTvScreen } from '@/features/display/hooks/useTvScreen'
 
 export interface TvPageProps {
   /** Always TV_SLOT_COUNT (3) slots, parsed from #/tv?slots=. */

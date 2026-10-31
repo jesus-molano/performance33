@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import type { Block } from '../../../types'
-import { useEditorUi } from '../state/editorUiStore'
+import type { Block } from '@/types'
+import { useEditorUi } from '@/features/editor/store/editorUiStore'
 
 /** Opens the first row of a block that was just created (see useAddBlock). */
 export function useFirstRowFocus(block: Block): void {

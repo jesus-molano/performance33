@@ -1,5 +1,5 @@
-import type { Block, PublicBlock } from '../../types'
-import { isAccessoryBlock } from '../blocks'
+import type { Block, PublicBlock } from '@/types'
+import { isAccessoryBlock } from '@/lib/blocks'
 
 type BlockLike = Pick<PublicBlock | Block, 'type' | 'params' | 'exercises'>
 

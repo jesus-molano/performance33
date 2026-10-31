@@ -1,58 +1,92 @@
 import type { KeyboardEvent, RefObject } from 'react'
-import { Input } from '../../../../components/ui'
-import { parseNumber } from '../../../../lib/numbers'
-import { breakUndoGroup, useAppActions } from '../../../../store'
-import type { ExerciseEntry } from '../../../../types'
+import { Input } from '@/components/ui'
+import { useValueDraft } from '@/hooks'
+import { breakUndoGroup } from '@/store'
+import type { ExerciseEntry } from '@/types'
+import type { ExerciseFieldsApi } from '@/features/editor/hooks/useExerciseFields'
+import { inputToOptionalNumber, optionalNumberToInput } from '@/features/editor/utils'
 import { TimeField } from './TimeField'
 
 export interface MeasureValueFieldProps {
   entry: ExerciseEntry
+  fields: ExerciseFieldsApi
   inputRef: RefObject<HTMLInputElement | null>
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void
 }
 
 const VALUE_CLASSES = 'text-base font-semibold tabular'
 
+interface NumberMeasureProps extends Omit<MeasureValueFieldProps, 'entry' | 'fields'> {
+  label: string
+  suffix: string
+  placeholder: string
+  value: number | null
+  onCommit: (value: number | null) => void
+}
+
+/** Decimal value typed freely ('1,5' keeps its comma while typing). */
+function NumberMeasureField({ label, suffix, placeholder, value, onCommit, inputRef, onKeyDown }: NumberMeasureProps) {
+  const draft = useValueDraft({ value, format: optionalNumberToInput, parse: inputToOptionalNumber, onCommit })
+  return (
+    <Input
+      ref={inputRef}
+      label={label}
+      inputMode="decimal"
+      suffix={suffix}
+      value={draft.text}
+      placeholder={placeholder}
+      onChange={(e) => draft.onChange(e.target.value)}
+      onKeyDown={onKeyDown}
+      onBlur={() => {
+        draft.onBlur()
+        breakUndoGroup()
+      }}
+      className={VALUE_CLASSES}
+    />
+  )
+}
+
 /** The main value for the row's measure. Reps accept free text: '8-10', 'máx', '21-15-9'. */
-export function MeasureValueField({ entry, inputRef, onKeyDown }: MeasureValueFieldProps) {
-  const { updateExercise } = useAppActions()
-  const shared = { ref: inputRef, onKeyDown, onBlur: breakUndoGroup, className: VALUE_CLASSES }
+export function MeasureValueField({ entry, fields, inputRef, onKeyDown }: MeasureValueFieldProps) {
+  const { setField } = fields
+  const shared = { inputRef, onKeyDown }
 
   switch (entry.measure) {
     case 'reps':
       return (
         <Input
-          {...shared}
+          ref={inputRef}
+          onKeyDown={onKeyDown}
+          onBlur={breakUndoGroup}
+          className={VALUE_CLASSES}
           label="Reps"
           value={entry.reps}
           placeholder="8-10"
-          onChange={(e) => updateExercise(entry.id, { reps: e.target.value })}
+          onChange={(e) => setField('reps', e.target.value)}
         />
       )
     case 'time':
-      return <TimeField {...shared} seconds={entry.durationSec} onChange={(durationSec) => updateExercise(entry.id, { durationSec })} />
+      return <TimeField {...shared} seconds={entry.durationSec} onChange={(durationSec) => setField('durationSec', durationSec)} />
     case 'distance':
       return (
-        <Input
+        <NumberMeasureField
           {...shared}
           label="Distancia"
-          inputMode="decimal"
           suffix="m"
-          value={entry.distanceM ?? ''}
           placeholder="400"
-          onChange={(e) => updateExercise(entry.id, { distanceM: parseNumber(e.target.value) })}
+          value={entry.distanceM}
+          onCommit={(distanceM) => setField('distanceM', distanceM)}
         />
       )
     case 'calories':
       return (
-        <Input
+        <NumberMeasureField
           {...shared}
           label="Calorías"
-          inputMode="numeric"
           suffix="cal"
-          value={entry.calories ?? ''}
           placeholder="12"
-          onChange={(e) => updateExercise(entry.id, { calories: parseNumber(e.target.value) })}
+          value={entry.calories}
+          onCommit={(calories) => setField('calories', calories)}
         />
       )
   }

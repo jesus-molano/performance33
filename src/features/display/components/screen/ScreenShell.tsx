@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { cn } from '../../../../lib/cn'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import { cn } from '@/lib/cn'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 
 interface ScreenShellProps {
   theme: DisplayThemeClasses

@@ -1,6 +1,7 @@
 export { Avatar, type AvatarProps, type AvatarSize } from './Avatar'
 export { Badge, type BadgeProps, type BadgeTone } from './Badge'
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button'
+export { Callout, type CalloutProps, type CalloutTone } from './Callout'
 export { Card, type CardProps } from './Card'
 export { Chip, type ChipProps } from './Chip'
 export { ConfirmDialog, ConfirmHost, type ConfirmDialogProps } from './ConfirmDialog'

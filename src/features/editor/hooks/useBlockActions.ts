@@ -1,11 +1,11 @@
 import { ArrowDown, ArrowUp, Copy, CopyPlus, Files, Shapes, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
-import type { MenuItem } from '../../../components/ui'
-import { useToast } from '../../../hooks'
-import { formatDayTitle, plural } from '../../../lib/format'
-import { useAppActions } from '../../../store'
-import type { BlockType, Day } from '../../../types'
-import { neighborIndex } from '../utils'
+import type { MenuItem } from '@/components/ui'
+import { useToast } from '@/hooks'
+import { formatDayTitle, plural } from '@/lib/format'
+import { useAppActions } from '@/store'
+import type { BlockType, Day } from '@/types'
+import { neighborIndex } from '@/features/editor/utils'
 
 export interface BlockActionsOptions {
   blockId: string

@@ -1,13 +1,13 @@
 import { MessageSquareText, Repeat } from 'lucide-react'
-import { cn } from '../../../../lib/cn'
-import type { DisplayBlock } from '../../../../lib/display'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import { cn } from '@/lib/cn'
+import type { DisplayBlock } from '@/lib/display'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { DisplayBlockHeader } from './DisplayBlockHeader'
 import { DisplayExerciseList } from './DisplayExerciseList'
 
 interface DisplayBlockCardProps {
   block: DisplayBlock
-  week: number
+  week: number | null
   theme: DisplayThemeClasses
   flashing: boolean
 }
@@ -24,7 +24,7 @@ export function DisplayBlockCard({ block, week, theme, flashing }: DisplayBlockC
     >
       <DisplayBlockHeader block={block} theme={theme} flashing={flashing} />
       {block.text && (
-        <p className={cn('mt-[0.5em] text-[1.4em] leading-snug whitespace-pre-line', theme.secondaryText)}>
+        <p className={cn('mt-[0.5em] text-[1.4em] leading-snug whitespace-pre-line [overflow-wrap:anywhere]', theme.secondaryText)}>
           {block.text}
         </p>
       )}
@@ -40,7 +40,7 @@ export function DisplayBlockCard({ block, week, theme, flashing }: DisplayBlockC
           )}
         >
           <MessageSquareText size="1em" aria-hidden className={cn('mt-[0.2em] shrink-0', theme.accentText)} />
-          <span>{block.note}</span>
+          <span className="min-w-0 [overflow-wrap:anywhere]">{block.note}</span>
         </p>
       )}
       {block.footer && (

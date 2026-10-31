@@ -1,11 +1,9 @@
 import { useId } from 'react'
-import { Button, Input, Modal, SegmentedControl, Select, Switch } from '../../../components/ui'
-import { EXERCISE_CATEGORIES } from '../../../data/exercises'
-import type { AnyLibraryExercise } from '../../../types'
-import { MEASURE_OPTIONS } from '../config'
-import { useExerciseForm } from '../hooks/useExerciseForm'
-
-const CATEGORY_OPTIONS = EXERCISE_CATEGORIES.map((c) => ({ value: c, label: c }))
+import { Button, Callout, Input, Modal, SegmentedControl, Select, Switch } from '@/components/ui'
+import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
+import type { AnyLibraryExercise } from '@/types'
+import { MEASURE_OPTIONS } from '@/features/settings/config'
+import { useExerciseForm } from '@/features/settings/hooks/useExerciseForm'
 
 export interface ExerciseFormModalProps {
   /** null = new custom exercise. */
@@ -38,13 +36,13 @@ export function ExerciseFormModal({ exercise, onClose }: ExerciseFormModalProps)
         <div className="flex flex-col gap-2">
           <Input label="Nombre" placeholder="Ej.: Remo con TRX" value={values.name} onChange={(e) => setField('name', e.target.value)} error={nameError} autoFocus autoComplete="off" />
           {similar.length > 0 && (
-            <p className="rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-800">
+            <Callout>
               Ya existe algo parecido: <strong>{similar.map((e) => e.name).join(', ')}</strong>. Comprueba que no sea el mismo.
-            </p>
+            </Callout>
           )}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select label="Categoría" options={CATEGORY_OPTIONS} value={values.category} onChange={(category) => setField('category', category)} />
+          <Select label="Categoría" options={EXERCISE_CATEGORY_OPTIONS} value={values.category} onChange={(category) => setField('category', category)} />
           <Input label="Material" placeholder="Ej.: TRX, Banco" hint="Separa con comas." value={values.equipment} onChange={(e) => setField('equipment', e.target.value)} />
         </div>
         <div className="flex flex-col gap-2">

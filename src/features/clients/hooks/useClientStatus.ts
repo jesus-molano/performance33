@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { getProgramStatus, type ProgramStatus } from '../../../lib/program'
-import { useCurrentProgram } from '../../../store'
-import type { Program } from '../../../types'
+import { getProgramStatus, type ProgramStatus } from '@/lib/program'
+import { useCurrentProgram } from '@/store'
+import type { Program } from '@/types'
 
 export interface ClientStatus {
   program: Program | null

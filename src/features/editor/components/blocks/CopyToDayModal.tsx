@@ -1,7 +1,7 @@
 import { CalendarPlus } from 'lucide-react'
-import { Modal } from '../../../../components/ui'
-import { formatDayTitle, plural } from '../../../../lib/format'
-import type { Day } from '../../../../types'
+import { Modal } from '@/components/ui'
+import { formatDayTitle, plural } from '@/lib/format'
+import type { Day } from '@/types'
 
 export interface CopyToDayModalProps {
   open: boolean

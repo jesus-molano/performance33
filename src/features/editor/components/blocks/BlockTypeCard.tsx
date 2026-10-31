@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
-import { Badge } from '../../../../components/ui'
-import type { BlockTypeMeta } from '../../../../config/blockTypes'
-import { cn } from '../../../../lib/cn'
+import { Badge } from '@/components/ui'
+import type { BlockTypeMeta } from '@/config/blockTypes'
+import { cn } from '@/lib/cn'
 
 export interface BlockTypeCardProps {
   meta: BlockTypeMeta

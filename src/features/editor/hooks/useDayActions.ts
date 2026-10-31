@@ -1,10 +1,10 @@
 import { ArrowLeft, ArrowRight, Copy, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
-import type { MenuItem } from '../../../components/ui'
-import { useToast } from '../../../hooks'
-import { useAppActions } from '../../../store'
-import type { Program } from '../../../types'
-import { neighborIndex } from '../utils'
+import type { MenuItem } from '@/components/ui'
+import { useToast } from '@/hooks'
+import { useAppActions } from '@/store'
+import type { Program } from '@/types'
+import { neighborIndex } from '@/features/editor/utils'
 
 export interface DayActionsApi {
   addDay: () => void

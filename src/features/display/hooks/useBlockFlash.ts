@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import type { DisplayDay } from '../../../lib/display'
-import { FLASH_MS } from '../config/display'
-import { findChangedBlockIds } from '../utils/changedBlocks'
+import type { DisplayDay } from '@/lib/display'
+import { FLASH_MS } from '@/features/display/config/display'
+import { findChangedBlockIds } from '@/features/display/utils/changedBlocks'
 
 const NONE: ReadonlySet<string> = new Set()
 

@@ -1,8 +1,8 @@
 import { Pencil, Pin, PinOff, Trash2, TriangleAlert } from 'lucide-react'
-import { Avatar, Badge, Button, DropdownMenu, Textarea, type MenuItem } from '../../../components/ui'
-import { cn } from '../../../lib/cn'
-import type { ClientNote } from '../../../types'
-import { useNoteItem } from '../hooks/useNoteItem'
+import { Avatar, Badge, Button, DropdownMenu, Textarea, type MenuItem } from '@/components/ui'
+import { cn } from '@/lib/cn'
+import type { ClientNote } from '@/types'
+import { useNoteItem } from '@/features/clients/hooks/useNoteItem'
 
 /** One private note: author, date, text; pin/edit/delete in the '⋯' menu. Edits autosave. */
 export function NoteItem({ note }: { note: ClientNote }) {
@@ -24,7 +24,7 @@ export function NoteItem({ note }: { note: ClientNote }) {
       )}
     >
       <div className="flex items-center gap-2.5">
-        <Avatar firstName={item.authorName} color={item.author?.color ?? '#8e8e99'} size="sm" />
+        <Avatar firstName={item.authorName} color={item.authorColor} size="sm" />
         <div className="min-w-0 flex-1 leading-tight">
           <p className="truncate text-sm font-semibold text-fg">{item.authorName}</p>
           <p className="text-xs text-fg-subtle">{item.dateLabel}</p>
@@ -34,7 +34,7 @@ export function NoteItem({ note }: { note: ClientNote }) {
             Alerta
           </Badge>
         )}
-        <DropdownMenu items={menu} label="Opciones de la nota" />
+        <DropdownMenu items={menu} label={`Opciones de la nota de ${item.authorName}`} />
       </div>
       {item.isEditing ? (
         <div className="mt-2 flex flex-col gap-2">
@@ -44,7 +44,7 @@ export function NoteItem({ note }: { note: ClientNote }) {
           </Button>
         </div>
       ) : (
-        <p className="mt-2 text-[15px] leading-relaxed whitespace-pre-wrap text-fg">{note.text}</p>
+        <p className="mt-2 text-md leading-relaxed whitespace-pre-wrap text-fg">{note.text}</p>
       )}
     </li>
   )

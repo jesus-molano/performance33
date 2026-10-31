@@ -1,5 +1,5 @@
-import type { Branding } from '../../../../types'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import type { Branding } from '@/types'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 
 interface DisplayLogoProps {
   branding: Branding

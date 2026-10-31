@@ -1,7 +1,7 @@
 import { Redo2, Undo2 } from 'lucide-react'
-import { IconButton } from '../../../components/ui'
-import { useUndoRedo } from '../../../hooks/useUndoRedo'
-import { modifierKeyLabel } from '../utils/nav'
+import { IconButton } from '@/components/ui'
+import { useUndoRedo } from '@/hooks'
+import { modifierKeyLabel } from '@/features/shell/utils/nav'
 
 /** Header undo/redo (the keyboard shortcuts are wired globally by the dashboard root). */
 export function UndoRedoButtons() {

@@ -1,8 +1,8 @@
 import { Plus } from 'lucide-react'
-import { Badge } from '../../../../components/ui'
-import { cn } from '../../../../lib/cn'
-import type { ExerciseAutocomplete } from '../../hooks/useExerciseAutocomplete'
-import { libraryMeta } from '../../utils'
+import { Badge } from '@/components/ui'
+import { cn } from '@/lib/cn'
+import type { ExerciseAutocomplete } from '@/features/editor/hooks/useExerciseAutocomplete'
+import { formatExerciseMeta } from '@/lib/exerciseLibrary'
 
 export interface ExerciseSuggestionsProps {
   id: string
@@ -34,7 +34,7 @@ export function ExerciseSuggestions({ id, query, ac }: ExerciseSuggestionsProps)
           onClick={() => ac.choose(index)}
           className={optionClasses(index === ac.highlighted)}
         >
-          <span className="flex items-center gap-2 text-[15px] font-medium text-fg">
+          <span className="flex items-center gap-2 text-md font-medium text-fg">
             {exercise.name}
             {matchedAlias && <span className="text-sm font-normal text-fg-subtle">· {matchedAlias}</span>}
             {exercise.custom && (
@@ -43,7 +43,7 @@ export function ExerciseSuggestions({ id, query, ac }: ExerciseSuggestionsProps)
               </Badge>
             )}
           </span>
-          <span className="text-xs text-fg-muted">{libraryMeta(exercise)}</span>
+          <span className="text-xs text-fg-muted">{formatExerciseMeta(exercise)}</span>
         </li>
       ))}
       {ac.showCustomOption && (
@@ -56,7 +56,7 @@ export function ExerciseSuggestions({ id, query, ac }: ExerciseSuggestionsProps)
           className={cn(optionClasses(customIndex === ac.highlighted), 'flex-row items-center justify-start gap-2 text-brand-strong')}
         >
           <Plus size={16} aria-hidden />
-          <span className="text-[15px]">
+          <span className="text-md">
             Usar «<span className="font-semibold">{query.trim()}</span>» como ejercicio propio
           </span>
         </li>

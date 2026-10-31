@@ -1,11 +1,11 @@
-import { FadingOverlay } from '../components/screen/FadingOverlay'
-import { ScreenShell } from '../components/screen/ScreenShell'
-import { ScreenToolbar } from '../components/screen/ScreenToolbar'
-import { DaySwitcher } from '../components/screen/DaySwitcher'
-import { WindowHint } from '../components/screen/WindowHint'
-import { DisplayFallback } from '../components/screen/DisplayFallback'
-import { RoutineDisplay } from '../components/RoutineDisplay'
-import { useSingleDisplay } from '../hooks/useSingleDisplay'
+import { FadingOverlay } from '@/features/display/components/screen/FadingOverlay'
+import { ScreenShell } from '@/features/display/components/screen/ScreenShell'
+import { ScreenToolbar } from '@/features/display/components/screen/ScreenToolbar'
+import { DaySwitcher } from '@/features/display/components/screen/DaySwitcher'
+import { WindowHint } from '@/features/display/components/screen/WindowHint'
+import { DisplayFallback } from '@/features/display/components/screen/DisplayFallback'
+import { RoutineDisplay } from '@/features/display/components/RoutineDisplay'
+import { useSingleDisplay } from '@/features/display/hooks/useSingleDisplay'
 
 export interface DisplayPageProps {
   clientId: string

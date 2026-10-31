@@ -1,4 +1,4 @@
-import { MAX_LOGO_BYTES } from '../config/branding'
+import { MAX_LOGO_BYTES } from '@/config/branding'
 import { todayISO } from './dates'
 
 /** Read an image File into a data URL. Rejects (Spanish message) when larger than maxBytes. */

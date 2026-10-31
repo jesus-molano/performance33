@@ -1,5 +1,5 @@
-import type { Route } from '../../../lib/routes'
-import type { NavLinkItem } from '../config'
+import type { Route } from '@/lib/routes'
+import type { NavLinkItem } from '@/features/shell/config'
 
 export function isNavActive(link: NavLinkItem, route: Route): boolean {
   return link.activeOn.includes(route.name)

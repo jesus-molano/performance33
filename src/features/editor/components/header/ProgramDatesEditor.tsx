@@ -1,8 +1,8 @@
 import { CalendarDays } from 'lucide-react'
-import { Input } from '../../../../components/ui'
-import { formatDateRange } from '../../../../lib/dates'
-import type { Program } from '../../../../types'
-import type { ProgramHeaderApi } from '../../hooks/useProgramHeader'
+import { Input } from '@/components/ui'
+import { formatDateRange } from '@/lib/dates'
+import type { Program } from '@/types'
+import type { ProgramHeaderApi } from '@/features/editor/hooks/useProgramHeader'
 import { WeeksStepper } from './WeeksStepper'
 
 export interface ProgramDatesEditorProps {

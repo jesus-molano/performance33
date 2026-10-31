@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react'
-import { cn } from '../../lib/cn'
+import { cn } from '@/lib/cn'
 
 export interface SwitchProps {
   checked: boolean
@@ -16,7 +16,7 @@ export function Switch({ checked, onChange, label, description, disabled, classN
   return (
     <div className={cn('flex min-h-11 items-center justify-between gap-3', className)}>
       <label htmlFor={id} className="flex flex-col">
-        <span className="text-[15px] font-medium text-fg">{label}</span>
+        <span className="text-md font-medium text-fg">{label}</span>
         {description && <span className="text-sm text-fg-muted">{description}</span>}
       </label>
       <button

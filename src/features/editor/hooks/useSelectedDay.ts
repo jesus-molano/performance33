@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
-import { clamp } from '../../../lib/numbers'
-import type { Day, Program } from '../../../types'
+import { clamp } from '@/lib/numbers'
+import type { Day, Program } from '@/types'
 
 interface Selection {
   id: string | null

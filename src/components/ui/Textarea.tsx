@@ -1,6 +1,6 @@
 import { useId, type ComponentProps, type ReactNode } from 'react'
-import { NATIVE_UNDO_ATTRIBUTE } from '../../hooks/useUndoShortcuts'
-import { cn } from '../../lib/cn'
+import { NATIVE_UNDO_ATTRIBUTE } from '@/hooks/useUndoShortcuts'
+import { cn } from '@/lib/cn'
 import { Field } from './Field'
 import { controlClasses, describedBy } from './styles'
 

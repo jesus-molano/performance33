@@ -1,6 +1,6 @@
-import type { ExerciseEntry, PublicExerciseEntry } from '../../types'
-import { formatNumber, isPlainNumber, parseNumber } from '../numbers'
-import { resolveEntryForWeek } from '../progression'
+import type { ExerciseEntry, PublicExerciseEntry } from '@/types'
+import { formatNumber, isPlainNumber, parseNumber } from '@/lib/numbers'
+import { resolveEntryForWeek } from '@/lib/progression'
 import { formatCalories, formatDistance, formatRest, formatSeconds } from './units'
 
 type EntryLike = PublicExerciseEntry | ExerciseEntry

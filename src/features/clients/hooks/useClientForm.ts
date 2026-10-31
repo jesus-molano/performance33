@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import { PLAN_BY_ID } from '../../../config/plans'
-import { useToast } from '../../../hooks/useToast'
-import { navigate, paths } from '../../../lib/routes'
-import { useAppActions } from '../../../store'
-import type { Client, PlanId } from '../../../types'
-import { toClientFormValues, toClientPatch, validateClientForm, type ClientFormErrors, type ClientFormValues } from '../utils/clientForm'
+import { PLAN_BY_ID } from '@/config/plans'
+import { useToast } from '@/hooks'
+import { navigate, paths } from '@/lib/routes'
+import { useAppActions } from '@/store'
+import type { Client, PlanId } from '@/types'
+import { toClientFormValues, toClientPatch, validateClientForm, type ClientFormErrors, type ClientFormValues } from '@/features/clients/utils/clientForm'
 
 export interface ClientFormApi {
   isEdit: boolean

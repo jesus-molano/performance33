@@ -1,7 +1,8 @@
 // Pure lookup + immutable path-update helpers over AppData (ids are globally unique).
 
-import { replaceAt } from '../lib/arrays'
-import type { AppData, Block, Day, ExerciseEntry, Program } from '../types'
+import { replaceAt } from '@/lib/arrays'
+import { findExerciseIndices } from '@/lib/programTree'
+import type { AppData, Block, Day, ExerciseEntry, Program } from '@/types'
 
 export interface DayLoc {
   pi: number
@@ -39,14 +40,8 @@ export function locateBlock(data: AppData, blockId: string): BlockLoc | null {
 
 export function locateExercise(data: AppData, exerciseId: string): ExerciseLoc | null {
   for (let pi = 0; pi < data.programs.length; pi++) {
-    const days = data.programs[pi].days
-    for (let di = 0; di < days.length; di++) {
-      const blocks = days[di].blocks
-      for (let bi = 0; bi < blocks.length; bi++) {
-        const ei = blocks[bi].exercises.findIndex((e) => e.id === exerciseId)
-        if (ei !== -1) return { pi, di, bi, ei }
-      }
-    }
+    const at = findExerciseIndices(data.programs[pi], exerciseId)
+    if (at) return { pi, ...at }
   }
   return null
 }

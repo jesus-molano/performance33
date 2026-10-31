@@ -1,4 +1,4 @@
-import { useConfirmStore, type ConfirmOptions } from '../store/confirmStore'
+import { useConfirmStore, type ConfirmOptions } from '@/store/confirmStore'
 
 /**
  * Promise-based confirm dialog (rendered once by <ConfirmHost/>). Use ONLY for big destructive

@@ -1,7 +1,7 @@
 import { Users } from 'lucide-react'
-import { cn } from '../../../lib/cn'
-import { readableTextOn } from '../../../lib/color'
-import type { Branding } from '../../../types'
+import { cn } from '@/lib/cn'
+import { readableTextOn } from '@/lib/color'
+import type { Branding } from '@/types'
 
 function PreviewLabel({ children }: { children: string }) {
   return <p className="mb-2 text-xs font-semibold tracking-wide text-fg-subtle uppercase">{children}</p>

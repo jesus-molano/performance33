@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { DISPLAY_KEYS, type DisplayKeyAction } from '../config/display'
+import { DISPLAY_KEYS, type DisplayKeyAction } from '@/features/display/config/display'
 
 export type DisplayShortcutHandlers = Partial<Record<DisplayKeyAction, () => void>>
 

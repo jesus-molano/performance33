@@ -1,23 +1,19 @@
 import { TrendingUp, X } from 'lucide-react'
-import { Button, HelpTip, IconButton, Select } from '../../../../components/ui'
-import { PROGRESSION_TARGET_META } from '../../../../config/exerciseFields'
-import type { ExerciseEntry } from '../../../../types'
-import { useProgressionEditor } from '../../hooks/useProgressionEditor'
-import type { WeekContext } from '../../types'
-import { PROGRESSION_TARGETS, progressionLabel } from '../../utils'
+import { Button, HelpTip, IconButton, Select } from '@/components/ui'
+import { PROGRESSION_TARGET_META } from '@/config/exerciseFields'
+import type { ExerciseEntry } from '@/types'
+import { useEditorContext } from '@/features/editor/hooks/useEditorContext'
+import { useProgressionEditor } from '@/features/editor/hooks/useProgressionEditor'
+import { PROGRESSION_TARGETS, progressionLabel } from '@/features/editor/utils'
 import { LinearFill } from './LinearFill'
 import { WeekValueInput } from './WeekValueInput'
 
 const TARGET_OPTIONS = PROGRESSION_TARGETS.map((value) => ({ value, label: PROGRESSION_TARGET_META[value].label }))
 const HELP = 'La pantalla muestra solo el valor de la semana en curso. Si una semana está vacía, se usa el valor normal.'
 
-export interface ProgressionStripProps {
-  entry: ExerciseEntry
-  weeks: WeekContext
-}
-
 /** Optional per-week values S1..SN (e.g. carga 20 → 22,5 → 25 → descarga 20). */
-export function ProgressionStrip({ entry, weeks }: ProgressionStripProps) {
+export function ProgressionStrip({ entry }: { entry: ExerciseEntry }) {
+  const { weeks } = useEditorContext()
   const editor = useProgressionEditor(entry, weeks.total)
   const { progression } = editor
 
@@ -33,7 +29,7 @@ export function ProgressionStrip({ entry, weeks }: ProgressionStripProps) {
     <section className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3" aria-label="Progresión semanal">
       <div className="flex items-center gap-2">
         <TrendingUp size={17} aria-hidden className="text-emerald-700" />
-        <span className="flex-1 text-[15px] font-semibold text-fg">
+        <span className="flex-1 text-md font-semibold text-fg">
           Progresión semanal <HelpTip text={HELP} className="align-middle" />
         </span>
         <IconButton icon={X} size="sm" label="Quitar progresión" onClick={editor.remove} />

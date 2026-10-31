@@ -1,6 +1,6 @@
-import type { DisplayTheme } from '../../../types'
+import type { DisplayTheme } from '@/types'
 
-/** Class families for the branded screen. Dark = black + brand pink; light = white + brand-strong. */
+/** Class families for the branded screen (read from 3-4 m). Dark = black + brand pink; light = white cards + brand-strong. */
 export interface DisplayThemeClasses {
   root: string
   card: string
@@ -22,10 +22,10 @@ const DARK: DisplayThemeClasses = {
   root: 'bg-ink text-white',
   card: 'bg-ink-soft border border-ink-line',
   mutedCard: 'border border-dashed border-ink-line',
-  accentText: 'text-brand',
-  accentBorder: 'border-brand',
-  badge: 'bg-brand text-brand-contrast',
-  outlineBadge: 'border border-brand/60 text-brand',
+  accentText: 'text-brand-on-dark',
+  accentBorder: 'border-brand-on-dark',
+  badge: 'bg-brand-on-dark text-brand-on-dark-contrast',
+  outlineBadge: 'border border-brand-on-dark/60 text-brand-on-dark',
   secondaryText: 'text-zinc-300',
   subtleText: 'text-zinc-400',
   noteSurface: 'bg-white/5',
@@ -36,15 +36,15 @@ const DARK: DisplayThemeClasses = {
 }
 
 const LIGHT: DisplayThemeClasses = {
-  root: 'bg-white text-fg',
-  card: 'bg-canvas border border-line',
+  root: 'bg-canvas text-fg',
+  card: 'bg-white border border-line-strong',
   mutedCard: 'border border-dashed border-line-strong',
   accentText: 'text-brand-strong',
   accentBorder: 'border-brand-strong',
   badge: 'bg-brand-strong text-brand-strong-contrast',
   outlineBadge: 'border border-brand-strong/60 text-brand-strong',
-  secondaryText: 'text-fg-muted',
-  subtleText: 'text-fg-subtle',
+  secondaryText: 'text-fg',
+  subtleText: 'text-fg-muted',
   noteSurface: 'bg-brand-soft',
   rowDivider: 'divide-line',
   columnDivider: 'divide-brand-strong/30',

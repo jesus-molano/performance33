@@ -11,3 +11,6 @@ export const AVATAR_COLORS = [
   '#db2777',
   '#475569',
 ] as const
+
+/** Avatar colour for notes whose author coach was deleted. */
+export const UNKNOWN_AUTHOR_COLOR = '#71717a'

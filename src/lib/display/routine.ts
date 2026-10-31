@@ -1,10 +1,10 @@
-import { BLOCK_TYPE_META } from '../../config/blockTypes'
-import type { DisplayData, ISODate, PublicClient, PublicDay } from '../../types'
-import { blockShowsSets } from '../blocks'
-import { todayISO } from '../dates'
-import { formatDayTitle, getBlockHeader, getEntryParts, getExerciseLabels } from '../format'
-import { formatWeekOf, getProgramWeekInfo } from '../program'
-import { getProgressionValue } from '../progression'
+import { BLOCK_TYPE_META } from '@/config/blockTypes'
+import type { DisplayData, ISODate, PublicClient, PublicDay } from '@/types'
+import { blockShowsSets } from '@/lib/blocks'
+import { todayISO } from '@/lib/dates'
+import { formatDayTitle, getBlockHeader, getEntryParts, getExerciseLabels } from '@/lib/format'
+import { formatProgramPeriod, getProgramWeekInfo, getProgressionWeek } from '@/lib/program'
+import { getProgressionValue } from '@/lib/progression'
 import type { DisplayBlock, DisplayDay, DisplayRoutine } from './types'
 
 export interface BuildRoutineOptions {
@@ -13,7 +13,7 @@ export interface BuildRoutineOptions {
   today?: ISODate
 }
 
-function formatBlock(day: PublicDay, blockIndex: number, week: number): DisplayBlock {
+function formatBlock(day: PublicDay, blockIndex: number, week: number | null): DisplayBlock {
   const block = day.blocks[blockIndex]
   const labels = getExerciseLabels(day.blocks, blockIndex)
   const showSets = blockShowsSets(block.type)
@@ -29,7 +29,7 @@ function formatBlock(day: PublicDay, blockIndex: number, week: number): DisplayB
       return {
         id: entry.id,
         label: labels[i] ?? null,
-        name: entry.name.trim() || 'Ejercicio',
+        name: entry.name.trim(),
         volume: parts.volume,
         load: parts.load,
         detail: [parts.tempo, parts.rest].filter(Boolean).join(' · '),
@@ -40,7 +40,7 @@ function formatBlock(day: PublicDay, blockIndex: number, week: number): DisplayB
   }
 }
 
-function formatDay(day: PublicDay, index: number, week: number): DisplayDay {
+function formatDay(day: PublicDay, index: number, week: number | null): DisplayDay {
   return {
     id: day.id,
     number: index + 1,
@@ -63,6 +63,7 @@ export function buildDisplayRoutine(
   const program = data.programs.find((p) => p.id === programId && p.clientId === clientId)
   if (!program) return null
   const info = getProgramWeekInfo(program, opts.today ?? todayISO())
+  const week = getProgressionWeek(info)
   return {
     branding: data.branding,
     clientId: client.id,
@@ -73,10 +74,10 @@ export function buildDisplayRoutine(
     startDate: program.startDate,
     endDate: program.endDate,
     phase: info.phase,
-    week: info.week,
+    week,
     totalWeeks: info.totalWeeks,
-    weekLabel: formatWeekOf(info.week, info.totalWeeks),
-    days: program.days.map((day, index) => formatDay(day, index, info.week)),
+    weekLabel: formatProgramPeriod(info, program.startDate),
+    days: program.days.map((day, index) => formatDay(day, index, week)),
   }
 }
 

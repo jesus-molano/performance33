@@ -1,46 +1,7 @@
 // Biblioteca de ejercicios por defecto (gimnasio funcional, nombres como se usan en España).
 // Los ids son slugs estables: no cambiarlos, las rutinas guardadas los referencian.
 
-export type ExerciseCategory =
-  | 'Piernas'
-  | 'Empuje'
-  | 'Tracción'
-  | 'Core'
-  | 'Halterofilia'
-  | 'Cardio'
-  | 'Gimnásticos'
-  | 'Movilidad'
-  | 'Pliometría'
-  | 'Brazos'
-  | 'Hombro'
-  | 'Glúteo'
-
-export type MeasureType = 'reps' | 'time' | 'distance' | 'calories'
-
-export interface LibraryExercise {
-  id: string
-  name: string
-  aliases?: string[]
-  category: ExerciseCategory
-  equipment: string[]
-  defaultMeasure: MeasureType
-  perSide?: boolean
-}
-
-export const EXERCISE_CATEGORIES: ExerciseCategory[] = [
-  'Piernas',
-  'Glúteo',
-  'Empuje',
-  'Tracción',
-  'Hombro',
-  'Brazos',
-  'Core',
-  'Halterofilia',
-  'Gimnásticos',
-  'Cardio',
-  'Pliometría',
-  'Movilidad',
-]
+import type { ExerciseCategory, LibraryExercise, MeasureType } from '@/types'
 
 interface Extra {
   aliases?: string[]

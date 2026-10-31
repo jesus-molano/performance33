@@ -1,6 +1,6 @@
-import { cn } from '../../../../lib/cn'
-import type { Day } from '../../../../types'
-import { pointerListenersOnly, useSortableItem } from '../../hooks/useSortableItem'
+import { cn } from '@/lib/cn'
+import type { Day } from '@/types'
+import { pointerListenersOnly, useSortableItem } from '@/features/editor/hooks/useSortableItem'
 
 export interface DayTabProps {
   day: Day
@@ -32,7 +32,7 @@ export function DayTab({ day, selected, onSelect }: DayTabProps) {
         isDragging && 'opacity-80 shadow-pop',
       )}
     >
-      <span className="text-[15px] leading-tight font-semibold whitespace-nowrap">{day.name || 'Día'}</span>
+      <span className="text-md leading-tight font-semibold whitespace-nowrap">{day.name || 'Día'}</span>
       {day.label.trim() && (
         <span className={cn('text-xs leading-tight whitespace-nowrap', selected ? 'text-brand' : 'text-fg-subtle')}>
           {day.label}

@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useClients, usePinnedNoteCounts } from '../../../store'
-import type { Client } from '../../../types'
-import type { PlanFilter } from '../config'
-import { countArchived, EMPTY_CLIENT_FILTERS, filterClients, hasActiveFilters, type ClientFilters } from '../utils/filterClients'
+import { useClients, usePinnedNoteCounts } from '@/store'
+import type { Client } from '@/types'
+import type { PlanFilter } from '@/features/clients/config'
+import { countArchived, EMPTY_CLIENT_FILTERS, filterClients, hasActiveFilters, type ClientFilters } from '@/features/clients/utils/filterClients'
 
 export interface ClientListApi {
   filters: ClientFilters

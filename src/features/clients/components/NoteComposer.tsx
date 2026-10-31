@@ -1,7 +1,7 @@
 import { Send } from 'lucide-react'
-import { Button, Switch, Textarea } from '../../../components/ui'
-import { CLIENT_TEXT } from '../config'
-import { useNoteComposer } from '../hooks/useNoteComposer'
+import { Button, Switch, Textarea } from '@/components/ui'
+import { CLIENT_TEXT } from '@/features/clients/config'
+import { useNoteComposer } from '@/features/clients/hooks/useNoteComposer'
 
 /** New private note: text + 'Fijar como alerta'. Ctrl/Cmd+Enter sends. */
 export function NoteComposer({ clientId }: { clientId: string }) {

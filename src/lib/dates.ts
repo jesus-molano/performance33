@@ -1,7 +1,7 @@
 // Local-date helpers. All calendar dates are 'YYYY-MM-DD' strings interpreted in
 // LOCAL time (never `new Date('2026-10-31')`, which is UTC and shifts a day).
 
-import type { ISODate } from '../types'
+import type { ISODate } from '@/types'
 
 const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const MONTHS_LONG = [

@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
-import { displayWindowUrl, openDisplayWindow, openTvWindow, tvWindowUrl } from '../lib/displayWindow'
-import type { TvSlot } from '../lib/routes'
-import { useToastStore } from '../store/toastStore'
+import { COPY } from '@/config/copy'
+import { displayWindowUrl, openDisplayWindow, openTvWindow, tvWindowUrl } from '@/lib/displayWindow'
+import type { TvSlot } from '@/lib/routes'
+import { useToast } from './useToast'
 
 export interface DisplayWindowApi {
   /** Opens a client's Pantalla popup. Call directly inside a click handler. */
@@ -15,17 +16,17 @@ export interface DisplayWindowApi {
  * button retries from a fresh click (which popup blockers allow) in a new tab.
  */
 export function useDisplayWindow(): DisplayWindowApi {
-  const show = useToastStore((s) => s.show)
+  const { toast } = useToast()
 
   const fallback = useCallback(
     (url: string) =>
-      show({
-        message: 'El navegador ha bloqueado la ventana.',
+      toast({
+        message: COPY.popupBlocked,
         tone: 'error',
-        actionLabel: 'Abrir pantalla',
+        actionLabel: COPY.openScreen,
         onAction: () => window.open(url, '_blank'),
       }),
-    [show],
+    [toast],
   )
 
   const openDisplay = useCallback<DisplayWindowApi['openDisplay']>(

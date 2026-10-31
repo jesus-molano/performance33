@@ -1,10 +1,10 @@
 import { ClipboardList, Plus } from 'lucide-react'
-import { Button, Card, EmptyState } from '../../../components/ui'
-import { DEFAULT_PROGRAM_WEEKS } from '../../../config/app'
-import { plural } from '../../../lib/format'
-import type { Client } from '../../../types'
-import { useClientStatus } from '../hooks/useClientStatus'
-import { useProgramActions } from '../hooks/useProgramActions'
+import { Button, Card, EmptyState } from '@/components/ui'
+import { DEFAULT_PROGRAM_WEEKS } from '@/config/app'
+import { plural } from '@/lib/format'
+import type { Client } from '@/types'
+import { useClientStatus } from '@/features/clients/hooks/useClientStatus'
+import { useProgramActions } from '@/features/clients/hooks/useProgramActions'
 import { CurrentProgramCard } from './CurrentProgramCard'
 
 export interface CurrentProgramSectionProps {

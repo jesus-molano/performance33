@@ -1,6 +1,6 @@
-import { matchesQuery } from '../../../lib/search'
-import type { Client } from '../../../types'
-import type { PlanFilter } from '../config'
+import { matchesQuery } from '@/lib/search'
+import type { Client } from '@/types'
+import type { PlanFilter } from '@/features/clients/config'
 
 export interface ClientFilters {
   query: string

@@ -1,4 +1,4 @@
-import type { PlanId } from '../types'
+import type { PlanId } from '@/types'
 
 export interface PlanMeta {
   id: PlanId

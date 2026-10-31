@@ -1,10 +1,9 @@
 import { useCallback } from 'react'
-import { useConfirm } from '../../../hooks/useConfirm'
-import { useToast } from '../../../hooks/useToast'
-import { formatFullName } from '../../../lib/format'
-import { navigate, paths } from '../../../lib/routes'
-import { useAppActions } from '../../../store'
-import type { Client } from '../../../types'
+import { useConfirm, useToast } from '@/hooks'
+import { formatFullName } from '@/lib/format'
+import { navigate, paths } from '@/lib/routes'
+import { useAppActions } from '@/store'
+import type { Client } from '@/types'
 
 export interface ClientActionsApi {
   archive: (client: Client) => void

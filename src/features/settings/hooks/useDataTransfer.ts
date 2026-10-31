@@ -1,10 +1,9 @@
 import { useCallback, useRef, type ChangeEvent, type RefObject } from 'react'
-import { useConfirm } from '../../../hooks/useConfirm'
-import { useToast } from '../../../hooks/useToast'
-import { plural } from '../../../lib/format'
-import { downloadBackup, readBackupFile } from '../../../persistence'
-import { useAppActions, useAppData } from '../../../store'
-import type { AppData } from '../../../types'
+import { useConfirm, useToast } from '@/hooks'
+import { plural } from '@/lib/format'
+import { downloadBackup, readBackupFile } from '@/persistence'
+import { useAppActions, useAppData } from '@/store'
+import type { AppData } from '@/types'
 
 export interface DataStats {
   clients: number

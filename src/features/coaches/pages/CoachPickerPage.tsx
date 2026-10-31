@@ -1,12 +1,12 @@
 import { Check, Pencil } from 'lucide-react'
-import { Button } from '../../../components/ui'
-import { useDisclosure } from '../../../hooks/useDisclosure'
-import { useBranding, useCoaches } from '../../../store'
-import type { Coach } from '../../../types'
-import { BrandLogo, editedItem, useEditTarget } from '../../shell'
-import { CoachFormModal } from '../components/CoachFormModal'
-import { AddCoachTile, CoachTile } from '../components/CoachTile'
-import { useCoachPicker } from '../hooks/useCoachPicker'
+import { Button } from '@/components/ui'
+import { useDisclosure } from '@/hooks'
+import { useBranding, useCoaches } from '@/store'
+import type { Coach } from '@/types'
+import { BrandLogo, editedItem, useEditTarget } from '@/features/shell'
+import { CoachFormModal } from '@/features/coaches/components/CoachFormModal'
+import { AddCoachTile, CoachTile } from '@/features/coaches/components/CoachTile'
+import { useCoachPicker } from '@/features/coaches/hooks/useCoachPicker'
 
 /** '¿Quién eres?' full-screen picker. After choosing: setCurrentCoach(id) and, on '#/', navigate(paths.clients()). */
 export function CoachPickerPage() {

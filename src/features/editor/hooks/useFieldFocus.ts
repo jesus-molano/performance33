@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useEditorUi, type RowField } from '../state/editorUiStore'
+import { useEditorUi, type RowField } from '@/features/editor/store/editorUiStore'
 
 /** Ref for a row field that focuses (and selects) itself when the editor requests it. */
 export function useFieldFocus<T extends HTMLInputElement>(exerciseId: string, field: RowField) {

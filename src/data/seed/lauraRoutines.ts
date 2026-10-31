@@ -1,6 +1,6 @@
 // Laura · Plus (3 días). Shoulder issue: no overhead pressing in her routines.
 
-import type { Day } from '../../types'
+import type { Day } from '@/types'
 import { WARMUP_TEXT, block, day, ex, kgProgression, roundEx } from './builders'
 
 const warmup = () => block('warmup', [], { text: WARMUP_TEXT, params: { durationMin: 10 } })

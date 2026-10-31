@@ -1,10 +1,10 @@
 // Small builders that keep the demo routines readable.
 
-import { endDateFor } from '../../lib/dates'
-import { createBlock, createDay, createExercise, exercisePatchFromLibrary } from '../../lib/factories'
-import { newId } from '../../lib/ids'
-import type { Block, BlockType, Day, ExerciseEntry, ISODate, Program } from '../../types'
-import { EXERCISE_LIBRARY } from '../exercises'
+import { endDateFor } from '@/lib/dates'
+import { createBlock, createDay, createExercise, exercisePatchFromLibrary } from '@/lib/factories'
+import { newId } from '@/lib/ids'
+import type { Block, BlockType, Day, ExerciseEntry, ISODate, Program } from '@/types'
+import { EXERCISE_LIBRARY } from '@/data/exercises'
 
 /** Exercise row from the library (throws on a typo so the seed never ships broken ids). */
 export function ex(libraryId: string, fields: Partial<ExerciseEntry> = {}): ExerciseEntry {

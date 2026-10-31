@@ -8,11 +8,16 @@
  *   private-*     amber family: internal notes ("Solo monitores", lock icon)
  */
 @theme {
+  --text-md: 0.9375rem;
+
   --font-sans: "Jost", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --color-brand: #f79cce;
   --color-brand-contrast: #000000;
-  --color-brand-strong: #d6449a;
+  /* Brand text on the black TV (lightened at runtime when a dark primary is chosen). */
+  --color-brand-on-dark: #f79cce;
+  --color-brand-on-dark-contrast: #000000;
+  --color-brand-strong: #b8287a;
   --color-brand-strong-contrast: #ffffff;
   --color-brand-soft: #fdf0f7;
   --color-brand-line: #f6c6e0;
@@ -28,7 +33,7 @@
   --color-line-strong: #d4d4d8;
   --color-fg: #18181b;
   --color-fg-muted: #5f5f6b;
-  --color-fg-subtle: #8e8e99;
+  --color-fg-subtle: #71717a;
 
   --color-private: #92400e;
   --color-private-bg: #fffbeb;

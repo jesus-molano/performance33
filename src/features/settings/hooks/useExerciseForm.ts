@@ -1,9 +1,9 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { useToast } from '../../../hooks/useToast'
-import { findSimilarExercises } from '../../../lib/search'
-import { useAppActions, useExerciseLibrary } from '../../../store'
-import type { AnyLibraryExercise } from '../../../types'
-import { toCustomExerciseInput, toExerciseFormValues, type ExerciseFormValues } from '../utils/exerciseForm'
+import { useToast } from '@/hooks'
+import { findSimilarExercises } from '@/lib/search'
+import { useAppActions, useExerciseLibrary } from '@/store'
+import type { AnyLibraryExercise } from '@/types'
+import { toCustomExerciseInput, toExerciseFormValues, type ExerciseFormValues } from '@/features/settings/utils/exerciseForm'
 
 export interface ExerciseFormApi {
   isEdit: boolean

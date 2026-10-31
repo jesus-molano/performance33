@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentProps } from 'react'
-import { cn } from '../../lib/cn'
-import { BUTTON_SIZES, BUTTON_VARIANTS, type ButtonSize, type ButtonVariant } from './styles'
+import { cn } from '@/lib/cn'
+import { BUTTON_SIZES, BUTTON_VARIANTS, BUTTON_WRAP_SIZES, type ButtonSize, type ButtonVariant } from './styles'
 
 export type { ButtonSize, ButtonVariant }
 
@@ -11,6 +11,8 @@ export interface ButtonProps extends ComponentProps<'button'> {
   leftIcon?: LucideIcon
   rightIcon?: LucideIcon
   fullWidth?: boolean
+  /** Long label that may wrap on narrow screens instead of overflowing. */
+  wrap?: boolean
 }
 
 export function Button({
@@ -19,6 +21,7 @@ export function Button({
   leftIcon: LeftIcon,
   rightIcon: RightIcon,
   fullWidth = false,
+  wrap = false,
   className,
   children,
   type = 'button',
@@ -29,10 +32,11 @@ export function Button({
     <button
       type={type}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-colors',
+        'inline-flex shrink-0 items-center justify-center font-medium transition-colors',
+        wrap ? 'whitespace-normal' : 'whitespace-nowrap',
         'disabled:pointer-events-none disabled:opacity-45',
         BUTTON_VARIANTS[variant],
-        BUTTON_SIZES[size],
+        wrap ? BUTTON_WRAP_SIZES[size] : BUTTON_SIZES[size],
         fullWidth && 'w-full',
         className,
       )}

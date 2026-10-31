@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react'
-import { MOBILE_MEDIA_QUERY } from '../config/app'
+import { MOBILE_MEDIA_QUERY } from '@/config/app'
 
 /** Live result of a CSS media query. */
 export function useMediaQuery(query: string): boolean {

@@ -1,5 +1,5 @@
-import { useHistoryState } from '../store/hooks'
-import { redo, undo } from '../store/history'
+import { useHistoryState } from '@/store/hooks'
+import { redo, undo } from '@/store/history'
 
 export interface UndoRedoApi {
   canUndo: boolean

@@ -1,8 +1,7 @@
-import { DEFAULT_BRANDING } from '../../../config/branding'
-import { useBrandingStyles } from '../../../hooks/useBrandingStyles'
-import { useDisplayData } from '../../../hooks/useDisplayData'
-import type { Branding, DisplayData } from '../../../types'
-import { getDisplayTheme, type DisplayThemeClasses } from '../utils/theme'
+import { DEFAULT_BRANDING } from '@/config/branding'
+import { useBrandingStyles, useDisplayData } from '@/hooks'
+import type { Branding, DisplayData } from '@/types'
+import { getDisplayTheme, type DisplayThemeClasses } from '@/features/display/utils/theme'
 
 export interface ScreenData {
   /** Sanitised live data (no private fields), null if nothing has been saved yet. */

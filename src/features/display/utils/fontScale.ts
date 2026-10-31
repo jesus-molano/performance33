@@ -1,5 +1,5 @@
-import { clamp } from '../../../lib/numbers'
-import { FONT_SCALE } from '../config/display'
+import { clamp } from '@/lib/numbers'
+import { FONT_SCALE } from '@/features/display/config/display'
 
 /** Next A-/A+ multiplier, rounded to one decimal and kept within bounds. */
 export function stepFontScale(current: number, direction: 1 | -1): number {

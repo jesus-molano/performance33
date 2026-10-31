@@ -1,12 +1,19 @@
-import type { Branding } from '../types'
-import { isHexColor, readableTextOn } from './color'
+import { DISPLAY_DARK_BACKGROUND, MIN_TEXT_CONTRAST } from '@/config/contrast'
+import type { Branding } from '@/types'
+import { ensureContrast, isHexColor, readableTextOn } from './color'
 
-/** CSS custom properties derived from branding (consumed by the Tailwind theme tokens). */
+/**
+ * CSS custom properties derived from branding (consumed by the Tailwind theme tokens).
+ * --color-brand-on-dark is the primary colour lightened as needed to stay readable on the black TV.
+ */
 export function brandingCssVars(branding: Branding): Record<string, string> {
   const vars: Record<string, string> = {}
   if (isHexColor(branding.primaryColor)) {
     vars['--color-brand'] = branding.primaryColor
     vars['--color-brand-contrast'] = readableTextOn(branding.primaryColor)
+    const onDark = ensureContrast(branding.primaryColor, DISPLAY_DARK_BACKGROUND, MIN_TEXT_CONTRAST)
+    vars['--color-brand-on-dark'] = onDark
+    vars['--color-brand-on-dark-contrast'] = readableTextOn(onDark)
   }
   if (isHexColor(branding.accentColor)) {
     vars['--color-brand-strong'] = branding.accentColor

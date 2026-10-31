@@ -1,10 +1,11 @@
-import { DEFAULT_BRANDING } from '../../config/branding'
-import { createSeedData } from '../../data/seed'
-import { removeById, updateById } from '../../lib/arrays'
-import { newId } from '../../lib/ids'
-import type { CustomExercise, CustomExerciseInput } from '../../types'
-import type { SettingsActions, SliceContext } from '../types'
-import { groupKey } from '../undoGroup'
+import { DEFAULT_BRANDING } from '@/config/branding'
+import { createSeedData } from '@/data/seed'
+import { removeById, updateById } from '@/lib/arrays'
+import { newId } from '@/lib/ids'
+import { mapProgramExercises } from '@/lib/programTree'
+import type { CustomExercise, CustomExerciseInput } from '@/types'
+import type { SettingsActions, SliceContext } from '@/store/types'
+import { groupKey } from '@/store/undoGroup'
 
 function buildCustomExercise(id: string, input: CustomExerciseInput): CustomExercise {
   return {
@@ -35,7 +36,15 @@ export function createSettingsSlice({ commit, clearHistory }: SliceContext): Set
         (d) => ({ ...d, customExercises: updateById(d.customExercises, id, (e) => ({ ...e, ...patch })) }),
         groupKey('custom', id, patch),
       ),
-    deleteCustomExercise: (id) => commit((d) => ({ ...d, customExercises: removeById(d.customExercises, id) })),
+    // Rows that used it become free text (so 'Guardar en biblioteca' works again); one undo restores both.
+    deleteCustomExercise: (id) =>
+      commit((d) => ({
+        ...d,
+        customExercises: removeById(d.customExercises, id),
+        programs: d.programs.map((p) =>
+          mapProgramExercises(p, (e) => (e.libraryId === id ? { ...e, libraryId: null } : e)),
+        ),
+      })),
     importData: (data) => {
       commit(() => data)
       clearHistory()

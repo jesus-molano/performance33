@@ -1,6 +1,6 @@
 // Javier (Standard, 2 días), Carlos (Plus, caducada) and Andrés (1 día).
 
-import type { Day } from '../../types'
+import type { Day } from '@/types'
 import { WARMUP_TEXT, block, day, ex, roundEx } from './builders'
 
 export function javierDays(): Day[] {

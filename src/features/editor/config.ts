@@ -1,7 +1,7 @@
 // Editor-only constants (labels, defaults, interaction thresholds).
 
-import { DEFAULT_PROGRESSION_STEP } from '../../config/exerciseFields'
-import type { MeasureType, ProgressionTarget } from '../../types'
+import { DEFAULT_PROGRESSION_STEP } from '@/config/exerciseFields'
+import type { MeasureType, ProgressionTarget } from '@/types'
 
 /** Quick focus labels offered under the day name. */
 export const DAY_LABEL_SUGGESTIONS = ['Pierna', 'Empuje', 'Tracción', 'Torso', 'Full body', 'Core', 'Cardio'] as const
@@ -45,3 +45,15 @@ export const DND_TEXTS = {
   end: 'Elemento soltado.',
   cancel: 'Movimiento cancelado.',
 } as const
+
+/** Bottom-sheet title while the open row has no name yet. */
+export const NEW_EXERCISE_TITLE = 'Nuevo ejercicio'
+
+/** Placeholder of a warm-up / mobility block's free text. */
+export const BLOCK_TEXT_PLACEHOLDER = 'Ej.\n5′ bici suave\n2 rondas: 10 sentadillas, 10 puentes de glúteo, 5 flexiones'
+
+export const PREVIEW_FIT_WARNING =
+  'Hay demasiado contenido para leerse bien en la tele: divide el bloque o pasa ejercicios a otro día.'
+
+/** Summary text of a row that has no name yet. */
+export const UNNAMED_EXERCISE = 'Ejercicio sin nombre'

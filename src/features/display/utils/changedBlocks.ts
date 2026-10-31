@@ -1,4 +1,4 @@
-import type { DisplayDay } from '../../../lib/display'
+import type { DisplayDay } from '@/lib/display'
 
 /** Ids of blocks that were added or whose visible content changed between two versions of a day. */
 export function findChangedBlockIds(prev: DisplayDay, next: DisplayDay): Set<string> {

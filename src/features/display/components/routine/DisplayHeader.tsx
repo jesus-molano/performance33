@@ -1,5 +1,5 @@
-import type { DisplayDay, DisplayRoutine } from '../../../../lib/display'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import type { DisplayDay, DisplayRoutine } from '@/lib/display'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { DisplayLogo } from './DisplayLogo'
 
 interface DisplayHeaderProps {

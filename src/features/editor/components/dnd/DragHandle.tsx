@@ -1,6 +1,6 @@
 import { GripVertical } from 'lucide-react'
-import { cn } from '../../../../lib/cn'
-import type { DragHandleBindings } from '../../hooks/useSortableItem'
+import { cn } from '@/lib/cn'
+import type { DragHandleBindings } from '@/features/editor/hooks/useSortableItem'
 
 export interface DragHandleProps {
   handle: DragHandleBindings

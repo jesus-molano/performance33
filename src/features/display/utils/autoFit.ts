@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { AUTO_FIT } from '../config/display'
+import { AUTO_FIT } from '@/features/display/config/display'
 
 export interface FitBounds {
   min: number
@@ -12,13 +12,24 @@ export interface FitResult {
   columns: number
 }
 
+export interface FitStatus {
+  /** Content still taller than the container at the smallest unit (the bottom is cut off). */
+  overflowing: boolean
+  /** Text too small to read from 3-4 m on a TV of this height. */
+  tooSmall: boolean
+}
+
 /** CSS variable read by the block list (column-count). */
 export const COLUMNS_VAR = '--display-columns'
 
-/** Unit range for a container; the max keeps a short routine from becoming absurdly huge. */
-export function getUnitBounds(width: number, height: number): FitBounds {
-  const max = Math.max(AUTO_FIT.minUnit, Math.min(width * AUTO_FIT.maxUnitPerWidth, height * AUTO_FIT.maxUnitPerHeight))
-  return { min: Math.min(AUTO_FIT.minUnit, max * AUTO_FIT.minUnitRatio), max }
+/**
+ * Unit range for a container; the max keeps a short routine from becoming absurdly huge.
+ * `fontScale` (A-/A+) scales the max, so A+ only enlarges text while it still fits.
+ */
+export function getUnitBounds(width: number, height: number, fontScale = 1): FitBounds {
+  const auto = Math.max(AUTO_FIT.minUnit, Math.min(width * AUTO_FIT.maxUnitPerWidth, height * AUTO_FIT.maxUnitPerHeight))
+  const max = auto * fontScale
+  return { min: Math.min(AUTO_FIT.minUnit, max * AUTO_FIT.minUnitRatio, max), max }
 }
 
 /**
@@ -35,6 +46,11 @@ export function findFittingUnit(measure: (unit: number) => number, target: numbe
     else high = mid
   }
   return low
+}
+
+/** Smallest comfortable unit for a container of this height (scales down for the editor preview). */
+export function readableMinUnit(height: number): number {
+  return height * AUTO_FIT.readableUnitPerHeight
 }
 
 /** Two columns only pay off when they make the text clearly bigger than one column. */

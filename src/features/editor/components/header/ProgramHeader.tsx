@@ -1,11 +1,11 @@
 import { ArrowLeft, Eye, EyeOff, MonitorPlay, Star } from 'lucide-react'
-import { Badge, Button, Card } from '../../../../components/ui'
-import { planLabel } from '../../../../lib/plans'
-import { getProgramDisplayName } from '../../../../lib/program'
-import { paths } from '../../../../lib/routes'
-import type { Client, Program } from '../../../../types'
-import type { ProgramHeaderApi } from '../../hooks/useProgramHeader'
-import { InlineInput } from '../common/InlineInput'
+import { Badge, Button, Card } from '@/components/ui'
+import { planLabel } from '@/lib/plans'
+import { getProgramDisplayName } from '@/lib/program'
+import { paths } from '@/lib/routes'
+import type { Client, Program } from '@/types'
+import type { ProgramHeaderApi } from '@/features/editor/hooks/useProgramHeader'
+import { InlineInput } from '@/features/editor/components/common/InlineInput'
 import { ProgramDatesEditor } from './ProgramDatesEditor'
 
 export interface ProgramHeaderProps {
@@ -22,7 +22,7 @@ export function ProgramHeader({ client, program, api, dayIndex, previewVisible, 
     <header className="flex flex-col gap-4">
       <a
         href={paths.client(client.id)}
-        className="-ml-1 inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg px-1 text-[15px] font-medium text-fg-muted hover:text-fg"
+        className="-ml-1 inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg px-1 text-md font-medium text-fg-muted hover:text-fg"
       >
         <ArrowLeft size={18} aria-hidden />
         Ficha de {client.firstName}
@@ -50,7 +50,7 @@ export function ProgramHeader({ client, program, api, dayIndex, previewVisible, 
             onValueChange={api.rename}
             className="mt-2"
           />
-          <p className="px-2 text-[15px] text-fg-muted">
+          <p className="px-2 text-md text-fg-muted">
             Rutina de <span className="font-medium text-fg">{client.firstName}</span> ·{' '}
             {planLabel(client.plan, client.trainingDays)}
           </p>
@@ -61,10 +61,10 @@ export function ProgramHeader({ client, program, api, dayIndex, previewVisible, 
             variant="secondary"
             leftIcon={previewVisible ? EyeOff : Eye}
             onClick={onTogglePreview}
-            aria-pressed={previewVisible}
+            aria-expanded={previewVisible}
             className="flex-1 lg:flex-none"
           >
-            Vista pantalla
+            {previewVisible ? 'Ocultar vista previa' : 'Mostrar vista previa'}
           </Button>
           <Button leftIcon={MonitorPlay} onClick={() => api.openOnScreen(dayIndex)} className="flex-1 lg:flex-none">
             Abrir en pantalla

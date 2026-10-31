@@ -1,5 +1,5 @@
-import { cn } from '../../../lib/cn'
-import { useBrandLogo } from '../hooks/useBrandLogo'
+import { cn } from '@/lib/cn'
+import { useBrandLogo } from '@/features/shell/hooks/useBrandLogo'
 
 export interface BrandLogoProps {
   /** Size the logo with height classes, e.g. 'h-10'. */

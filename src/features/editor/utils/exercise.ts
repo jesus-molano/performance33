@@ -1,8 +1,8 @@
 // Pure helpers for exercise rows in the editor.
 
-import type { AnyLibraryExercise, ExerciseEntry, ExercisePatch, MeasureType } from '../../../types'
-import { MEASURE_DEFAULTS } from '../config'
-import type { RowField } from '../state/editorUiStore'
+import type { ExerciseEntry, ExercisePatch, MeasureType } from '@/types'
+import { MEASURE_DEFAULTS } from '@/features/editor/config'
+import type { RowField } from '@/features/editor/store/editorUiStore'
 
 /** Patch for switching the measure type, filling a sensible value when the new field is empty. */
 export function measurePatch(entry: ExerciseEntry, measure: MeasureType): ExercisePatch {
@@ -21,11 +21,6 @@ export function rowFieldOrder(showSets: boolean): RowField[] {
 export function nextRowField(order: RowField[], current: RowField): RowField | null {
   const index = order.indexOf(current)
   return index === -1 || index === order.length - 1 ? null : order[index + 1]
-}
-
-/** 'Piernas · Kettlebell, Banco'. */
-export function libraryMeta(exercise: Pick<AnyLibraryExercise, 'category' | 'equipment'>): string {
-  return [exercise.category, exercise.equipment.join(', ')].filter(Boolean).join(' · ')
 }
 
 /** How many optional fields ('Más opciones') hold a value. */

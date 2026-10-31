@@ -1,26 +1,25 @@
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { Badge, DropdownMenu, HelpTip, IconButton, type MenuItem } from '../../../../components/ui'
-import { BLOCK_TYPE_META } from '../../../../config/blockTypes'
-import { getAutoBlockTitle } from '../../../../lib/blocks'
-import { cn } from '../../../../lib/cn'
-import { getBlockSummary } from '../../../../lib/format'
-import { useAppActions } from '../../../../store'
-import type { Block } from '../../../../types'
-import type { DragHandleBindings } from '../../hooks/useSortableItem'
-import { InlineInput } from '../common/InlineInput'
-import { DragHandle } from '../dnd/DragHandle'
+import { Badge, DropdownMenu, HelpTip, IconButton, type MenuItem } from '@/components/ui'
+import { BLOCK_TYPE_META } from '@/config/blockTypes'
+import { getAutoBlockTitle } from '@/lib/blocks'
+import { cn } from '@/lib/cn'
+import { getBlockSummary } from '@/lib/format'
+import type { Block } from '@/types'
+import type { DragHandleBindings } from '@/features/editor/hooks/useSortableItem'
+import { InlineInput } from '@/features/editor/components/common/InlineInput'
+import { DragHandle } from '@/features/editor/components/dnd/DragHandle'
 
 export interface BlockHeaderBarProps {
   block: Block
   collapsed: boolean
   onToggle: () => void
+  onTitleChange: (title: string) => void
   handle: DragHandleBindings
   menuItems: MenuItem[]
 }
 
 /** Grip · type icon · editable title (auto from type) · summary · collapse · '⋯'. */
-export function BlockHeaderBar({ block, collapsed, onToggle, handle, menuItems }: BlockHeaderBarProps) {
-  const { updateBlock } = useAppActions()
+export function BlockHeaderBar({ block, collapsed, onToggle, onTitleChange, handle, menuItems }: BlockHeaderBarProps) {
   const meta = BLOCK_TYPE_META[block.type]
   const Icon = meta.icon
   return (
@@ -41,13 +40,15 @@ export function BlockHeaderBar({ block, collapsed, onToggle, handle, menuItems }
             aria-label="Título del bloque"
             value={block.title}
             placeholder={getAutoBlockTitle(block)}
-            onValueChange={(title) => updateBlock(block.id, { title })}
+            onValueChange={onTitleChange}
           />
           {meta.acronym && (
-            <span className="hidden shrink-0 items-center gap-1 sm:inline-flex">
-              <Badge tone="brand" size="sm">
-                {meta.acronym}
-              </Badge>
+            <span className="inline-flex shrink-0 items-center gap-1">
+              <span className="hidden sm:inline-flex">
+                <Badge tone="brand" size="sm">
+                  {meta.acronym}
+                </Badge>
+              </span>
               <HelpTip text={meta.description} />
             </span>
           )}
@@ -60,7 +61,7 @@ export function BlockHeaderBar({ block, collapsed, onToggle, handle, menuItems }
         aria-expanded={!collapsed}
         onClick={onToggle}
       />
-      <DropdownMenu items={menuItems} label="Opciones del bloque" />
+      <DropdownMenu items={menuItems} label={`Opciones del bloque ${block.title.trim() || getAutoBlockTitle(block)}`} />
     </div>
   )
 }

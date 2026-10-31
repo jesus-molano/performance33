@@ -1,9 +1,10 @@
 import { RotateCcw } from 'lucide-react'
-import { Button, Card, Input, SegmentedControl } from '../../../components/ui'
-import { DEFAULT_BRANDING } from '../../../config/branding'
-import { DISPLAY_THEME_OPTIONS, MIN_ACCENT_CONTRAST } from '../config'
-import { useBrandingEditor } from '../hooks/useBrandingEditor'
-import { contrastOnWhite } from '../utils/contrast'
+import { Button, Card, Input, SegmentedControl } from '@/components/ui'
+import { DEFAULT_BRANDING } from '@/config/branding'
+import { DISPLAY_DARK_BACKGROUND, MIN_TEXT_CONTRAST, WHITE } from '@/config/contrast'
+import { contrastRatio } from '@/lib/color'
+import { DISPLAY_THEME_OPTIONS } from '@/features/settings/config'
+import { useBrandingEditor } from '@/features/settings/hooks/useBrandingEditor'
 import { BrandingPreview } from './BrandingPreview'
 import { ColorField } from './ColorField'
 import { LogoUploadField } from './LogoUploadField'
@@ -12,7 +13,8 @@ import { SettingsSection } from './SettingsSection'
 /** Ajustes → Marca. Every change autosaves and shows live in the preview. */
 export function BrandingPanel() {
   const { branding, update, endEdit, reset } = useBrandingEditor()
-  const lowContrast = contrastOnWhite(branding.accentColor) < MIN_ACCENT_CONTRAST
+  const lowContrast = contrastRatio(branding.accentColor, WHITE) < MIN_TEXT_CONTRAST
+  const lowOnDark = contrastRatio(branding.primaryColor, DISPLAY_DARK_BACKGROUND) < MIN_TEXT_CONTRAST
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
@@ -43,7 +45,7 @@ export function BrandingPanel() {
         </SettingsSection>
         <SettingsSection title="Colores">
           <div className="grid gap-5 sm:grid-cols-2">
-            <ColorField label="Color principal" hint="Sobre negro: menú y pantallas." value={branding.primaryColor} onChange={(primaryColor) => update({ primaryColor })} onEditEnd={endEdit} />
+            <ColorField label="Color principal" hint="Sobre negro: menú y pantallas." value={branding.primaryColor} onChange={(primaryColor) => update({ primaryColor })} onEditEnd={endEdit} warning={lowOnDark ? 'Poco contraste sobre negro (pantalla): en la tele se usará un tono más claro.' : undefined} />
             <ColorField
               label="Color de botones y textos"
               hint="Sobre blanco: botones y enlaces del panel."

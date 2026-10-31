@@ -1,8 +1,8 @@
-import { ClientDetailPage, ClientsPage } from '../features/clients'
-import { ProgramEditorPage } from '../features/editor'
-import { SettingsPage } from '../features/settings'
-import { NotFoundPage } from '../features/shell'
-import type { Route } from '../lib/routes'
+import { ClientDetailPage, ClientsPage } from '@/features/clients'
+import { ProgramEditorPage } from '@/features/editor'
+import { SettingsPage } from '@/features/settings'
+import { NotFoundPage } from '@/features/shell'
+import type { Route } from '@/lib/routes'
 
 /** Page for a dashboard route (inside AppLayout). */
 export function DashboardPage({ route }: { route: Route }) {

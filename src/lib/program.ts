@@ -1,7 +1,7 @@
 // Program timing / status helpers (pure).
 
-import type { Client, ISODate, Program } from '../types'
-import { EXPIRING_THRESHOLD_DAYS } from '../config/app'
+import type { Client, ISODate, Program } from '@/types'
+import { EXPIRING_THRESHOLD_DAYS } from '@/config/app'
 import { diffDays, formatDateShort, todayISO } from './dates'
 
 export type ProgramPhase = 'upcoming' | 'active' | 'expired'
@@ -29,6 +29,21 @@ export function getProgramWeekInfo(program: Pick<Program, 'startDate' | 'endDate
   }
   const week = Math.min(totalWeeks, Math.floor(sinceStart / 7) + 1)
   return { phase: 'active', week, totalWeeks, daysLeft, daysUntilStart: 0 }
+}
+
+/**
+ * Week whose progression values apply: only while the program is running. Before it starts or
+ * after it ends the base values are shown (same policy in the editor and on the TV).
+ */
+export function getProgressionWeek(info: Pick<ProgramWeekInfo, 'phase' | 'week'>): number | null {
+  return info.phase === 'active' ? info.week : null
+}
+
+/** Header line for the TV: 'Semana 2 de 4', 'Empieza el 3 nov' or 'Rutina terminada'. */
+export function formatProgramPeriod(info: ProgramWeekInfo, startDate: ISODate): string {
+  if (info.phase === 'upcoming') return `Empieza el ${formatDateShort(startDate)}`
+  if (info.phase === 'expired') return 'Rutina terminada'
+  return formatWeekOf(info.week, info.totalWeeks)
 }
 
 /** 'Semana 2 de 4'. */

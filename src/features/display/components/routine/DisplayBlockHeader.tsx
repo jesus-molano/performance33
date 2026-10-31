@@ -1,8 +1,8 @@
-import { BLOCK_TYPE_META } from '../../../../config/blockTypes'
-import { cn } from '../../../../lib/cn'
-import type { DisplayBlock } from '../../../../lib/display'
-import { getBlockOverline, getVisibleBadge } from '../../utils/blockHeader'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import { BLOCK_TYPE_META } from '@/config/blockTypes'
+import { cn } from '@/lib/cn'
+import type { DisplayBlock } from '@/lib/display'
+import { getBlockOverline, getVisibleBadge } from '@/features/display/utils/blockBadges'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 
 interface DisplayBlockHeaderProps {
   block: DisplayBlock
@@ -18,30 +18,35 @@ export function DisplayBlockHeader({ block, theme, flashing }: DisplayBlockHeade
   const headlineColor = block.muted ? theme.secondaryText : theme.accentText
 
   return (
-    <header className="flex items-start gap-[0.6em]">
+    <header className="relative flex items-start gap-[0.6em]">
+      {flashing && (
+        <span
+          className={cn(
+            'absolute -top-[1.3em] right-0 animate-fade-in rounded-full px-[0.6em] py-[0.1em] text-[0.95em] font-semibold',
+            theme.badge,
+          )}
+        >
+          Actualizado
+        </span>
+      )}
       <Icon size="1em" aria-hidden className={cn('mt-[0.15em] shrink-0 text-[1.75em]', headlineColor)} />
       <div className="min-w-0 flex-1">
         {overline && (
           <p className={cn('text-[1em] font-semibold tracking-[0.14em] uppercase', theme.subtleText)}>{overline}</p>
         )}
-        <h2 className={cn('text-[1.75em] leading-tight font-bold tracking-wide uppercase', headlineColor)}>
+        <h2 className={cn('text-[1.75em] leading-tight [overflow-wrap:anywhere] font-bold tracking-wide uppercase', headlineColor)}>
           {block.headline}
         </h2>
-        {block.subtitle && <p className={cn('text-[1.2em] leading-snug', theme.secondaryText)}>{block.subtitle}</p>}
+        {block.subtitle && <p className={cn('text-[1.2em] leading-snug [overflow-wrap:anywhere]', theme.secondaryText)}>{block.subtitle}</p>}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-[0.3em]">
-        {flashing && (
-          <span className={cn('animate-fade-in rounded-full px-[0.6em] py-[0.1em] text-[0.95em] font-semibold', theme.badge)}>
-            Actualizado
-          </span>
-        )}
         {badge && (
           <span className={cn('rounded-full px-[0.6em] py-[0.1em] text-[0.95em] font-bold tracking-wider', theme.outlineBadge)}>
             {badge}
           </span>
         )}
         {block.chip && (
-          <span className={cn('tabular rounded-[0.4em] px-[0.5em] py-[0.05em] text-[1.35em] font-bold', theme.badge)}>
+          <span className={cn('tabular max-w-[12em] [overflow-wrap:anywhere] rounded-[0.4em] px-[0.5em] py-[0.05em] text-[1.35em] font-bold', theme.badge)}>
             {block.chip}
           </span>
         )}

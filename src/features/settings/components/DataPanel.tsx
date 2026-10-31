@@ -1,6 +1,6 @@
 import { Download, HardDrive, RotateCcw, Upload } from 'lucide-react'
-import { Button } from '../../../components/ui'
-import { useDataTransfer } from '../hooks/useDataTransfer'
+import { Button } from '@/components/ui'
+import { useDataTransfer } from '@/features/settings/hooks/useDataTransfer'
 import { SettingsSection } from './SettingsSection'
 
 function Stat({ value, label }: { value: number; label: string }) {
@@ -42,7 +42,7 @@ export function DataPanel() {
         </div>
       </SettingsSection>
       <SettingsSection title="Datos de demostración" description="Vuelve a cargar los clientes y rutinas de ejemplo. Borra todo lo actual.">
-        <Button variant="danger" leftIcon={RotateCcw} onClick={resetDemo} className="self-start">
+        <Button variant="danger" leftIcon={RotateCcw} onClick={resetDemo} wrap className="self-start">
           Restablecer datos de demostración
         </Button>
       </SettingsSection>

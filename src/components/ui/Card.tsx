@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { cn } from '../../lib/cn'
+import { cn } from '@/lib/cn'
 
 export interface CardProps extends ComponentProps<'div'> {
   padding?: 'none' | 'sm' | 'md' | 'lg'

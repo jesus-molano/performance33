@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
-import { useToast } from '../../../hooks/useToast'
-import { useAppActions } from '../../../store'
+import { useToast } from '@/hooks'
+import { useAppActions } from '@/store'
 
 export interface NoteComposerApi {
   text: string

@@ -1,10 +1,10 @@
 import { Trash2 } from 'lucide-react'
 import { useId } from 'react'
-import { ColorSwatchPicker } from '../../../components/ColorSwatchPicker'
-import { Avatar, Button, Input, Modal } from '../../../components/ui'
-import type { Coach } from '../../../types'
-import { useCoachForm } from '../hooks/useCoachForm'
-import { COACH_NAME_MAX_LENGTH } from '../utils/coachForm'
+import { ColorSwatchPicker } from '@/components/ColorSwatchPicker'
+import { Avatar, Button, Input, Modal } from '@/components/ui'
+import type { Coach } from '@/types'
+import { useCoachForm } from '@/features/coaches/hooks/useCoachForm'
+import { COACH_NAME_MAX_LENGTH } from '@/features/coaches/utils/coachForm'
 
 export interface CoachFormModalProps {
   /** null = new coach. */

@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react'
-import { Input } from '../../../components/ui'
-import { useHexDraft } from '../hooks/useHexDraft'
+import { Input } from '@/components/ui'
+import { useHexDraft } from '@/features/settings/hooks/useHexDraft'
 
 export interface ColorFieldProps {
   label: string

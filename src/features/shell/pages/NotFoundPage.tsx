@@ -1,7 +1,7 @@
 import { Compass } from 'lucide-react'
-import { Button, EmptyState } from '../../../components/ui'
-import { navigate, paths } from '../../../lib/routes'
-import { PageContainer } from '../components/PageLayout'
+import { Button, EmptyState } from '@/components/ui'
+import { navigate, paths } from '@/lib/routes'
+import { PageContainer } from '@/features/shell/components/PageLayout'
 
 export function NotFoundPage() {
   return (

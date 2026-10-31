@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react'
-import { Button } from '../../../../components/ui'
-import type { Day } from '../../../../types'
-import { SortableList } from '../dnd/SortableList'
+import { Button } from '@/components/ui'
+import type { Day } from '@/types'
+import { SortableList } from '@/features/editor/components/dnd/SortableList'
 import { DayTab } from './DayTab'
 
 export interface DayTabsProps {

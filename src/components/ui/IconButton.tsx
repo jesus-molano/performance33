@@ -1,12 +1,12 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentProps } from 'react'
-import { cn } from '../../lib/cn'
+import { cn } from '@/lib/cn'
 import { BUTTON_VARIANTS, type ButtonVariant } from './styles'
 
 export type IconButtonSize = 'sm' | 'md'
 
 const SIZES: Record<IconButtonSize, { box: string; icon: number }> = {
-  sm: { box: 'size-9 rounded-lg', icon: 16 },
+  sm: { box: 'size-11 rounded-lg md:size-9', icon: 16 },
   md: { box: 'size-11 rounded-xl', icon: 20 },
 }
 

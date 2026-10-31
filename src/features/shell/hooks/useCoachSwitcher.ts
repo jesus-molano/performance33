@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
-import { useToast } from '../../../hooks/useToast'
-import { navigate, paths } from '../../../lib/routes'
-import { useCoaches, useCurrentCoach, useUiStore } from '../../../store'
-import type { Coach } from '../../../types'
+import { useToast } from '@/hooks'
+import { navigate, paths } from '@/lib/routes'
+import { useCoaches, useCurrentCoach, useUiStore } from '@/store'
+import type { Coach } from '@/types'
 
 export interface CoachSwitcherApi {
   current: Coach | null

@@ -1,8 +1,8 @@
 // Pure helpers for the weekly progression strip (S1..SN).
 
-import { LOAD_UNIT_META, PROGRESSION_TARGET_META } from '../../../config/exerciseFields'
-import { buildLinearProgression, defaultProgressionTarget, fitProgression, getBaseValue } from '../../../lib/progression'
-import type { ExerciseEntry, Progression, ProgressionTarget } from '../../../types'
+import { LOAD_UNIT_META, PROGRESSION_TARGET_META } from '@/config/exerciseFields'
+import { buildLinearProgression, defaultProgressionTarget, fitProgression, getBaseValue } from '@/lib/progression'
+import type { ExerciseEntry, Progression, ProgressionTarget } from '@/types'
 
 export const PROGRESSION_TARGETS = Object.keys(PROGRESSION_TARGET_META) as ProgressionTarget[]
 

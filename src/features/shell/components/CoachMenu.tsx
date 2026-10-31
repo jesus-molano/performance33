@@ -1,6 +1,6 @@
 import { Check, UserCog, Users, type LucideIcon } from 'lucide-react'
-import { Avatar } from '../../../components/ui'
-import type { Coach } from '../../../types'
+import { Avatar } from '@/components/ui'
+import type { Coach } from '@/types'
 
 export interface CoachMenuProps {
   coaches: Coach[]
@@ -10,7 +10,7 @@ export interface CoachMenuProps {
   onShowPicker: () => void
 }
 
-const ROW = 'flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-[15px] text-fg hover:bg-fg/5'
+const ROW = 'flex h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-md text-fg hover:bg-fg/5'
 
 function MenuLink({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
   return (

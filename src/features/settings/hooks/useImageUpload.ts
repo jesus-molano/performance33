@@ -1,6 +1,6 @@
 import { useRef, type ChangeEvent, type RefObject } from 'react'
-import { useToast } from '../../../hooks/useToast'
-import { fileToDataUrl } from '../../../lib/files'
+import { useToast } from '@/hooks'
+import { fileToDataUrl } from '@/lib/files'
 
 export interface ImageUploadApi {
   inputRef: RefObject<HTMLInputElement | null>

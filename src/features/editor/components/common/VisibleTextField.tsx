@@ -1,7 +1,7 @@
 import { useId } from 'react'
-import { controlClasses, PrivacyLabel } from '../../../../components/ui'
-import { cn } from '../../../../lib/cn'
-import { breakUndoGroup } from '../../../../store'
+import { controlClasses, PrivacyLabel } from '@/components/ui'
+import { cn } from '@/lib/cn'
+import { breakUndoGroup } from '@/store'
 
 export interface VisibleTextFieldProps {
   label: string

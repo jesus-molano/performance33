@@ -1,4 +1,5 @@
-import type { AnyLibraryExercise, CustomExerciseInput, ExerciseCategory, MeasureType } from '../../../types'
+import { splitList } from '@/lib/exerciseLibrary'
+import type { AnyLibraryExercise, CustomExerciseInput, ExerciseCategory, MeasureType } from '@/types'
 
 export interface ExerciseFormValues {
   name: string
@@ -24,14 +25,6 @@ export function toExerciseFormValues(exercise: AnyLibraryExercise | null): Exerc
   }
 }
 
-/** 'a, b ,, c' → ['a', 'b', 'c']. */
-export function splitList(text: string): string[] {
-  return text
-    .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean)
-}
-
 export function toCustomExerciseInput(values: ExerciseFormValues): CustomExerciseInput {
   return {
     name: values.name.trim(),
@@ -41,9 +34,4 @@ export function toCustomExerciseInput(values: ExerciseFormValues): CustomExercis
     perSide: values.perSide,
     aliases: splitList(values.aliases),
   }
-}
-
-/** 'Piernas · Kettlebell, Banco'. */
-export function formatExerciseMeta(exercise: AnyLibraryExercise): string {
-  return [exercise.category, exercise.equipment.join(', ')].filter(Boolean).join(' · ')
 }

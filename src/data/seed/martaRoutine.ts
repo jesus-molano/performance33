@@ -1,6 +1,6 @@
 // Marta · Elite (4 días). Showcases every block type.
 
-import type { Day } from '../../types'
+import type { Day } from '@/types'
 import { block, day, ex, kgProgression, roundEx } from './builders'
 
 const activation = () =>

@@ -1,7 +1,8 @@
-import { parseTvSlots, serializeTvSlots, type TvSlot } from '../../../lib/routes'
-import type { DisplayData, PublicClient } from '../../../types'
-import { DISPLAY_STORAGE_KEYS } from '../config/display'
-import { readStorage, writeStorage } from './storage'
+import { TV_SLOT_COUNT } from '@/config/app'
+import { parseTvSlots, serializeTvSlots, type TvSlot } from '@/lib/routes'
+import type { Client, DisplayData, PublicClient } from '@/types'
+import { DISPLAY_STORAGE_KEYS } from '@/features/display/config/display'
+import { readStorage, writeStorage } from '@/lib/safeStorage'
 
 export const isEmptySlotSet = (slots: TvSlot[]): boolean => slots.every((s) => !s.clientId)
 
@@ -36,4 +37,15 @@ export function withSelectedClient(
   if (!data || !clientId || clients.some((c) => c.id === clientId)) return clients
   const selected = data.clients.find((c) => c.id === clientId)
   return selected ? [selected, ...clients] : clients
+}
+
+/** The first clients with a current routine fill the TV thirds (day 1); the rest stay empty. */
+export function pickDefaultTvSlots(clients: readonly Pick<Client, 'id' | 'archived' | 'currentProgramId'>[]): TvSlot[] {
+  const withRoutine = clients.filter((c) => !c.archived && c.currentProgramId)
+  return Array.from({ length: TV_SLOT_COUNT }, (_, i) => ({ clientId: withRoutine[i]?.id ?? null, day: 1 }))
+}
+
+/** Slots for the 'Pantallas' button: the setup last used on this device, else the defaults. */
+export function initialTvSlots(clients: readonly Pick<Client, 'id' | 'archived' | 'currentProgramId'>[]): TvSlot[] {
+  return loadStoredSlots() ?? pickDefaultTvSlots(clients)
 }

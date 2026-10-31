@@ -1,8 +1,8 @@
 import { FileQuestion } from 'lucide-react'
-import { Button, EmptyState } from '../../../components/ui'
-import { navigate, paths } from '../../../lib/routes'
-import { ProgramEditor } from '../components/ProgramEditor'
-import { useEditorData } from '../hooks/useEditorData'
+import { Button, EmptyState } from '@/components/ui'
+import { navigate, paths } from '@/lib/routes'
+import { ProgramEditor } from '@/features/editor/components/ProgramEditor'
+import { useEditorData } from '@/features/editor/hooks/useEditorData'
 
 export interface ProgramEditorPageProps {
   clientId: string

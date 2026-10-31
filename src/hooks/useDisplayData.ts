@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { loadDisplayData, subscribeDisplayChanges } from '../persistence/sync'
-import type { DisplayData } from '../types'
+import { loadDisplayData, subscribeDisplayChanges } from '@/persistence/sync'
+import type { DisplayData } from '@/types'
 
 export interface LiveDisplayData {
   /** Sanitised data (never contains private fields); null when nothing is stored yet. */

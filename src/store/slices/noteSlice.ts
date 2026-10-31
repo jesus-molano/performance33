@@ -1,9 +1,9 @@
-import { removeById, updateById } from '../../lib/arrays'
-import { newId } from '../../lib/ids'
-import type { ClientNote } from '../../types'
-import { getCurrentCoachId } from '../uiStore'
-import type { NoteActions, SliceContext } from '../types'
-import { groupKey } from '../undoGroup'
+import { removeById, updateById } from '@/lib/arrays'
+import { newId } from '@/lib/ids'
+import type { ClientNote } from '@/types'
+import { getCurrentCoachId } from '@/store/uiStore'
+import type { NoteActions, SliceContext } from '@/store/types'
+import { groupKey } from '@/store/undoGroup'
 
 export function createNoteSlice({ commit }: SliceContext): NoteActions {
   return {

@@ -1,13 +1,13 @@
 import { useCallback } from 'react'
-import { useDisclosure } from '../../../hooks/useDisclosure'
-import { useToast } from '../../../hooks/useToast'
-import { formatDateTime } from '../../../lib/dates'
-import { breakUndoGroup, useAppActions, useCoach } from '../../../store'
-import type { ClientNote, Coach } from '../../../types'
+import { useDisclosure, useToast } from '@/hooks'
+import { UNKNOWN_AUTHOR_COLOR } from '@/config/colors'
+import { formatDateTime } from '@/lib/dates'
+import { breakUndoGroup, useAppActions, useCoach } from '@/store'
+import type { ClientNote } from '@/types'
 
 export interface NoteItemApi {
-  author: Coach | null
   authorName: string
+  authorColor: string
   dateLabel: string
   isEditing: boolean
   startEditing: () => void
@@ -36,8 +36,8 @@ export function useNoteItem(note: ClientNote): NoteItemApi {
   }, [close, note.text, remove])
 
   return {
-    author,
     authorName: author?.name ?? 'Monitor eliminado',
+    authorColor: author?.color ?? UNKNOWN_AUTHOR_COLOR,
     dateLabel: formatDateTime(note.createdAt),
     isEditing: isOpen,
     startEditing: open,

@@ -1,4 +1,4 @@
-import { CONTROLS_IDLE_MS, WINDOW_HINT_MS } from '../config/display'
+import { CONTROLS_IDLE_MS, WINDOW_HINT_MS } from '@/features/display/config/display'
 import { useFontScale, type FontScaleApi } from './useFontScale'
 import { useFullscreen, type FullscreenApi } from './useFullscreen'
 import { useIdleVisibility } from './useIdleVisibility'

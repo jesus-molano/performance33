@@ -1,12 +1,12 @@
 import { Search } from 'lucide-react'
 import { useId } from 'react'
-import { controlClasses } from '../../../../components/ui'
-import { findExerciseById } from '../../../../lib/search'
-import { breakUndoGroup, useExerciseLibrary } from '../../../../store'
-import type { ExerciseEntry } from '../../../../types'
-import { useExerciseAutocomplete } from '../../hooks/useExerciseAutocomplete'
-import { useFieldFocus } from '../../hooks/useFieldFocus'
-import { libraryMeta } from '../../utils'
+import { controlClasses } from '@/components/ui'
+import { findExerciseById } from '@/lib/search'
+import { breakUndoGroup, useExerciseLibrary } from '@/store'
+import type { ExerciseEntry } from '@/types'
+import { useExerciseAutocomplete } from '@/features/editor/hooks/useExerciseAutocomplete'
+import { useFieldFocus } from '@/features/editor/hooks/useFieldFocus'
+import { formatExerciseMeta } from '@/lib/exerciseLibrary'
 import { ExerciseSuggestions } from './ExerciseSuggestions'
 import { SaveToLibrary } from './SaveToLibrary'
 
@@ -56,7 +56,7 @@ export function ExerciseNameField({ entry, onDone, onExit }: ExerciseNameFieldPr
       </div>
       <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
         <span className="text-sm text-fg-muted">
-          {linked ? libraryMeta(linked) : entry.name.trim() ? 'Ejercicio propio (texto libre)' : ''}
+          {linked ? formatExerciseMeta(linked) : entry.name.trim() ? 'Ejercicio propio (texto libre)' : ''}
         </span>
         <SaveToLibrary entry={entry} />
       </div>

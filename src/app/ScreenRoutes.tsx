@@ -1,5 +1,5 @@
-import { DisplayPage, TvPage } from '../features/display'
-import type { Route } from '../lib/routes'
+import { DisplayPage, TvPage } from '@/features/display'
+import type { Route } from '@/lib/routes'
 
 type ScreenRoute = Extract<Route, { name: 'display' | 'tv' }>
 

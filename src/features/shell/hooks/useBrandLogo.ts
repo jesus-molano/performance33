@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useBranding } from '../../../store'
+import { useBranding } from '@/store'
 
 export interface BrandLogoState {
   src: string

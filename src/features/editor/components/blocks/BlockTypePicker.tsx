@@ -1,6 +1,6 @@
-import { Modal } from '../../../../components/ui'
-import { BLOCK_TYPE_META, BLOCK_TYPE_ORDER } from '../../../../config/blockTypes'
-import type { BlockType } from '../../../../types'
+import { Modal } from '@/components/ui'
+import { BLOCK_TYPE_META, BLOCK_TYPE_ORDER } from '@/config/blockTypes'
+import type { BlockType } from '@/types'
 import { BlockTypeCard } from './BlockTypeCard'
 
 export interface BlockTypePickerProps {

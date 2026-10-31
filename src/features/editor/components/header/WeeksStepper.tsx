@@ -1,17 +1,25 @@
 import { Minus, Plus } from 'lucide-react'
 import { useId } from 'react'
-import { IconButton } from '../../../../components/ui'
-import { MAX_PROGRAM_WEEKS } from '../../../../config/app'
-import { parseOptionalInt } from '../../../../lib/numbers'
+import { IconButton } from '@/components/ui'
+import { MAX_PROGRAM_WEEKS } from '@/config/app'
+import { useValueDraft } from '@/hooks'
+import { parseOptionalInt } from '@/lib/numbers'
 
 export interface WeeksStepperProps {
   value: number
   onChange: (weeks: number) => void
 }
 
-/** − [4] + semanas. Big buttons so it works with a thumb. */
+/** Valid week count, or undefined while the field is empty / 0 (the coach is retyping). */
+const parseWeeks = (text: string): number | undefined => {
+  const weeks = parseOptionalInt(text)
+  return weeks ? Math.min(weeks, MAX_PROGRAM_WEEKS) : undefined
+}
+
+/** − [4] + semanas. Big buttons so it works with a thumb; the number can be retyped freely. */
 export function WeeksStepper({ value, onChange }: WeeksStepperProps) {
   const id = useId()
+  const draft = useValueDraft({ value, format: String, parse: parseWeeks, onCommit: onChange })
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="text-sm font-medium text-fg">
@@ -22,12 +30,10 @@ export function WeeksStepper({ value, onChange }: WeeksStepperProps) {
         <input
           id={id}
           inputMode="numeric"
-          value={value}
-          onChange={(e) => {
-            const weeks = parseOptionalInt(e.target.value)
-            if (weeks) onChange(weeks)
-          }}
-          className="h-full w-10 min-w-0 bg-transparent text-center text-[15px] font-semibold tabular focus:outline-none"
+          value={draft.text}
+          onChange={(e) => draft.onChange(e.target.value)}
+          onBlur={draft.onBlur}
+          className="h-full w-10 min-w-0 bg-transparent text-center text-md font-semibold tabular focus:outline-none"
         />
         <IconButton
           icon={Plus}

@@ -1,10 +1,10 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
-import { exercisePatchFromLibrary } from '../../../lib/factories'
-import { searchExercises, type ExerciseSearchResult } from '../../../lib/search'
-import { useAppActions, useExerciseLibrary } from '../../../store'
-import type { AnyLibraryExercise, ExerciseEntry } from '../../../types'
-import { SEARCH_RESULT_LIMIT } from '../config'
-import { namePatch } from '../utils'
+import { exercisePatchFromLibrary } from '@/lib/factories'
+import { searchExercises, type ExerciseSearchResult } from '@/lib/search'
+import { useAppActions, useExerciseLibrary } from '@/store'
+import type { AnyLibraryExercise, ExerciseEntry } from '@/types'
+import { SEARCH_RESULT_LIMIT } from '@/features/editor/config'
+import { namePatch } from '@/features/editor/utils'
 
 export interface AutocompleteOptions {
   entry: ExerciseEntry

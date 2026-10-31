@@ -1,4 +1,4 @@
-import type { DisplayBlock } from '../../../lib/display'
+import type { DisplayBlock } from '@/lib/display'
 
 /** Overline above the headline, only when it adds information (a custom title like 'Fuerza'). */
 export function getBlockOverline(block: DisplayBlock): string | null {

@@ -1,7 +1,7 @@
-import { PLAN_BY_ID } from '../../../config/plans'
-import { pickColor } from '../../../lib/color'
-import { isValidISODate, todayISO } from '../../../lib/dates'
-import type { Client, ClientPatch, ISODate, PlanId } from '../../../types'
+import { PLAN_BY_ID } from '@/config/plans'
+import { pickColor } from '@/lib/color'
+import { isValidISODate, todayISO } from '@/lib/dates'
+import type { Client, ClientPatch, ISODate, PlanId } from '@/types'
 
 export interface ClientFormValues {
   firstName: string

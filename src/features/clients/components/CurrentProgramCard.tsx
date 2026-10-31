@@ -1,10 +1,10 @@
 import { CopyPlus, MonitorPlay, Pencil, Plus, Trash2 } from 'lucide-react'
-import { Badge, Button, Card, DropdownMenu, type MenuItem } from '../../../components/ui'
-import { formatDateRange } from '../../../lib/dates'
-import { getProgramDisplayName, type ProgramStatus } from '../../../lib/program'
-import type { Program } from '../../../types'
-import type { ProgramActionsApi } from '../hooks/useProgramActions'
-import { formatProgramShape } from '../utils/programSummary'
+import { Badge, Button, Card, DropdownMenu, type MenuItem } from '@/components/ui'
+import { formatDateRange } from '@/lib/dates'
+import { getProgramDisplayName, type ProgramStatus } from '@/lib/program'
+import type { Program } from '@/types'
+import type { ProgramActionsApi } from '@/features/clients/hooks/useProgramActions'
+import { formatProgramShape } from '@/features/clients/utils/programSummary'
 import { ExpiryCallout } from './ExpiryCallout'
 import { ProgramDayList } from './ProgramDayList'
 import { ProgramProgressBar } from './ProgramProgressBar'
@@ -18,7 +18,7 @@ export interface CurrentProgramCardProps {
 
 export function CurrentProgramCard({ program, status, actions, onNewProgram }: CurrentProgramCardProps) {
   const menu: MenuItem[] = [
-    { label: 'Duplicar como nuevo bloque', icon: CopyPlus, onSelect: () => actions.duplicateAsNext(program) },
+    { label: 'Duplicar como nueva rutina', icon: CopyPlus, onSelect: () => actions.duplicateAsNext(program) },
     { label: 'Nueva rutina…', icon: Plus, onSelect: onNewProgram },
     'separator',
     { label: 'Eliminar rutina…', icon: Trash2, danger: true, onSelect: () => actions.remove(program) },

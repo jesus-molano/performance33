@@ -1,9 +1,9 @@
 import { Plus, Wand2 } from 'lucide-react'
 import { useState } from 'react'
-import { Button, Input } from '../../../../components/ui'
-import { formatNumber, parseNumber } from '../../../../lib/numbers'
-import type { ProgressionTarget } from '../../../../types'
-import { PROGRESSION_STEP_DEFAULTS } from '../../config'
+import { Button, Input } from '@/components/ui'
+import { formatNumber, parseNumber } from '@/lib/numbers'
+import type { ProgressionTarget } from '@/types'
+import { PROGRESSION_STEP_DEFAULTS } from '@/features/editor/config'
 
 export interface LinearFillProps {
   target: ProgressionTarget

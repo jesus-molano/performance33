@@ -1,5 +1,5 @@
-import { PLAN_BY_ID } from '../config/plans'
-import type { PlanId } from '../types'
+import { PLAN_BY_ID } from '@/config/plans'
+import type { PlanId } from '@/types'
 
 /** '3 días/semana' / '1 día/semana'. */
 export function formatTrainingDays(days: number): string {

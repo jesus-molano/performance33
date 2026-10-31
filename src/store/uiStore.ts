@@ -1,25 +1,16 @@
 // UI-only state: NOT part of the persisted data and NOT in undo history.
 
 import { create } from 'zustand'
-import { STORAGE_KEYS } from '../config/app'
+import { STORAGE_KEYS } from '@/config/app'
+import { readStorage, removeStorage, writeStorage } from '@/lib/safeStorage'
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
-function readStoredCoach(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.currentCoach)
-  } catch {
-    return null
-  }
-}
+const readStoredCoach = (): string | null => readStorage(STORAGE_KEYS.currentCoach)
 
 function storeCoach(id: string | null): void {
-  try {
-    if (id) localStorage.setItem(STORAGE_KEYS.currentCoach, id)
-    else localStorage.removeItem(STORAGE_KEYS.currentCoach)
-  } catch {
-    // Storage unavailable (private mode): the choice simply is not remembered.
-  }
+  if (id) writeStorage(STORAGE_KEYS.currentCoach, id)
+  else removeStorage(STORAGE_KEYS.currentCoach)
 }
 
 interface UiState {

@@ -6,9 +6,6 @@
 // ExerciseEntry.internalNote, Client.lastName, Client.goal.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { ExerciseCategory, LibraryExercise, MeasureType } from './data/exercises'
-
-export type { ExerciseCategory, LibraryExercise, MeasureType }
 
 /** Local calendar date, 'YYYY-MM-DD'. */
 export type ISODate = string
@@ -62,12 +59,12 @@ export interface ClientNote {
   updatedAt: ISODateTime
 }
 
-// ── Programs (bloques de entrenamiento ~4 semanas) ─────────────────────────
+// ── Programs (rutinas de ~4 semanas) ─────────────────────────
 
 export interface Program {
   id: ID
   clientId: ID
-  /** Optional name, e.g. 'Bloque fuerza otoño'. Empty → UI shows 'Rutina del <fecha>'. */
+  /** Optional name, e.g. 'Fuerza otoño'. Empty → UI shows 'Rutina del <fecha>'. */
   name: string
   startDate: ISODate
   /** Inclusive last day. Kept consistent with weeks by store.setProgramDates. */
@@ -193,6 +190,32 @@ export interface ExerciseEntry {
 
 // ── Library ─────────────────────────────────────────────────────────────────
 
+export type ExerciseCategory =
+  | 'Piernas'
+  | 'Empuje'
+  | 'Tracción'
+  | 'Core'
+  | 'Halterofilia'
+  | 'Cardio'
+  | 'Gimnásticos'
+  | 'Movilidad'
+  | 'Pliometría'
+  | 'Brazos'
+  | 'Hombro'
+  | 'Glúteo'
+
+export type MeasureType = 'reps' | 'time' | 'distance' | 'calories'
+
+export interface LibraryExercise {
+  id: string
+  name: string
+  aliases?: string[]
+  category: ExerciseCategory
+  equipment: string[]
+  defaultMeasure: MeasureType
+  perSide?: boolean
+}
+
 /** A coach-created library exercise (stored in AppData.customExercises). */
 export interface CustomExercise extends LibraryExercise {
   custom: true
@@ -215,7 +238,7 @@ export interface Branding {
   iconUrl: string
   /** Main brand colour, used on dark backgrounds (default #f79cce). */
   primaryColor: string
-  /** Darker brand colour readable on white, for text/buttons (default #d6449a). */
+  /** Darker brand colour readable on white, for text/buttons (default #b8287a). */
   accentColor: string
   /** TV / display theme. */
   displayTheme: DisplayTheme

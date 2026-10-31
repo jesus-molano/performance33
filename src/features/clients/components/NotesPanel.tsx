@@ -1,6 +1,6 @@
 import { Lock } from 'lucide-react'
-import { Card, PrivacyLabel } from '../../../components/ui'
-import { useClientNotes } from '../../../store'
+import { Card, PrivacyLabel } from '@/components/ui'
+import { useClientNotes } from '@/store'
 import { NoteComposer } from './NoteComposer'
 import { NoteItem } from './NoteItem'
 

@@ -1,5 +1,5 @@
 import { CircleHelp } from 'lucide-react'
-import { cn } from '../../lib/cn'
+import { cn } from '@/lib/cn'
 
 export interface HelpTipProps {
   /** Plain-Spanish explanation of a term (EMOM, RPE, tempo…). */

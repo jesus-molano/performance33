@@ -1,10 +1,10 @@
 import { ArrowDown, ArrowUp, Copy, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
-import type { MenuItem } from '../../../components/ui'
-import { useToast } from '../../../hooks'
-import { useAppActions } from '../../../store'
-import { useEditorUi } from '../state/editorUiStore'
-import { neighborIndex } from '../utils'
+import type { MenuItem } from '@/components/ui'
+import { useToast } from '@/hooks'
+import { useAppActions } from '@/store'
+import { useEditorUi } from '@/features/editor/store/editorUiStore'
+import { neighborIndex } from '@/features/editor/utils'
 
 /** '⋯' menu of an exercise row: duplicate, move up/down (accessible alternative to dragging), delete with undo. */
 export function useExerciseRowActions(exerciseId: string, blockId: string, index: number, count: number): MenuItem[] {

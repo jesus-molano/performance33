@@ -1,6 +1,6 @@
-import { cn } from '../../../lib/cn'
-import { paths, SETTINGS_TABS, type SettingsTab } from '../../../lib/routes'
-import { SETTINGS_TAB_META } from '../config'
+import { cn } from '@/lib/cn'
+import { paths, SETTINGS_TABS, type SettingsTab } from '@/lib/routes'
+import { SETTINGS_TAB_META } from '@/features/settings/config'
 
 /** Settings sections as tabs (links, so each tab has its own URL). Scrolls sideways on mobile. */
 export function SettingsTabs({ active }: { active: SettingsTab }) {
@@ -16,7 +16,7 @@ export function SettingsTabs({ active }: { active: SettingsTab }) {
               href={paths.settings(tab)}
               aria-current={selected ? 'page' : undefined}
               className={cn(
-                'inline-flex h-11 items-center gap-2 rounded-xl px-4 text-[15px] font-medium whitespace-nowrap transition-colors',
+                'inline-flex h-11 items-center gap-2 rounded-xl px-4 text-md font-medium whitespace-nowrap transition-colors',
                 selected ? 'bg-surface text-fg shadow-card' : 'text-fg-muted hover:text-fg',
               )}
             >

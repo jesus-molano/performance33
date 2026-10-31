@@ -1,14 +1,14 @@
 import { TriangleAlert } from 'lucide-react'
-import { PrivacyLabel, PrivateSurface } from '../../../components/ui'
-import { formatDateTime } from '../../../lib/dates'
-import { useCoach, usePinnedNotes } from '../../../store'
-import type { ClientNote } from '../../../types'
+import { PrivacyLabel, PrivateSurface } from '@/components/ui'
+import { formatDateTime } from '@/lib/dates'
+import { useCoach, usePinnedNotes } from '@/store'
+import type { ClientNote } from '@/types'
 
 function AlertLine({ note }: { note: ClientNote }) {
   const author = useCoach(note.authorId)
   return (
     <li className="flex flex-col gap-0.5">
-      <p className="text-[15px] font-medium whitespace-pre-wrap text-amber-950">{note.text}</p>
+      <p className="text-md font-medium whitespace-pre-wrap text-amber-950">{note.text}</p>
       <p className="text-xs text-private">
         {author?.name ?? 'Monitor eliminado'} · {formatDateTime(note.createdAt)}
       </p>

@@ -1,9 +1,9 @@
 // Demo data. Dates are relative to `today` so the demo always looks current.
 
-import { DEFAULT_BRANDING } from '../../config/branding'
-import { addDays, todayISO } from '../../lib/dates'
-import { newId } from '../../lib/ids'
-import { SCHEMA_VERSION, type AppData, type Client, type ClientNote, type Coach, type ISODate, type PlanId } from '../../types'
+import { DEFAULT_BRANDING } from '@/config/branding'
+import { addDays, todayISO } from '@/lib/dates'
+import { newId } from '@/lib/ids'
+import { SCHEMA_VERSION, type AppData, type Client, type ClientNote, type Coach, type ISODate, type PlanId } from '@/types'
 import { program } from './builders'
 import { lauraCurrentDays, lauraPreviousDays } from './lauraRoutines'
 import { martaDays } from './martaRoutine'
@@ -57,7 +57,7 @@ export function createSeedData(today: ISODate = todayISO()): AppData {
 
   const programs = [
     program({ clientId: laura.id, coachId: carla.id, startDate: addDays(today, -36), days: lauraPreviousDays(), name: 'Bloque base' }),
-    program({ clientId: laura.id, coachId: carla.id, startDate: addDays(today, -8), days: lauraCurrentDays(), name: 'Bloque fuerza otoño' }),
+    program({ clientId: laura.id, coachId: carla.id, startDate: addDays(today, -8), days: lauraCurrentDays(), name: 'Fuerza otoño' }),
     program({ clientId: javier.id, coachId: dani.id, startDate: addDays(today, -24), days: javierDays() }),
     program({ clientId: marta.id, coachId: dani.id, startDate: addDays(today, -2), days: martaDays(), name: 'Preparación competición' }),
     program({ clientId: carlos.id, coachId: carla.id, startDate: addDays(today, -38), days: carlosDays() }),

@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useToast } from '../../../hooks/useToast'
-import { useAppActions, useExerciseLibrary } from '../../../store'
-import type { AnyLibraryExercise } from '../../../types'
-import { LIBRARY_VISIBLE_LIMIT } from '../config'
-import { filterLibrary, type LibraryFilters } from '../utils/libraryFilter'
+import { useToast } from '@/hooks'
+import { useAppActions, useExerciseLibrary } from '@/store'
+import type { AnyLibraryExercise } from '@/types'
+import { LIBRARY_VISIBLE_LIMIT } from '@/features/settings/config'
+import { filterLibrary, type LibraryFilters } from '@/features/settings/utils/libraryFilter'
 
 export interface LibraryBrowserApi {
   filters: LibraryFilters

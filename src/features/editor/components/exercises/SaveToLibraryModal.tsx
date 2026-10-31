@@ -1,26 +1,18 @@
-import { useState } from 'react'
-import { Button, Input, Modal, Select } from '../../../../components/ui'
-import { EXERCISE_CATEGORIES } from '../../../../data/exercises'
-import type { ExerciseCategory, ExerciseEntry } from '../../../../types'
-import type { LibraryDraft, SaveToLibraryApi } from '../../hooks/useSaveToLibrary'
-import { libraryMeta } from '../../utils'
-
-const CATEGORY_OPTIONS = EXERCISE_CATEGORIES.map((category) => ({ value: category, label: category }))
+import { Button, Callout, Input, Modal, Select } from '@/components/ui'
+import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
+import { formatExerciseMeta } from '@/lib/exerciseLibrary'
+import type { ExerciseCategory } from '@/types'
+import type { SaveToLibraryApi } from '@/features/editor/hooks/useSaveToLibrary'
 
 export interface SaveToLibraryModalProps {
-  entry: ExerciseEntry
   api: SaveToLibraryApi
   onClose: () => void
 }
 
 /** Name + category + material. Similar library names are offered first to avoid duplicates. */
-export function SaveToLibraryModal({ entry, api, onClose }: SaveToLibraryModalProps) {
-  const [draft, setDraft] = useState<LibraryDraft>({ name: entry.name.trim(), category: EXERCISE_CATEGORIES[0], equipment: '' })
-  const valid = draft.name.trim().length > 1
+export function SaveToLibraryModal({ api, onClose }: SaveToLibraryModalProps) {
   const submit = () => {
-    if (!valid) return
-    api.save(draft)
-    onClose()
+    if (api.submit()) onClose()
   }
 
   return (
@@ -35,7 +27,7 @@ export function SaveToLibraryModal({ entry, api, onClose }: SaveToLibraryModalPr
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={submit} disabled={!valid}>
+          <Button onClick={submit} disabled={!api.valid}>
             Guardar ejercicio
           </Button>
         </>
@@ -49,36 +41,39 @@ export function SaveToLibraryModal({ entry, api, onClose }: SaveToLibraryModalPr
         }}
       >
         {api.similar.length > 0 && (
-          <div className="flex flex-col gap-2 rounded-xl bg-sky-50 p-3 text-sky-900">
-            <p className="text-sm font-medium">¿Es alguno de estos? Ya están en la biblioteca:</p>
-            {api.similar.map((exercise) => (
-              <button
-                key={exercise.id}
-                type="button"
-                onClick={() => {
-                  api.pickExisting(exercise)
-                  onClose()
-                }}
-                className="flex min-h-11 flex-col items-start justify-center rounded-lg bg-surface px-3 py-1.5 text-left shadow-card hover:bg-sky-100"
-              >
-                <span className="font-medium text-fg">Usar «{exercise.name}»</span>
-                <span className="text-xs text-fg-muted">{libraryMeta(exercise)}</span>
-              </button>
-            ))}
-          </div>
+          <Callout>
+            <p className="mb-2 font-medium">¿Es alguno de estos? Ya están en la biblioteca:</p>
+            <div className="flex flex-col gap-2">
+              {api.similar.map((exercise) => (
+                <button
+                  key={exercise.id}
+                  type="button"
+                  onClick={() => {
+                    api.pickExisting(exercise)
+                    onClose()
+                  }}
+                  className="flex min-h-11 flex-col items-start justify-center rounded-lg bg-surface px-3 py-1.5 text-left shadow-card hover:bg-sky-100"
+                >
+                  <span className="font-medium text-fg">Usar «{exercise.name}»</span>
+                  <span className="text-xs text-fg-muted">{formatExerciseMeta(exercise)}</span>
+                </button>
+              ))}
+            </div>
+          </Callout>
         )}
-        <Input label="Nombre" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} autoFocus />
+        <Input label="Nombre" nativeUndo value={api.draft.name} onChange={(e) => api.setField('name', e.target.value)} autoFocus />
         <Select<ExerciseCategory>
           label="Categoría"
-          options={CATEGORY_OPTIONS}
-          value={draft.category}
-          onChange={(category) => setDraft({ ...draft, category })}
+          options={EXERCISE_CATEGORY_OPTIONS}
+          value={api.draft.category}
+          onChange={(category) => api.setField('category', category)}
         />
         <Input
           label="Material (opcional)"
           hint="Separado por comas: Kettlebell, Banco"
-          value={draft.equipment}
-          onChange={(e) => setDraft({ ...draft, equipment: e.target.value })}
+          nativeUndo
+          value={api.draft.equipment}
+          onChange={(e) => api.setField('equipment', e.target.value)}
         />
       </form>
     </Modal>

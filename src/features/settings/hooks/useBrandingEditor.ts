@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
-import { useToast } from '../../../hooks/useToast'
-import { breakUndoGroup, useAppActions, useBranding } from '../../../store'
-import type { Branding } from '../../../types'
+import { useToast } from '@/hooks'
+import { breakUndoGroup, useAppActions, useBranding } from '@/store'
+import type { Branding } from '@/types'
 
 export interface BrandingEditorApi {
   branding: Branding

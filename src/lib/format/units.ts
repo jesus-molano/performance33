@@ -1,4 +1,4 @@
-import { formatNumber } from '../numbers'
+import { formatNumber } from '@/lib/numbers'
 
 /** Seconds → TV style: 30 → '30″', 90 → '1′30″', 120 → '2′'. */
 export function formatSeconds(sec: number | null | undefined): string {

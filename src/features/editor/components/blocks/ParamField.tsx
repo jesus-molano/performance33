@@ -1,8 +1,8 @@
-import { HelpTip, Input } from '../../../../components/ui'
-import { BLOCK_PARAM_META, type BlockParamKey } from '../../../../config/blockTypes'
-import { parseOptionalInt } from '../../../../lib/numbers'
-import { breakUndoGroup } from '../../../../store'
-import type { BlockParams } from '../../../../types'
+import { HelpTip, Input } from '@/components/ui'
+import { BLOCK_PARAM_META, type BlockParamKey } from '@/config/blockTypes'
+import { parseOptionalInt } from '@/lib/numbers'
+import { breakUndoGroup } from '@/store'
+import type { BlockParams } from '@/types'
 
 export interface ParamFieldProps {
   param: BlockParamKey

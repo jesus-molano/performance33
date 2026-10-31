@@ -1,8 +1,15 @@
-import { insertAt, moveItem, removeById } from '../../lib/arrays'
-import { cloneDay, createDay } from '../../lib/factories'
-import { dayAt, locateDay, locateProgram, withDay, withProgram } from '../locate'
-import type { DayActions, SliceContext } from '../types'
-import { groupKey } from '../undoGroup'
+import { insertAt, moveItem, removeById } from '@/lib/arrays'
+import { copiedDayName, renumberDays } from '@/lib/days'
+import { cloneDay, createDay } from '@/lib/factories'
+import type { AppData, Day } from '@/types'
+import { dayAt, locateDay, locateProgram, withDay, withProgram } from '@/store/locate'
+import type { DayActions, SliceContext } from '@/store/types'
+import { groupKey } from '@/store/undoGroup'
+
+/** Structural day change; automatic names ('Día N') are renumbered to their new position. */
+function withDays(data: AppData, pi: number, update: (days: Day[]) => Day[]): AppData {
+  return withProgram(data, pi, (p) => ({ ...p, days: renumberDays(update(p.days)) }))
+}
 
 export function createDaySlice({ commit, getData }: SliceContext): DayActions {
   return {
@@ -10,7 +17,7 @@ export function createDaySlice({ commit, getData }: SliceContext): DayActions {
       const pi = locateProgram(getData(), programId)
       if (pi === -1) return ''
       const day = createDay(getData().programs[pi].days.length, init)
-      commit((d) => withProgram(d, pi, (p) => ({ ...p, days: [...p.days, day] })))
+      commit((d) => withDays(d, pi, (days) => [...days, day]))
       return day.id
     },
     updateDay: (dayId, patch) => {
@@ -22,19 +29,19 @@ export function createDaySlice({ commit, getData }: SliceContext): DayActions {
       const loc = locateDay(getData(), dayId)
       if (!loc) return ''
       const source = dayAt(getData(), loc)
-      const copy = { ...cloneDay(source), name: `${source.name} (copia)` }
-      commit((d) => withProgram(d, loc.pi, (p) => ({ ...p, days: insertAt(p.days, loc.di + 1, copy) })))
+      const copy = { ...cloneDay(source), name: copiedDayName(source) }
+      commit((d) => withDays(d, loc.pi, (days) => insertAt(days, loc.di + 1, copy)))
       return copy.id
     },
     deleteDay: (dayId) => {
       const loc = locateDay(getData(), dayId)
       if (!loc) return
-      commit((d) => withProgram(d, loc.pi, (p) => ({ ...p, days: removeById(p.days, dayId) })))
+      commit((d) => withDays(d, loc.pi, (days) => removeById(days, dayId)))
     },
     moveDay: (dayId, toIndex) => {
       const loc = locateDay(getData(), dayId)
       if (!loc || loc.di === toIndex) return
-      commit((d) => withProgram(d, loc.pi, (p) => ({ ...p, days: moveItem(p.days, loc.di, toIndex) })))
+      commit((d) => withDays(d, loc.pi, (days) => moveItem(days, loc.di, toIndex)))
     },
   }
 }

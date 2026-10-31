@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { getDisplayableClients } from '../../../lib/display'
-import type { TvSlot } from '../../../lib/routes'
+import { getDisplayableClients } from '@/lib/display'
+import type { TvSlot } from '@/lib/routes'
 import { useDisplayShortcuts } from './useDisplayShortcuts'
 import { useScreenChrome } from './useScreenChrome'
 import { useScreenData } from './useScreenData'

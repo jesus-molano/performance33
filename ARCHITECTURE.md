@@ -16,6 +16,12 @@ All UI text is Spanish (Spain), informal "tú". Hash routing. Data in localStora
 
 ## 2. Folder structure
 
+Conventions: imports use the `@/` alias (`@/components/ui`, `@/hooks`, `@/store`, `@/features/<f>`) and
+barrels where they exist; `./` only for siblings. A feature may add a `store/` folder for its own
+ephemeral UI store (e.g. `features/editor/store/editorUiStore.ts`); global UI stores live in `src/store`.
+Components never touch stores directly: they use feature hooks (e.g. `useExerciseFields`, `useBlockCard`).
+Pure functions have unit tests next to them (`*.test.ts`, run with `npm test`).
+
 ```
 src/
   main.tsx, App.tsx            route switch: screen routes vs dashboard
@@ -57,7 +63,7 @@ Helpers: `paths.*` builders, `navigate(path)`, `replaceRoute(path)` (no history 
 Hook: `useHashRoute(): Route`. Without a valid current coach every dashboard route renders the picker;
 the picker must `navigate(paths.clients())` after choosing when the route is `#/`.
 
-## 4. Store (`src/store`, import from `'../../store'`)
+## 4. Store (`src/store`, import from `'@/store'`)
 
 Data store = zustand + zundo; only `data: AppData` is tracked (limit 100). UI state (current coach,
 save status), toasts and confirm requests live in separate stores and are never undone.
@@ -72,7 +78,7 @@ Actions (`useAppActions()`; ids returned are the new entity id, `''` if the pare
 - Programs: `createProgram(clientId, {name?,startDate?,weeks?,dayCount?,makeCurrent?}) → id`
   (dayCount default client.trainingDays, weeks 4, current by default), `updateProgram(id, {name})`,
   `setProgramDates(id, {startDate?|weeks?|endDate?})`, `duplicateProgram(id, {startDate?,makeCurrent?}) → id`
-  ("Duplicar como nuevo bloque", starts after the previous one ends or today), `setCurrentProgram(clientId, programId|null)`,
+  ("Duplicar como nueva rutina", starts after the previous one ends or today), `setCurrentProgram(clientId, programId|null)`,
   `deleteProgram(id)` (confirm first; falls back to newest remaining).
 - Days: `addDay(programId, {name?,label?}) → id`, `updateDay(dayId, {name?,label?})`, `duplicateDay(dayId) → id`,
   `deleteDay(dayId)`, `moveDay(dayId, toIndex)`.

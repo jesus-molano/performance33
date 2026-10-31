@@ -1,6 +1,6 @@
-import { readableTextOn } from '../../lib/color'
-import { cn } from '../../lib/cn'
-import { getInitials } from '../../lib/format'
+import { readableTextOn } from '@/lib/color'
+import { cn } from '@/lib/cn'
+import { getInitials } from '@/lib/format'
 
 export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl'
 

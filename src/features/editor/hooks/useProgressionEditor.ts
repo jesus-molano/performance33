@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { fitProgression, getBaseValue } from '../../../lib/progression'
-import { useAppActions } from '../../../store'
-import type { ExerciseEntry, Progression, ProgressionTarget } from '../../../types'
-import { createProgression, fillLinear, setWeekValue } from '../utils'
+import { fitProgression, getBaseValue } from '@/lib/progression'
+import { useAppActions } from '@/store'
+import type { ExerciseEntry, Progression, ProgressionTarget } from '@/types'
+import { createProgression, fillLinear, setWeekValue } from '@/features/editor/utils'
 
 export interface ProgressionEditor {
   /** Normalised to the program's weeks; null when the row has no progression. */

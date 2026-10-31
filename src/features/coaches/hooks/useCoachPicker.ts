@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
-import { useHashRoute } from '../../../hooks/useHashRoute'
-import { navigate, paths } from '../../../lib/routes'
-import { useUiStore } from '../../../store'
+import { useHashRoute } from '@/hooks'
+import { navigate, paths } from '@/lib/routes'
+import { useUiStore } from '@/store'
 
 /** Selecting a profile: remember it on this device and, from '#/', go to the clients list. */
 export function useCoachPicker(): (coachId: string) => void {

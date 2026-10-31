@@ -1,8 +1,8 @@
 // Pure rules for copying a block into other days.
 
-import { insertAt } from '../../lib/arrays'
-import { cloneBlock } from '../../lib/factories'
-import type { Block, Day } from '../../types'
+import { insertAt } from '@/lib/arrays'
+import { cloneBlock } from '@/lib/factories'
+import type { Block, Day } from '@/types'
 
 /** Copy into one day: warm-up goes first, everything else is appended. */
 export function copyIntoDay(day: Day, source: Block): { day: Day; copy: Block } {

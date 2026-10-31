@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { isHexColor } from '../../../lib/color'
+import { isHexColor } from '@/lib/color'
 
 export interface HexDraftApi {
   draft: string

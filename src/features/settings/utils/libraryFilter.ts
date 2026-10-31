@@ -1,5 +1,5 @@
-import { searchExercises } from '../../../lib/search'
-import type { AnyLibraryExercise, ExerciseCategory } from '../../../types'
+import { searchExercises } from '@/lib/search'
+import type { AnyLibraryExercise, ExerciseCategory } from '@/types'
 
 export type LibraryScope = 'custom' | 'all'
 export type CategoryFilter = ExerciseCategory | 'all'

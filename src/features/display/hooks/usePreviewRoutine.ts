@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { buildDisplayRoutine, toPublicClient, toPublicProgram, type DisplayRoutine } from '../../../lib/display'
-import { useBranding, useClient, useProgram } from '../../../store'
-import type { DisplayData } from '../../../types'
+import { buildDisplayRoutine, toPublicClient, toPublicProgram, type DisplayRoutine } from '@/lib/display'
+import { useBranding, useClient, useProgram } from '@/store'
+import type { DisplayData } from '@/types'
 
 export interface PreviewRoutine {
   routine: DisplayRoutine

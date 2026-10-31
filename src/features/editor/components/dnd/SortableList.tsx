@@ -1,8 +1,8 @@
 import { closestCenter, DndContext, type Announcements, type DragEndEvent } from '@dnd-kit/core'
 import { horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { ReactNode } from 'react'
-import { DND_TEXTS } from '../../config'
-import { useSortableSensors } from '../../hooks/useSortableSensors'
+import { DND_TEXTS } from '@/features/editor/config'
+import { useSortableSensors } from '@/features/editor/hooks/useSortableSensors'
 
 const ANNOUNCEMENTS: Announcements = {
   onDragStart: () => DND_TEXTS.start,

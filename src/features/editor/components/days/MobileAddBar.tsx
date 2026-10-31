@@ -1,5 +1,5 @@
 import { LayoutGrid, Plus } from 'lucide-react'
-import { Button } from '../../../../components/ui'
+import { Button } from '@/components/ui'
 
 export interface MobileAddBarProps {
   onAddBlock: () => void

@@ -1,10 +1,10 @@
-import { cn } from '../../../../lib/cn'
-import type { DisplayExerciseLine } from '../../../../lib/display'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import { cn } from '@/lib/cn'
+import type { DisplayExerciseLine } from '@/lib/display'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 
 interface DisplayExerciseRowProps {
   line: DisplayExerciseLine
-  week: number
+  week: number | null
   /** Warm-up/mobility rows: smaller so the main work stands out. */
   compact: boolean
   theme: DisplayThemeClasses
@@ -26,15 +26,15 @@ export function DisplayExerciseRow({ line, week, compact, theme }: DisplayExerci
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className={cn('leading-tight font-semibold', mainSize)}>{line.name}</p>
-        {line.cue && <p className={cn('text-[1.3em] leading-snug', theme.secondaryText)}>{line.cue}</p>}
-        {line.detail && <p className={cn('tabular text-[1.15em] leading-snug', theme.subtleText)}>{line.detail}</p>}
+        <p className={cn('leading-tight font-semibold [overflow-wrap:anywhere]', mainSize)}>{line.name}</p>
+        {line.cue && <p className={cn('text-[1.3em] leading-snug [overflow-wrap:anywhere]', theme.secondaryText)}>{line.cue}</p>}
+        {line.detail && <p className={cn('tabular text-[1.15em] leading-snug [overflow-wrap:anywhere]', theme.subtleText)}>{line.detail}</p>}
       </div>
       {(line.volume || line.load) && (
         <div className="max-w-[48%] shrink-0 text-right">
-          {line.volume && <p className={cn('tabular leading-tight font-bold', mainSize)}>{line.volume}</p>}
+          {line.volume && <p className={cn('tabular leading-tight font-bold [overflow-wrap:anywhere]', mainSize)}>{line.volume}</p>}
           {line.load && (
-            <p className={cn('tabular text-[1.45em] leading-tight font-semibold', theme.accentText)}>
+            <p className={cn('tabular text-[1.45em] leading-tight font-semibold [overflow-wrap:anywhere]', theme.accentText)}>
               {line.load}
               {line.progressed && <span className="ml-[0.3em] align-top text-[0.6em] opacity-80">S{week}</span>}
             </p>

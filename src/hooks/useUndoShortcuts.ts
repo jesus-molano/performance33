@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { redo, undo } from '../store/history'
+import { redo, undo } from '@/store/history'
 
 /** Inputs whose value is NOT bound to the store opt out of store undo with this attribute. */
 export const NATIVE_UNDO_ATTRIBUTE = 'data-native-undo'

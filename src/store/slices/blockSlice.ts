@@ -1,10 +1,10 @@
-import { BLOCK_TYPE_META } from '../../config/blockTypes'
-import { insertAt, moveItem, removeById } from '../../lib/arrays'
-import { cloneBlock, createBlock, createExercise } from '../../lib/factories'
-import type { BlockParams } from '../../types'
-import { blockAt, locateBlock, locateDay, sameDay, withBlock, withDay, withProgram } from '../locate'
-import type { BlockActions, SliceContext } from '../types'
-import { groupKey } from '../undoGroup'
+import { BLOCK_TYPE_META } from '@/config/blockTypes'
+import { insertAt, moveItem, removeById } from '@/lib/arrays'
+import { cloneBlock, createBlock, createExercise } from '@/lib/factories'
+import type { BlockParams } from '@/types'
+import { blockAt, locateBlock, locateDay, sameDay, withBlock, withDay, withProgram } from '@/store/locate'
+import type { BlockActions, SliceContext } from '@/store/types'
+import { groupKey } from '@/store/undoGroup'
 import { copyIntoDay, copyIntoDayAt } from './blockCopy'
 
 function mergeParams(current: BlockParams, patch: Partial<BlockParams>): BlockParams {

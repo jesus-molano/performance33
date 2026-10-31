@@ -1,5 +1,5 @@
-import { useClient, useProgram } from '../../../store'
-import type { Client, Program } from '../../../types'
+import { useClient, useProgram } from '@/store'
+import type { Client, Program } from '@/types'
 
 export interface EditorData {
   client: Client | null

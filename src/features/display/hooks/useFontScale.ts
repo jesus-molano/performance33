@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
-import { DISPLAY_STORAGE_KEYS } from '../config/display'
-import { parseFontScale, stepFontScale } from '../utils/fontScale'
-import { readStorage, writeStorage } from '../utils/storage'
+import { DISPLAY_STORAGE_KEYS } from '@/features/display/config/display'
+import { parseFontScale, stepFontScale } from '@/features/display/utils/fontScale'
+import { readStorage, writeStorage } from '@/lib/safeStorage'
 
 export interface FontScaleApi {
   fontScale: number

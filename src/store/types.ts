@@ -21,7 +21,7 @@ import type {
   NotePatch,
   ProgramDatesPatch,
   ProgramPatch,
-} from '../types'
+} from '@/types'
 
 export interface CoachActions {
   addCoach: (input: NewCoachInput) => string
@@ -45,7 +45,7 @@ export interface ProgramActions {
   updateProgram: (id: string, patch: ProgramPatch) => void
   /** weeks → recomputes endDate; endDate → recomputes weeks; startDate alone → keeps weeks, shifts endDate. */
   setProgramDates: (id: string, patch: ProgramDatesPatch) => void
-  /** 'Duplicar como nuevo bloque': deep copy starting max(endDate + 1, today). Current by default. */
+  /** 'Duplicar como nueva rutina': deep copy starting max(endDate + 1, today). Current by default. */
   duplicateProgram: (id: string, opts?: { startDate?: ISODate; makeCurrent?: boolean }) => string
   setCurrentProgram: (clientId: string, programId: string | null) => void
   /** If it was current, the most recent remaining program becomes current. */
@@ -99,6 +99,8 @@ export interface ExerciseActions {
   /** Inserts a copy right after. */
   duplicateExercise: (exerciseId: string) => string
   deleteExercise: (exerciseId: string) => void
+  /** Removes the row if it still has no name, WITHOUT an undo step. Returns true when removed. */
+  discardUnnamedExercise: (exerciseId: string) => boolean
   /** Within a block or to another block (any day). */
   moveExercise: (exerciseId: string, toBlockId: string, toIndex: number) => void
 }
@@ -144,4 +146,6 @@ export interface SliceContext {
   commit: (recipe: (data: AppData) => AppData, groupKey?: string) => void
   getData: () => AppData
   clearHistory: () => void
+  /** Applies `recipe` without recording an undo step (housekeeping). */
+  commitSilently: (recipe: (data: AppData) => AppData) => void
 }

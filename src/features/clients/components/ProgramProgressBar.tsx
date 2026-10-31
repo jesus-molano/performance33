@@ -1,6 +1,6 @@
-import { cn } from '../../../lib/cn'
-import type { ProgramStatus, StatusTone } from '../../../lib/program'
-import { elapsedWeeks } from '../utils/programSummary'
+import { cn } from '@/lib/cn'
+import type { ProgramStatus, StatusTone } from '@/lib/program'
+import { elapsedWeeks } from '@/features/clients/utils/programSummary'
 
 const BAR_TONES: Record<StatusTone, string> = {
   neutral: 'bg-fg-subtle',
@@ -18,7 +18,7 @@ export function ProgramProgressBar({ status, className }: { status: ProgramStatu
   return (
     <div
       role="progressbar"
-      aria-label="Progreso del bloque"
+      aria-label="Progreso de la rutina"
       aria-valuemin={0}
       aria-valuemax={totalWeeks}
       aria-valuenow={filled}

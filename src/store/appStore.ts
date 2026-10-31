@@ -3,8 +3,8 @@
 
 import { temporal } from 'zundo'
 import { create } from 'zustand'
-import { UNDO_GROUP_MS, UNDO_LIMIT } from '../config/app'
-import { createEmptyData } from '../lib/factories'
+import { UNDO_GROUP_MS, UNDO_LIMIT } from '@/config/app'
+import { createEmptyData } from '@/lib/factories'
 import { createBlockSlice } from './slices/blockSlice'
 import { createClientSlice } from './slices/clientSlice'
 import { createCoachSlice } from './slices/coachSlice'
@@ -13,6 +13,7 @@ import { createExerciseSlice } from './slices/exerciseSlice'
 import { createNoteSlice } from './slices/noteSlice'
 import { createProgramSlice } from './slices/programSlice'
 import { createSettingsSlice } from './slices/settingsSlice'
+import type { AppData } from '@/types'
 import type { AppState, SliceContext } from './types'
 import { createUndoGrouper } from './undoGroup'
 
@@ -23,19 +24,23 @@ type TrackedState = Pick<AppState, 'data'>
 export const useAppStore = create<AppState>()(
   temporal(
     (set, get) => {
+      const setUntracked = (data: AppData) => {
+        const history = useAppStore.temporal.getState()
+        history.pause()
+        set({ data })
+        history.resume()
+      }
       const ctx: SliceContext = {
         commit: (recipe, key) => {
           const next = recipe(get().data)
           if (next === get().data) return
-          if (!undoGrouper.shouldMerge(key)) {
-            set({ data: next })
-            return
-          }
           // Same field edited again within the window: update without a new undo step.
-          const history = useAppStore.temporal.getState()
-          history.pause()
-          set({ data: next })
-          history.resume()
+          if (undoGrouper.shouldMerge(key)) setUntracked(next)
+          else set({ data: next })
+        },
+        commitSilently: (recipe) => {
+          const next = recipe(get().data)
+          if (next !== get().data) setUntracked(next)
         },
         getData: () => get().data,
         clearHistory: () => {

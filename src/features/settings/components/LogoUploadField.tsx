@@ -1,8 +1,8 @@
 import { RotateCcw, Upload } from 'lucide-react'
-import { Button } from '../../../components/ui'
-import { cn } from '../../../lib/cn'
-import { IMAGE_ACCEPT } from '../config'
-import { useImageUpload } from '../hooks/useImageUpload'
+import { Button } from '@/components/ui'
+import { cn } from '@/lib/cn'
+import { IMAGE_ACCEPT } from '@/features/settings/config'
+import { useImageUpload } from '@/features/settings/hooks/useImageUpload'
 
 export interface LogoUploadFieldProps {
   label: string
@@ -28,7 +28,7 @@ export function LogoUploadField({ label, hint, value, defaultValue, onChange, su
         {value ? <img src={value} alt={label} className="max-h-full max-w-full object-contain" /> : <span className="text-sm text-fg-subtle">Sin imagen</span>}
       </div>
       <div className="flex min-w-0 flex-col gap-2">
-        <p className="text-[15px] font-medium text-fg">{label}</p>
+        <p className="text-md font-medium text-fg">{label}</p>
         <p className="text-sm text-fg-muted">{hint}</p>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" leftIcon={Upload} onClick={pick}>

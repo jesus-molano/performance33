@@ -2,10 +2,10 @@
 //   data    → full AppData, for other DASHBOARD tabs.
 //   display → sanitised DisplayData (no private fields), for Pantalla / TV windows.
 
-import { SYNC_CHANNELS } from '../config/app'
-import { toDisplayData } from '../lib/display'
-import type { AppData, DisplayData } from '../types'
-import type { ChangeMeta, RemoteChange } from './repository'
+import { SYNC_CHANNELS } from '@/config/app'
+import { toDisplayData } from '@/lib/display'
+import type { AppData, DisplayData } from '@/types'
+import type { ChangeMeta, DisplayChange, RemoteChange } from './repository'
 
 interface ChannelMessage<T> extends ChangeMeta {
   data: T
@@ -49,6 +49,6 @@ export function listenDataChannel(listener: (change: RemoteChange) => void): () 
   return listen<AppData>(SYNC_CHANNELS.data, listener)
 }
 
-export function listenDisplayChannel(listener: (message: ChannelMessage<DisplayData>) => void): () => void {
+export function listenDisplayChannel(listener: (change: DisplayChange) => void): () => void {
   return listen<DisplayData>(SYNC_CHANNELS.display, listener)
 }

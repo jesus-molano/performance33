@@ -1,6 +1,6 @@
-import { cn } from '../../../lib/cn'
-import { useSaveStatus } from '../../../store'
-import { SAVE_STATUS_META } from '../config'
+import { cn } from '@/lib/cn'
+import { useSaveStatus } from '@/store'
+import { SAVE_STATUS_META } from '@/features/shell/config'
 
 /** 'Guardando… / Guardado' pill. Changes save automatically, there is no Save button. */
 export function SaveIndicator() {

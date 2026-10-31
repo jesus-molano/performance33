@@ -1,10 +1,10 @@
-import type { DisplayBlock } from '../../../../lib/display'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import type { DisplayBlock } from '@/lib/display'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { DisplayBlockCard } from './DisplayBlockCard'
 
 interface DisplayBlockListProps {
   blocks: DisplayBlock[]
-  week: number
+  week: number | null
   theme: DisplayThemeClasses
   flashBlockIds: ReadonlySet<string>
 }

@@ -1,8 +1,8 @@
 import { Pencil, Plus } from 'lucide-react'
-import { readableTextOn } from '../../../lib/color'
-import { cn } from '../../../lib/cn'
-import { getInitials } from '../../../lib/format'
-import type { Coach } from '../../../types'
+import { readableTextOn } from '@/lib/color'
+import { cn } from '@/lib/cn'
+import { getInitials } from '@/lib/format'
+import type { Coach } from '@/types'
 
 const TILE = 'flex size-28 items-center justify-center rounded-3xl transition-all duration-200 sm:size-36'
 const WRAPPER = 'group flex flex-col items-center gap-3 rounded-3xl p-1 focus-visible:outline-brand'

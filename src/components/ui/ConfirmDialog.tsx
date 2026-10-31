@@ -1,4 +1,4 @@
-import { useConfirmStore } from '../../store/confirmStore'
+import { useConfirmStore } from '@/store/confirmStore'
 import { Button } from './Button'
 import { Modal } from './Modal'
 

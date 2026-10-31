@@ -15,7 +15,7 @@ import type {
   PublicDay,
   PublicExerciseEntry,
   PublicProgram,
-} from '../../types'
+} from '@/types'
 
 function toPublicExercise(e: ExerciseEntry): PublicExerciseEntry {
   return {
@@ -47,7 +47,8 @@ function toPublicBlock(b: Block): PublicBlock {
     params: { ...b.params },
     note: b.note,
     text: b.text,
-    exercises: b.exercises.map(toPublicExercise),
+    // Rows left without a name (half-typed in the editor) mean nothing to the client.
+    exercises: b.exercises.filter((e) => e.name.trim() !== '').map(toPublicExercise),
   }
 }
 

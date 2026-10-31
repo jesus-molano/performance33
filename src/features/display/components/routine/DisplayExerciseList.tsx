@@ -1,11 +1,11 @@
-import { cn } from '../../../../lib/cn'
-import type { DisplayBlock } from '../../../../lib/display'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import { cn } from '@/lib/cn'
+import type { DisplayBlock } from '@/lib/display'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { DisplayExerciseRow } from './DisplayExerciseRow'
 
 interface DisplayExerciseListProps {
   block: DisplayBlock
-  week: number
+  week: number | null
   theme: DisplayThemeClasses
 }
 

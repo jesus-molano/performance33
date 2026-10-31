@@ -2,11 +2,10 @@
 // future backend). The same change can arrive through both paths, so every receiver
 // filters by (source, revision) and ignores its own tab.
 
-import { toDisplayData } from '../lib/display'
-import type { DisplayData } from '../types'
+import type { DisplayData } from '@/types'
 import { listenDataChannel, listenDisplayChannel } from './channels'
+import type { ChangeMeta, DisplayChange, RemoteChange } from './repository'
 import { repository } from './repositoryInstance'
-import type { ChangeMeta, RemoteChange } from './repository'
 import { TAB_ID } from './tabId'
 
 /** Accepts a change only once per (source, revision) and never from this tab. */
@@ -37,23 +36,21 @@ export function subscribeRemoteChanges(listener: (change: RemoteChange) => void)
   }
 }
 
-/** Display/TV windows: SANITISED data only (repository changes are sanitised here). */
+/** Display/TV windows: only ever receive the SANITISED copy (display channel + display key). */
 export function subscribeDisplayChanges(listener: (data: DisplayData) => void): () => void {
   const accept = createChangeFilter()
-  const stopChannel = listenDisplayChannel((message) => {
-    if (accept(message)) listener(message.data)
-  })
-  const stopRepository = repository.subscribe((change) => {
-    if (accept(change)) listener(toDisplayData(change.data))
-  })
+  const onChange = (change: DisplayChange) => {
+    if (accept(change)) listener(change.data)
+  }
+  const stopChannel = listenDisplayChannel(onChange)
+  const stopRepository = repository.subscribeDisplay(onChange)
   return () => {
     stopChannel()
     stopRepository()
   }
 }
 
-/** One-shot sanitised read of the stored data (initial load of display windows). */
+/** One-shot read of the sanitised copy (initial load of display windows). */
 export function loadDisplayData(): DisplayData | null {
-  const data = repository.loadSync()
-  return data ? toDisplayData(data) : null
+  return repository.loadDisplaySync()
 }

@@ -1,6 +1,6 @@
 import { CalendarX2, MonitorOff, UserX } from 'lucide-react'
-import type { Branding } from '../../../../types'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import type { Branding } from '@/types'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { ScreenMessage } from './ScreenMessage'
 
 interface DisplayFallbackProps {

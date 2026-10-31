@@ -1,10 +1,10 @@
 import { useCallback } from 'react'
-import { MAX_PROGRAM_WEEKS } from '../../../config/app'
-import { useDisplayWindow } from '../../../hooks'
-import { clamp } from '../../../lib/numbers'
-import { getProgramStatus, type ProgramStatus } from '../../../lib/program'
-import { useAppActions } from '../../../store'
-import type { Client, ISODate, Program } from '../../../types'
+import { MAX_PROGRAM_WEEKS } from '@/config/app'
+import { useDisplayWindow } from '@/hooks'
+import { clamp } from '@/lib/numbers'
+import { getProgramStatus, type ProgramStatus } from '@/lib/program'
+import { useAppActions } from '@/store'
+import type { Client, ISODate, Program } from '@/types'
 
 export interface ProgramHeaderApi {
   status: ProgramStatus

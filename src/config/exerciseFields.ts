@@ -1,4 +1,4 @@
-import type { LoadUnit, MeasureType, ProgressionTarget } from '../types'
+import type { LoadUnit, MeasureType, ProgressionTarget } from '@/types'
 
 export const MEASURE_META: Record<MeasureType, { label: string; short: string }> = {
   reps: { label: 'Reps', short: 'reps' },
@@ -30,7 +30,9 @@ export const TEMPO_HELP =
   'Tempo: bajar - pausa - subir - pausa. Ej. 3-1-1-0 = 3 s bajar, 1 s pausa, 1 s subir, sin pausa. X = explosivo.'
 
 /** Quick chips under the focused row. */
-export const REP_CHIPS = ['5', '8', '10', '12', '15'] as const
+export const REP_CHIPS = ['5', '8', '10', '12', '15', 'máx'] as const
+/** Chip that toggles 'por lado' (appends 'c/lado' to the volume). */
+export const PER_SIDE_CHIP_LABEL = 'c/lado'
 export const REST_CHIPS: Array<{ label: string; sec: number }> = [
   { label: '30s', sec: 30 },
   { label: '60s', sec: 60 },

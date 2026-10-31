@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Chip } from '../../../components/ui'
+import { Chip } from '@/components/ui'
 
 export interface NumberChoiceProps {
   label: string
@@ -23,7 +23,7 @@ export function NumberChoice({ label, hint, options, value, onChange, optionLabe
             active={option === value}
             onClick={() => onChange(option)}
             aria-label={optionLabel?.(option)}
-            className="h-11 min-w-12 text-[15px]"
+            className="h-11 min-w-12 text-md"
           >
             {option}
           </Chip>

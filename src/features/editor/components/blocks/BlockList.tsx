@@ -1,23 +1,16 @@
-import { useAppActions } from '../../../../store'
-import type { Day } from '../../../../types'
-import type { WeekContext } from '../../types'
-import { SortableList } from '../dnd/SortableList'
+import type { Day } from '@/types'
+import { useSortActions } from '@/features/editor/hooks/useAddExercise'
+import { SortableList } from '@/features/editor/components/dnd/SortableList'
 import { BlockCard } from './BlockCard'
 
-export interface BlockListProps {
-  day: Day
-  days: Day[]
-  weeks: WeekContext
-}
-
 /** The day's blocks, reorderable by their grip (or the block '⋯' menu). */
-export function BlockList({ day, days, weeks }: BlockListProps) {
-  const { moveBlock } = useAppActions()
+export function BlockList({ day }: { day: Day }) {
+  const { moveBlock } = useSortActions()
   return (
     <div className="flex flex-col gap-3">
       <SortableList ids={day.blocks.map((b) => b.id)} onMove={(id, to) => moveBlock(id, day.id, to)}>
         {day.blocks.map((block, index) => (
-          <BlockCard key={block.id} block={block} blockIndex={index} day={day} days={days} weeks={weeks} />
+          <BlockCard key={block.id} block={block} blockIndex={index} day={day} />
         ))}
       </SortableList>
     </div>

@@ -1,7 +1,7 @@
 import { Maximize, Minimize } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { cn } from '../../../../lib/cn'
-import type { DisplayThemeClasses } from '../../utils/theme'
+import { cn } from '@/lib/cn'
+import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { OverlayButton } from './OverlayButton'
 
 interface ScreenToolbarProps {
