@@ -304,7 +304,10 @@ export interface PublicDay extends Omit<Day, 'blocks'> {
 export interface PublicProgram extends Omit<Program, 'days' | 'createdBy'> {
   days: PublicDay[]
 }
-export type PublicClient = Pick<Client, 'id' | 'firstName' | 'color' | 'archived' | 'currentProgramId'>
+export interface PublicClient extends Pick<Client, 'id' | 'firstName' | 'color' | 'archived' | 'currentProgramId'> {
+  /** First letter of the surname (never the surname): tells apart clients sharing a first name in the TV picker. */
+  lastInitial: string
+}
 
 export interface DisplayData {
   branding: Branding

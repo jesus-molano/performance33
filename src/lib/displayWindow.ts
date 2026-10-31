@@ -52,7 +52,7 @@ export function openDisplayWindow(clientId: string, day?: number | null, program
 
 let tvWindow: Window | null = null
 
-/** 3-column TV window (16:9). If this tab already opened it, it is focused, not reloaded. */
+/** Modo TV window (16:9, 1-4 columns). If this tab already opened it, it is focused, not reloaded. */
 export function openTvWindow(slots: TvSlot[] = []): Window | null {
   if (tvWindow && !tvWindow.closed) {
     tvWindow.focus()

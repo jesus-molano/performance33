@@ -1,17 +1,40 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { paths, replaceRoute, type TvSlot } from '@/lib/routes'
-import { isEmptySlotSet, loadStoredSlots, replaceSlot, storeSlots } from '@/features/display/utils/tvSlots'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { paths, replaceRoute, serializeTvSlots, type TvSlot } from '@/lib/routes'
+import {
+  addSlot,
+  assignSlotClient,
+  canAddSlot,
+  canRemoveSlot,
+  isEmptySlotSet,
+  loadStoredSlots,
+  moveSlot,
+  reconcileSlotKeys,
+  removeLastSlot,
+  replaceSlot,
+  resizeSlotKeys,
+  storeSlots,
+  tvSlotSortId,
+  type TvSlotKeys,
+} from '@/features/display/utils/tvSlots'
 
 export interface TvSlotsApi {
+  /** One stable id per column (React key + sortable id): it follows the column when it moves. */
+  slotIds: string[]
   setSlotClient: (index: number, clientId: string | null) => void
   setSlotDay: (index: number, day: number) => void
+  addColumn: () => void
+  removeColumn: () => void
+  moveColumn: (from: number, to: number) => void
+  canAddColumn: boolean
+  canRemoveColumn: boolean
 }
 
 /**
  * The URL (#/tv?slots=) is the source of truth so a bookmarked TV setup survives reloads;
  * every change is mirrored to localStorage and restored when the URL arrives empty.
+ * `candidateClientIds` (clients with a routine, in picker order) fill a newly added column.
  */
-export function useTvSlots(slots: TvSlot[]): TvSlotsApi {
+export function useTvSlots(slots: TvSlot[], candidateClientIds: readonly string[]): TvSlotsApi {
   // Restore only on mount: emptying the setup later on is a deliberate choice.
   const initialSlots = useRef(slots)
   useEffect(() => {
@@ -20,19 +43,46 @@ export function useTvSlots(slots: TvSlot[]): TvSlotsApi {
     if (stored) replaceRoute(paths.tv(stored))
   }, [])
 
-  const commit = useCallback((next: TvSlot[]) => {
-    storeSlots(next)
-    replaceRoute(paths.tv(next))
-  }, [])
+  // Our own changes set the keys together with the route (same batch); outside URL changes resize them.
+  const [storedKeys, setStoredKeys] = useState<TvSlotKeys>(() => reconcileSlotKeys(null, slots))
+  const slotKeys = reconcileSlotKeys(storedKeys, slots)
+  if (slotKeys !== storedKeys) setStoredKeys(slotKeys)
+  const keys = slotKeys.keys
+  const slotIds = useMemo(() => keys.map(tvSlotSortId), [keys])
+
+  const commit = useCallback(
+    (next: TvSlot[], nextKeys: number[] = resizeSlotKeys(keys, next.length)) => {
+      if (next === slots) return
+      setStoredKeys({ serialized: serializeTvSlots(next), keys: nextKeys })
+      storeSlots(next)
+      replaceRoute(paths.tv(next))
+    },
+    [slots, keys],
+  )
 
   const setSlotClient = useCallback(
-    (index: number, clientId: string | null) => commit(replaceSlot(slots, index, { clientId, day: 1 })),
+    (index: number, clientId: string | null) => commit(assignSlotClient(slots, index, clientId)),
     [slots, commit],
   )
   const setSlotDay = useCallback(
     (index: number, day: number) => commit(replaceSlot(slots, index, { day })),
     [slots, commit],
   )
+  const addColumn = useCallback(() => commit(addSlot(slots, candidateClientIds)), [slots, candidateClientIds, commit])
+  const removeColumn = useCallback(() => commit(removeLastSlot(slots)), [slots, commit])
+  const moveColumn = useCallback(
+    (from: number, to: number) => commit(moveSlot(slots, from, to), moveSlot(keys, from, to)),
+    [slots, keys, commit],
+  )
 
-  return { setSlotClient, setSlotDay }
+  return {
+    slotIds,
+    setSlotClient,
+    setSlotDay,
+    addColumn,
+    removeColumn,
+    moveColumn,
+    canAddColumn: canAddSlot(slots),
+    canRemoveColumn: canRemoveSlot(slots),
+  }
 }

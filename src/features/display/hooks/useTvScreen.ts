@@ -6,12 +6,13 @@ import { useScreenChrome } from './useScreenChrome'
 import { useScreenData } from './useScreenData'
 import { useTvSlots } from './useTvSlots'
 
-/** Modo TV window: live data, the clients that can be picked, slot setters and window chrome. */
+/** Modo TV window: live data, clients with a routine, slot/column setters and window chrome. */
 export function useTvScreen(slots: TvSlot[]) {
   const screen = useScreenData()
   const chrome = useScreenChrome('tv')
-  const slotsApi = useTvSlots(slots)
   const clients = useMemo(() => (screen.data ? getDisplayableClients(screen.data) : []), [screen.data])
+  const clientIds = useMemo(() => clients.map((c) => c.id), [clients])
+  const slotsApi = useTvSlots(slots, clientIds)
 
   useDisplayShortcuts({
     fullscreen: chrome.toggleFullscreen,
@@ -19,5 +20,5 @@ export function useTvScreen(slots: TvSlot[]) {
     smaller: chrome.decrease,
   })
 
-  return { ...screen, ...slotsApi, chrome, clients }
+  return { ...screen, ...slotsApi, chrome, hasClients: clients.length > 0 }
 }

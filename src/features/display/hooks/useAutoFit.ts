@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import {
   applyFitToElement,
-  findFittingUnit,
   fitStyle,
-  getUnitBounds,
-  prefersTwoColumns,
+  getDisplayDensity,
+  planFit,
   readableMinUnit,
+  type DisplayDensity,
   type FitResult,
   type FitStatus,
 } from '@/features/display/utils/autoFit'
 
 export interface AutoFitOptions {
-  /** 2 lets a landscape full screen split blocks into two columns instead of shrinking text. */
-  maxColumns: 1 | 2
+  /** Landscape full screen: split blocks into two columns when that makes text clearly bigger. */
+  preferColumns: boolean
   /** Manual A-/A+ multiplier of the largest allowed size. */
   fontScale: number
   /** Any value that changes when the content changes (triggers a re-fit). */
@@ -23,25 +23,34 @@ export interface AutoFit extends FitStatus {
   containerRef: RefObject<HTMLDivElement | null>
   contentRef: RefObject<HTMLDivElement | null>
   style: CSSProperties
+  density: DisplayDensity
 }
 
-interface FitState extends FitResult, FitStatus {}
+interface FitState extends FitResult, FitStatus {
+  density: DisplayDensity
+}
 
-const INITIAL_FIT: FitState = { unit: 16, columns: 1, overflowing: false, tooSmall: false }
+const INITIAL_FIT: FitState = { unit: 16, columns: 1, density: 'comfortable', overflowing: false, tooSmall: false }
 
 const sameFit = (a: FitState, b: FitState) =>
-  a.unit === b.unit && a.columns === b.columns && a.overflowing === b.overflowing && a.tooSmall === b.tooSmall
+  a.unit === b.unit &&
+  a.columns === b.columns &&
+  a.density === b.density &&
+  a.overflowing === b.overflowing &&
+  a.tooSmall === b.tooSmall
 
 /**
  * Scales a routine view to fill its container without scrolling: binary-searches the root
- * font-size (all inner sizes are em). Re-fits on container resize, content resize (late web
- * fonts, live edits), content change and font loading.
+ * font-size (all inner sizes are em) between the readable floor and a max, and picks the compact
+ * or comfortable density from the container's shape. Re-fits on container resize, content resize
+ * (late web fonts, live edits), content change, density change and font loading.
  */
-export function useAutoFit({ maxColumns, fontScale, fitKey }: AutoFitOptions): AutoFit {
+export function useAutoFit({ preferColumns, fontScale, fitKey }: AutoFitOptions): AutoFit {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const fittedHeight = useRef(0)
   const [fit, setFit] = useState<FitState>(INITIAL_FIT)
+  const renderedDensity = useRef<DisplayDensity>(INITIAL_FIT.density)
 
   const runFit = useCallback(() => {
     const container = containerRef.current
@@ -50,27 +59,30 @@ export function useAutoFit({ maxColumns, fontScale, fitKey }: AutoFitOptions): A
     const { clientWidth: width, clientHeight: height } = container
     if (!width || !height) return
 
-    const bounds = getUnitBounds(width, height, fontScale)
-    const measure = (columns: number) => (unit: number) => {
-      applyFitToElement(content, { unit, columns })
+    const density = getDisplayDensity(width, height)
+    if (density !== renderedDensity.current) {
+      // Measuring now would use the old density's classes: re-render first, the layout effect measures then.
+      renderedDensity.current = density
+      setFit((prev) => ({ ...prev, density }))
+      return
+    }
+    const measure = (candidate: FitResult) => {
+      applyFitToElement(content, candidate)
       return content.offsetHeight
     }
-    let best: FitResult = { unit: findFittingUnit(measure(1), height, bounds), columns: 1 }
-    if (maxColumns > 1 && width > height) {
-      const twoColumns = findFittingUnit(measure(2), height, bounds)
-      if (prefersTwoColumns(best.unit, twoColumns)) best = { unit: twoColumns, columns: 2 }
-    }
+    const best = planFit({ width, height, density, fontScale, preferColumns, measure })
     applyFitToElement(content, best)
     fittedHeight.current = content.offsetHeight
     const next: FitState = {
       ...best,
+      density,
       overflowing: fittedHeight.current > height || content.scrollWidth > container.clientWidth,
-      tooSmall: best.unit < readableMinUnit(height),
+      tooSmall: best.unit < readableMinUnit(height, density),
     }
     setFit((prev) => (sameFit(prev, next) ? prev : next))
-  }, [maxColumns, fontScale])
+  }, [preferColumns, fontScale])
 
-  useLayoutEffect(runFit, [runFit, fitKey])
+  useLayoutEffect(runFit, [runFit, fitKey, fit.density])
 
   useEffect(() => {
     const container = containerRef.current
@@ -102,6 +114,7 @@ export function useAutoFit({ maxColumns, fontScale, fitKey }: AutoFitOptions): A
     containerRef,
     contentRef,
     style: fitStyle(fit),
+    density: fit.density,
     overflowing: fit.overflowing,
     tooSmall: fit.tooSmall,
   }

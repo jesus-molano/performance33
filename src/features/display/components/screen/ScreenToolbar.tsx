@@ -10,7 +10,7 @@ interface ScreenToolbarProps {
   onToggleFullscreen: () => void
   onBigger: () => void
   onSmaller: () => void
-  /** Extra controls on the left (day switcher). */
+  /** Extra controls on the left (day switcher, TV column count). */
   children?: ReactNode
 }
 

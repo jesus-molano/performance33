@@ -27,9 +27,16 @@ export const MAX_PROGRAM_WEEKS = 52
 /** Media query used for the mobile layout (bottom sheets, one column). */
 export const MOBILE_MEDIA_QUERY = '(max-width: 767px)'
 
-/** Maximum popup sizes: a third of a 16:9 1080p TV, and the full 3-column TV (shrunk to fit the screen). */
+/** Maximum popup sizes: a third of a 16:9 1080p TV, and the full multi-column TV (shrunk to fit the screen). */
 export const DISPLAY_WINDOW_SIZE = { width: 640, height: 1080 } as const
 export const TV_WINDOW_SIZE = { width: 1600, height: 900 } as const
 /** Space left around a popup so it fits within the screen (taskbar, window chrome). */
 export const POPUP_SCREEN_MARGIN = 40
-export const TV_SLOT_COUNT = 3
+/** Modo TV columns: old URLs and fresh setups get the default; coaches can choose MIN..MAX. */
+export const TV_DEFAULT_SLOTS = 3
+export const TV_MIN_SLOTS = 1
+export const TV_MAX_SLOTS = 4
+/** URL token for an empty TV column ('-' keeps a single empty column distinct from a missing list). */
+export const TV_EMPTY_SLOT_TOKEN = '-'
+/** Pixels the pointer must move on a column grip before a drag starts (a click stays a click). */
+export const TV_DRAG_ACTIVATION_DISTANCE = 6

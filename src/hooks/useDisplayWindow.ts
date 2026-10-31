@@ -7,7 +7,7 @@ import { useToast } from './useToast'
 export interface DisplayWindowApi {
   /** Opens a client's Pantalla popup. Call directly inside a click handler. */
   openDisplay: (clientId: string, day?: number | null, programId?: string | null) => void
-  /** Opens the 3-column Modo TV popup. */
+  /** Opens the Modo TV popup (1-4 columns). */
   openTv: (slots?: TvSlot[]) => void
 }
 

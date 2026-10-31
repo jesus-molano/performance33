@@ -6,13 +6,13 @@ interface DisplayExerciseRowProps {
   line: DisplayExerciseLine
   week: number | null
   /** Warm-up/mobility rows: smaller so the main work stands out. */
-  compact: boolean
+  muted: boolean
   theme: DisplayThemeClasses
 }
 
 /** 'A1  Press banca ........ 4 × 8-10 / 60 kg' with cue and tempo/rest underneath. */
-export function DisplayExerciseRow({ line, week, compact, theme }: DisplayExerciseRowProps) {
-  const mainSize = compact ? 'text-[1.6em]' : 'text-[2.05em]'
+export function DisplayExerciseRow({ line, week, muted, theme }: DisplayExerciseRowProps) {
+  const mainSize = muted ? 'text-[1.6em]' : 'text-[2.05em]'
   return (
     <li className="flex items-start gap-[0.6em] py-[0.45em]">
       {line.label && (

@@ -6,9 +6,10 @@
 //   #/clientes/:clientId/programa/:programId → program (editor)
 //   #/ajustes?tab=marca|biblioteca|monitores|datos → settings
 //   #/pantalla/:clientId?dia=2&programa=pid  → display (single client, no app chrome)
-//   #/tv?slots=cid:1,cid:2,                  → tv (3 columns, no app chrome)
+//   #/tv?slots=cid:1,-,cid:2                 → tv (1-4 columns, '-' = empty, no app chrome)
 
-import { TV_SLOT_COUNT } from '@/config/app'
+import { TV_DEFAULT_SLOTS, TV_EMPTY_SLOT_TOKEN, TV_MAX_SLOTS, TV_MIN_SLOTS } from '@/config/app'
+import { clamp } from '@/lib/numbers'
 
 export interface TvSlot {
   clientId: string | null
@@ -41,20 +42,27 @@ const parseDay = (raw: string | null | undefined): number | null => {
   return Number.isInteger(n) && n >= 1 ? n : null
 }
 
-/** 'cid:1,cid:2,' → always TV_SLOT_COUNT slots. Empty/invalid → { clientId: null, day: 1 }. */
+function parseTvSlot(raw: string): TvSlot {
+  const [clientId, day] = raw.split(':')
+  if (!clientId || clientId === TV_EMPTY_SLOT_TOKEN) return { clientId: null, day: 1 }
+  return { clientId: decodeURIComponent(clientId), day: parseDay(day) ?? 1 }
+}
+
+/**
+ * 'cid:1,-,cid:2' → one slot per entry, clamped to TV_MIN_SLOTS..TV_MAX_SLOTS.
+ * Missing list → TV_DEFAULT_SLOTS empty slots. Old 3-slot URLs ('cid:1,cid:2,') keep working.
+ */
 export function parseTvSlots(raw: string | null): TvSlot[] {
-  const parts = (raw ?? '').split(',')
-  return Array.from({ length: TV_SLOT_COUNT }, (_, i) => {
-    const [clientId, day] = (parts[i] ?? '').split(':')
-    return { clientId: clientId ? decodeURIComponent(clientId) : null, day: parseDay(day) ?? 1 }
-  })
+  const parts = raw ? raw.split(',') : []
+  const count = parts.length ? clamp(parts.length, TV_MIN_SLOTS, TV_MAX_SLOTS) : TV_DEFAULT_SLOTS
+  return Array.from({ length: count }, (_, i) => parseTvSlot(parts[i] ?? ''))
 }
 
 export function serializeTvSlots(slots: TvSlot[]): string {
-  return Array.from({ length: TV_SLOT_COUNT }, (_, i) => {
-    const slot = slots[i]
-    return slot?.clientId ? `${encodeURIComponent(slot.clientId)}:${slot.day || 1}` : ''
-  }).join(',')
+  return slots
+    .slice(0, TV_MAX_SLOTS)
+    .map((slot) => (slot.clientId ? `${encodeURIComponent(slot.clientId)}:${slot.day || 1}` : TV_EMPTY_SLOT_TOKEN))
+    .join(',')
 }
 
 const enc = encodeURIComponent

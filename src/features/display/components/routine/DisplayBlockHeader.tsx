@@ -3,6 +3,8 @@ import { cn } from '@/lib/cn'
 import type { DisplayBlock } from '@/lib/display'
 import { getBlockOverline, getVisibleBadge } from '@/features/display/utils/blockBadges'
 import type { DisplayThemeClasses } from '@/features/display/utils/theme'
+import { DENSITY_STYLES } from './densityStyles'
+import { FlashTag } from './FlashTag'
 
 interface DisplayBlockHeaderProps {
   block: DisplayBlock
@@ -19,16 +21,7 @@ export function DisplayBlockHeader({ block, theme, flashing }: DisplayBlockHeade
 
   return (
     <header className="relative flex items-start gap-[0.6em]">
-      {flashing && (
-        <span
-          className={cn(
-            'absolute -top-[1.3em] right-0 animate-fade-in rounded-full px-[0.6em] py-[0.1em] text-[0.95em] font-semibold',
-            theme.badge,
-          )}
-        >
-          Actualizado
-        </span>
-      )}
+      {flashing && <FlashTag theme={theme} className={DENSITY_STYLES.comfortable.flashTag} />}
       <Icon size="1em" aria-hidden className={cn('mt-[0.15em] shrink-0 text-[1.75em]', headlineColor)} />
       <div className="min-w-0 flex-1">
         {overline && (

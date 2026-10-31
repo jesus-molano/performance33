@@ -19,6 +19,11 @@ describe('toDisplayData', () => {
     expect(display).not.toHaveProperty('coaches')
   })
 
+  it('sends only the surname initial', () => {
+    expect(display.clients.map((c) => c.lastInitial)).toEqual(data.clients.map((c) => c.lastName.charAt(0).toUpperCase()))
+    for (const client of data.clients) expect(json).not.toContain(client.lastName)
+  })
+
   it('never contains the text of any client note', () => {
     for (const note of data.notes) expect(json).not.toContain(note.text)
   })

@@ -15,8 +15,8 @@ export interface RoutinePreviewProps {
 }
 
 /**
- * Live mini TV preview for the editor ('Vista pantalla'): exactly what the client sees on a third
- * of the TV, built from sanitised data (private notes are never part of it).
+ * Live mini TV preview for the editor ('Vista pantalla'): what the client sees in a narrow (3-4 column)
+ * TV slot, compact layout included, built from sanitised data (private notes are never part of it).
  */
 export function RoutinePreview({ programId, dayId, className, onFitChange }: RoutinePreviewProps) {
   const preview = usePreviewRoutine(programId, dayId)

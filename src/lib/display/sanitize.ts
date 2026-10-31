@@ -73,6 +73,7 @@ export function toPublicClient(c: Client): PublicClient {
   return {
     id: c.id,
     firstName: c.firstName,
+    lastInitial: c.lastName.trim().charAt(0).toLocaleUpperCase('es'),
     color: c.color,
     archived: c.archived,
     currentProgramId: c.currentProgramId,

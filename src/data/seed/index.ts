@@ -1,4 +1,7 @@
 // Demo data. Dates are relative to `today` so the demo always looks current.
+// Routines mirror real coaching density: 4-5 blocks per day, 2-5 exercises per block.
+// Only a first run (nothing stored) or 'Restablecer datos de demostración' loads it: stored data is
+// never replaced, since persistence has no seed version to tell an old demo from user edits.
 
 import { DEFAULT_BRANDING } from '@/config/branding'
 import { addDays, todayISO } from '@/lib/dates'

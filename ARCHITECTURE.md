@@ -56,7 +56,7 @@ src/
 | `#/clientes/:clientId/programa/:programId` | `program` | `ProgramEditorPage { clientId, programId }` |
 | `#/ajustes?tab=marca\|biblioteca\|monitores\|datos` | `settings` | `SettingsPage { tab: SettingsTab }` (default `marca`) |
 | `#/pantalla/:clientId?dia=N&programa=pid` | `display` | `DisplayPage { clientId, day: number\|null, programId: string\|null }` |
-| `#/tv?slots=cid:1,cid:2,` | `tv` | `TvPage { slots: TvSlot[] }` (always 3) |
+| `#/tv?slots=cid:1,-,cid:2` | `tv` | `TvPage { slots: TvSlot[] }` (`TV_MIN_SLOTS`–`TV_MAX_SLOTS` = 1–4 columns, `-` = empty column; missing list → `TV_DEFAULT_SLOTS` = 3; old `cid:1,cid:2,` URLs still give 3) |
 
 Helpers: `paths.*` builders, `navigate(path)`, `replaceRoute(path)` (no history entry), `parseRoute`,
 `isScreenRoute`, `absoluteHashUrl`, `parseTvSlots`/`serializeTvSlots`, `SETTINGS_TABS`.
@@ -128,6 +128,21 @@ shows a toast with an "Abrir pantalla" retry. Display windows read ONLY `useDisp
 `getDisplayableClients(data)`, `clampDayNumber(routine, day)` from `lib/display`. They must apply branding with
 `useBrandingStyles(data.branding)` when data exists. Persist TV slot changes with `replaceRoute(paths.tv(slots))`.
 
+Modo TV (`features/display`): `useTvSlots(slots, candidateClientIds)` owns every slot change (pure helpers in
+`utils/tvSlots.ts`: `assignSlotClient` keeps the day when the same client is picked, `addSlot`/`removeLastSlot`/`moveSlot`)
+and gives each column a stable `slotIds[i]` (React key + dnd-kit sortable id; never the index, client ids can repeat).
+Columns are reordered by their grip (`TvColumns` + `useTvColumnSort`, pointer after `TV_DRAG_ACTIVATION_DISTANCE` px or
+keyboard). The client picker is a searchable combobox (`useComboboxSearch`, pure logic in `utils/combobox.ts`) showing
+first names only (`label` from `utils/clientOptions.ts`, plus `lastInitial` when two clients share a first name); an open
+list keeps its column's controls visible. A single column renders `RoutineDisplay layout="full"`. TV copy lives in
+`features/display/config/tv.ts`.
+
+Routine density: `useAutoFit({ preferColumns, fontScale, fitKey })` picks `compact` (width < `AUTO_FIT.compactMaxAspect` ×
+height: 3–4 TV columns, editor preview) or `comfortable` from the slot's shape, never fits below the readable floor
+(`AUTO_FIT.readableUnitPerHeight`), splits into two sub-columns when `preferColumns` and each is ≥ `minColumnWidthUnits`,
+else overflows with '…'. Per-density classes live in `components/routine/densityStyles.ts`; compact text never goes
+below 1em (the floor) and the client-visible cue gets its own line (clamped to two).
+
 ## 6. Shared primitives (`components/ui`)
 
 `Button {variant: primary|secondary|ghost|danger|dark, size: sm|md|lg, leftIcon?, rightIcon?, fullWidth?}` ·
@@ -178,7 +193,9 @@ without undo history and without re-saving (no echo loops); duplicates are filte
 Display windows never load private data: `useDisplayData()` = initial sanitised read + live channel + storage event.
 First run seeds demo data relative to today (Carla & Dani; Laura week 2/4 with pinned shoulder alert and a previous
 block; Javier expires in 3 days; Marta elite 4 days with every block type; Carlos expired; Lucía no routine;
-Andrés 1 day; Sergio archived).
+Andrés 1 day; Sergio archived). Every routine day has 4–5 realistic blocks (Laura's 'Pierna' day is the 5-block,
+15-line stress case; her programs never contain overhead work, see `seed.test.ts`). Saved data has no seed version:
+an existing browser keeps its old demo until "Restablecer datos de demostración".
 
 ## 9. Design tokens & UI conventions
 
@@ -193,7 +210,8 @@ Font Jost (400–800). Brand colours follow Ajustes at runtime via CSS variables
 - Touch targets ≥ 44 px (`Button`/`IconButton` md). No hover-only controls: secondary actions go in `DropdownMenu` ('⋯').
 - PRIVATE = amber + lock + "Solo monitores" (`PrivateSurface`, `PrivacyLabel kind="private"`, `Badge tone="private"`).
   CLIENT-VISIBLE text fields (block note, cue) = `PrivacyLabel kind="visible"` ("Lo verá el cliente", eye, pink).
-  Private data (notes, internalNote, lastName, goal) NEVER reaches display components: only `toDisplayData` output does.
+  Private data (notes, internalNote, lastName, goal) NEVER reaches display components: only `toDisplayData` output does
+  (it carries `lastInitial`, the surname's first letter, only so the TV picker can tell apart two clients with the same first name).
 - Autosave everywhere, no Save buttons. Row/block/day deletes: no confirm, show `toastUndo('Ejercicio eliminado')`.
   Confirm (`useConfirm`, `danger: true`) only for deleting a program/client, importing or resetting data; offer archive for clients.
 - Spanish labels first, acronym as a badge and `HelpTip` for jargon (EMOM, AMRAP, RPE, RIR, tempo).

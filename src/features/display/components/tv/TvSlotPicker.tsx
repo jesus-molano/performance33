@@ -1,51 +1,63 @@
 import { cn } from '@/lib/cn'
 import type { DisplayDay } from '@/lib/display'
-import type { PublicClient } from '@/types'
+import type { TvDragHandleBindings } from '@/features/display/hooks/useTvSortableSlot'
+import type { ClientOption } from '@/features/display/utils/clientOptions'
 import type { DisplayThemeClasses } from '@/features/display/utils/theme'
+import { TV_PICKER_TEXTS } from '@/features/display/config/tv'
+import { ClientCombobox } from './ClientCombobox'
 import { OverlaySelect } from './OverlaySelect'
-
-const NO_CLIENT = ''
+import { TvDragHandle } from './TvDragHandle'
 
 interface TvSlotPickerProps {
   index: number
   clientId: string | null
   dayNumber: number
-  clients: PublicClient[]
+  clientOptions: ClientOption[]
   days: DisplayDay[]
   theme: DisplayThemeClasses
+  /** null with a single column: no grip at all (the client box gets the space). */
+  dragHandle: TvDragHandleBindings | null
+  /** The grip fades with the rest of the controls (it keeps its place so the row does not jump). */
+  dragHandleVisible: boolean
   onClientChange: (clientId: string | null) => void
   onDayChange: (day: number) => void
+  onPickerOpenChange: (open: boolean) => void
 }
 
-/** Client + day pickers for one third of the TV. */
+/** Drag grip + client search + day picker for one TV column. */
 export function TvSlotPicker({
   index,
   clientId,
   dayNumber,
-  clients,
+  clientOptions,
   days,
   theme,
+  dragHandle,
+  dragHandleVisible,
   onClientChange,
   onDayChange,
+  onPickerOpenChange,
 }: TvSlotPickerProps) {
-  const clientOptions = [
-    { value: NO_CLIENT, label: 'Elige cliente…' },
-    ...clients.map((c) => ({ value: c.id, label: c.firstName })),
-  ]
+  const position = index + 1
   const dayOptions = days.map((d) => ({ value: String(d.number), label: d.title }))
 
   return (
-    <div className={cn('flex w-full gap-2 rounded-[1.75rem] p-1.5 shadow-pop', theme.overlay)}>
-      <OverlaySelect
-        label={`Cliente de la columna ${index + 1}`}
-        value={clientId ?? NO_CLIENT}
+    <div className={cn('flex w-full items-center gap-2 rounded-[1.75rem] p-1.5 shadow-pop', theme.overlay)}>
+      {dragHandle && (
+        <TvDragHandle handle={dragHandle} label={TV_PICKER_TEXTS.moveColumn(position)} hidden={!dragHandleVisible} />
+      )}
+      <ClientCombobox
+        label={TV_PICKER_TEXTS.clientLabel(position)}
         options={clientOptions}
-        onChange={(value) => onClientChange(value || null)}
+        selectedId={clientId}
+        theme={theme}
+        onChange={onClientChange}
+        onOpenChange={onPickerOpenChange}
         className="flex-1"
       />
       {dayOptions.length > 1 && (
         <OverlaySelect
-          label={`Día de la columna ${index + 1}`}
+          label={TV_PICKER_TEXTS.dayLabel(position)}
           value={String(dayNumber)}
           options={dayOptions}
           onChange={(value) => onDayChange(Number(value))}

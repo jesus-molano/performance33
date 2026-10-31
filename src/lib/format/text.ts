@@ -20,3 +20,16 @@ export function getInitials(first: string, last = ''): string {
 export function formatFullName(first: string, last = ''): string {
   return [first.trim(), last.trim()].filter(Boolean).join(' ')
 }
+
+/** Non-empty parts joined on one line: joinParts(['tempo 3-1-1-0', '', 'Pecho alto']) → 'tempo 3-1-1-0 · Pecho alto'. */
+export function joinParts(parts: ReadonlyArray<string | null | undefined>, separator = ' · '): string {
+  return parts
+    .map((part) => part?.trim() ?? '')
+    .filter(Boolean)
+    .join(separator)
+}
+
+/** Multi-line free text (warm-up) folded onto one flowing line for narrow screens. */
+export function foldLines(text: string): string {
+  return joinParts(text.split('\n'))
+}
