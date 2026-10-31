@@ -1,6 +1,6 @@
 // The ONLY way data reaches the TV / Pantalla / live preview. Every object is built by an
 // explicit whitelist copy (never a spread of the source), so private fields such as
-// notes, internalNote, lastName, goal or createdBy cannot leak even if new ones are added.
+// notes, internalNote, goal or createdBy cannot leak even if new ones are added.
 
 import type {
   AppData,
@@ -73,14 +73,14 @@ export function toPublicClient(c: Client): PublicClient {
   return {
     id: c.id,
     firstName: c.firstName,
-    lastInitial: c.lastName.trim().charAt(0).toLocaleUpperCase('es'),
+    lastName: c.lastName,
     color: c.color,
     archived: c.archived,
     currentProgramId: c.currentProgramId,
   }
 }
 
-/** Strip all private data (notes, internal notes, surnames, goals, coaches, library). */
+/** Strip all private data (notes, internal notes, goals, coaches, library). */
 export function toDisplayData(data: AppData): DisplayData {
   return {
     branding: { ...data.branding },

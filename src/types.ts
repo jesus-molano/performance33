@@ -3,7 +3,8 @@
 // Everything persisted lives under AppData. Dates are local calendar dates as
 // 'YYYY-MM-DD' strings (ISODate); timestamps are full ISO strings (ISODateTime).
 // PRIVATE fields (never shown on the TV/display): ClientNote (all of it),
-// ExerciseEntry.internalNote, Client.lastName, Client.goal.
+// ExerciseEntry.internalNote, Client.goal. (Client.lastName reaches display windows only
+// for the TV client picker; routine views show the first name.)
 // ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -304,10 +305,8 @@ export interface PublicDay extends Omit<Day, 'blocks'> {
 export interface PublicProgram extends Omit<Program, 'days' | 'createdBy'> {
   days: PublicDay[]
 }
-export interface PublicClient extends Pick<Client, 'id' | 'firstName' | 'color' | 'archived' | 'currentProgramId'> {
-  /** First letter of the surname (never the surname): tells apart clients sharing a first name in the TV picker. */
-  lastInitial: string
-}
+/** lastName is only for the coach-facing TV client picker; routine views show the first name alone. */
+export type PublicClient = Pick<Client, 'id' | 'firstName' | 'lastName' | 'color' | 'archived' | 'currentProgramId'>
 
 export interface DisplayData {
   branding: Branding

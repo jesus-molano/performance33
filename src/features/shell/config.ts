@@ -18,7 +18,7 @@ export const NAV_LINKS: readonly NavLinkItem[] = [
 
 export const TV_LAUNCHER = {
   label: 'Pantallas',
-  hint: 'Modo TV · 3 clientes a la vez',
+  hint: 'Modo TV · hasta 4 clientes a la vez',
 } as const
 
 export interface SaveStatusMeta {

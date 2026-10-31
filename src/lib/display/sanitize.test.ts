@@ -12,16 +12,14 @@ describe('toDisplayData', () => {
 
   it('never contains private fields', () => {
     expect(json).not.toContain('internalNote')
-    expect(json).not.toContain('lastName')
     expect(json).not.toContain('"goal"')
     expect(json).not.toContain('createdBy')
     expect(display).not.toHaveProperty('notes')
     expect(display).not.toHaveProperty('coaches')
   })
 
-  it('sends only the surname initial', () => {
-    expect(display.clients.map((c) => c.lastInitial)).toEqual(data.clients.map((c) => c.lastName.charAt(0).toUpperCase()))
-    for (const client of data.clients) expect(json).not.toContain(client.lastName)
+  it('sends the surname for the TV client picker', () => {
+    expect(display.clients.map((c) => c.lastName)).toEqual(data.clients.map((c) => c.lastName))
   })
 
   it('never contains the text of any client note', () => {

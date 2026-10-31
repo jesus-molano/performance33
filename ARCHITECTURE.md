@@ -133,7 +133,7 @@ Modo TV (`features/display`): `useTvSlots(slots, candidateClientIds)` owns every
 and gives each column a stable `slotIds[i]` (React key + dnd-kit sortable id; never the index, client ids can repeat).
 Columns are reordered by their grip (`TvColumns` + `useTvColumnSort`, pointer after `TV_DRAG_ACTIVATION_DISTANCE` px or
 keyboard). The client picker is a searchable combobox (`useComboboxSearch`, pure logic in `utils/combobox.ts`) showing
-first names only (`label` from `utils/clientOptions.ts`, plus `lastInitial` when two clients share a first name); an open
+full names, searchable by first name and surname (`label` from `utils/clientOptions.ts`); an open
 list keeps its column's controls visible. A single column renders `RoutineDisplay layout="full"`. TV copy lives in
 `features/display/config/tv.ts`.
 
@@ -210,8 +210,8 @@ Font Jost (400–800). Brand colours follow Ajustes at runtime via CSS variables
 - Touch targets ≥ 44 px (`Button`/`IconButton` md). No hover-only controls: secondary actions go in `DropdownMenu` ('⋯').
 - PRIVATE = amber + lock + "Solo monitores" (`PrivateSurface`, `PrivacyLabel kind="private"`, `Badge tone="private"`).
   CLIENT-VISIBLE text fields (block note, cue) = `PrivacyLabel kind="visible"` ("Lo verá el cliente", eye, pink).
-  Private data (notes, internalNote, lastName, goal) NEVER reaches display components: only `toDisplayData` output does
-  (it carries `lastInitial`, the surname's first letter, only so the TV picker can tell apart two clients with the same first name).
+  Private data (notes, internalNote, goal) NEVER reaches display components: only `toDisplayData` output does.
+  It carries `lastName` only for the coach-facing TV client picker; routine views show the first name alone.
 - Autosave everywhere, no Save buttons. Row/block/day deletes: no confirm, show `toastUndo('Ejercicio eliminado')`.
   Confirm (`useConfirm`, `danger: true`) only for deleting a program/client, importing or resetting data; offer archive for clients.
 - Spanish labels first, acronym as a badge and `HelpTip` for jargon (EMOM, AMRAP, RPE, RIR, tempo).
