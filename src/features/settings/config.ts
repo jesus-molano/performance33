@@ -1,0 +1,36 @@
+import { Database, Dumbbell, Moon, Palette, Sun, Users, type LucideIcon } from 'lucide-react'
+import type { SettingsTab } from '../../lib/routes'
+import type { DisplayTheme, MeasureType } from '../../types'
+import { MEASURE_META, MEASURE_ORDER } from '../../config/exerciseFields'
+
+export interface SettingsTabMeta {
+  label: string
+  icon: LucideIcon
+  description: string
+}
+
+export const SETTINGS_TAB_META: Record<SettingsTab, SettingsTabMeta> = {
+  marca: { label: 'Marca', icon: Palette, description: 'Nombre, logotipo y colores del gimnasio.' },
+  biblioteca: { label: 'Ejercicios', icon: Dumbbell, description: 'La biblioteca que aparece al escribir un ejercicio.' },
+  monitores: { label: 'Monitores', icon: Users, description: 'Quién usa la aplicación.' },
+  datos: { label: 'Datos', icon: Database, description: 'Copias de seguridad y datos de demostración.' },
+}
+
+export const DISPLAY_THEME_OPTIONS: ReadonlyArray<{ value: DisplayTheme; label: string; icon: LucideIcon }> = [
+  { value: 'dark', label: 'Oscuro', icon: Moon },
+  { value: 'light', label: 'Claro', icon: Sun },
+]
+
+export const MEASURE_OPTIONS: ReadonlyArray<{ value: MeasureType; label: string }> = MEASURE_ORDER.map((m) => ({
+  value: m,
+  label: MEASURE_META[m].label,
+}))
+
+/** WCAG AA for large text / UI components: below this the accent is hard to read on white. */
+export const MIN_ACCENT_CONTRAST = 3
+
+/** Max rows rendered in the library list at once (the search narrows it down). */
+export const LIBRARY_VISIBLE_LIMIT = 60
+
+/** Accepted image types for logo / icon uploads. */
+export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/svg+xml,image/webp'

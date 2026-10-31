@@ -1,4 +1,10 @@
+import { cn } from '../../../lib/cn'
 import type { DisplayRoutine } from '../../../lib/display'
+import { useAutoFit } from '../hooks/useAutoFit'
+import { getDisplayTheme } from '../utils/theme'
+import { DisplayBlockList } from './routine/DisplayBlockList'
+import { DisplayEmptyDay } from './routine/DisplayEmptyDay'
+import { DisplayHeader } from './routine/DisplayHeader'
 
 export type RoutineDisplayLayout = 'column' | 'full' | 'preview'
 
@@ -14,13 +20,37 @@ export interface RoutineDisplayProps {
   flashBlockIds?: ReadonlySet<string>
 }
 
-/** Pure, props-driven branded routine view (black + pink). Never receives private data. */
-export function RoutineDisplay({ routine, dayNumber }: RoutineDisplayProps) {
-  const day = routine.days[dayNumber - 1]
+const NO_FLASH: ReadonlySet<string> = new Set()
+
+/**
+ * Pure, props-driven branded routine view. It fills its parent and auto-fits the whole day
+ * without scrolling. It only ever receives sanitised data (no private notes).
+ */
+export function RoutineDisplay({
+  routine,
+  dayNumber,
+  layout = 'column',
+  fontScale = 1,
+  flashBlockIds = NO_FLASH,
+}: RoutineDisplayProps) {
+  const day = routine.days[dayNumber - 1] ?? null
+  const theme = getDisplayTheme(routine.branding.displayTheme)
+  const { containerRef, contentRef, style } = useAutoFit({
+    maxColumns: layout === 'full' ? 2 : 1,
+    fontScale,
+    fitKey: day,
+  })
+
   return (
-    <section className="bg-ink p-6 text-white">
-      <h1 className="text-3xl font-bold">{routine.clientFirstName}</h1>
-      <p className="text-brand">{day?.title}</p>
-    </section>
+    <div ref={containerRef} className={cn('relative h-full w-full overflow-hidden font-sans', theme.root)}>
+      <div ref={contentRef} style={style} className="flex flex-col gap-[1.1em] px-[1.3em] pt-[1.2em] pb-[0.4em]">
+        <DisplayHeader routine={routine} day={day} theme={theme} />
+        {day && day.blocks.length > 0 ? (
+          <DisplayBlockList blocks={day.blocks} week={routine.week} theme={theme} flashBlockIds={flashBlockIds} />
+        ) : (
+          <DisplayEmptyDay hasDays={routine.days.length > 0} theme={theme} />
+        )}
+      </div>
+    </div>
   )
 }

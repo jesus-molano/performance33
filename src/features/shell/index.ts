@@ -1,2 +1,5 @@
 export { AppLayout, type AppLayoutProps } from './components/AppLayout'
+export { BrandLogo, type BrandLogoProps } from './components/BrandLogo'
+export { BackLink, PageContainer, PageHeader, type PageHeaderProps } from './components/PageLayout'
+export { editedItem, useEditTarget, type EditTarget, type EditTargetApi } from './hooks/useEditTarget'
 export { NotFoundPage } from './pages/NotFoundPage'

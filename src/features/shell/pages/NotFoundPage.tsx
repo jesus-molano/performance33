@@ -1,5 +1,17 @@
-import { PagePlaceholder } from '../../../components/PagePlaceholder'
+import { Compass } from 'lucide-react'
+import { Button, EmptyState } from '../../../components/ui'
+import { navigate, paths } from '../../../lib/routes'
+import { PageContainer } from '../components/PageLayout'
 
 export function NotFoundPage() {
-  return <PagePlaceholder title="Página no encontrada" />
+  return (
+    <PageContainer>
+      <EmptyState
+        icon={Compass}
+        title="No encontramos esta página"
+        description="Puede que el enlace sea antiguo o que se haya borrado lo que buscabas."
+        action={<Button onClick={() => navigate(paths.clients())}>Volver a clientes</Button>}
+      />
+    </PageContainer>
+  )
 }

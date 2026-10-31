@@ -13,26 +13,12 @@ All UI text is Spanish (Spain), informal "tú". Hash routing. Data in localStora
   no duplicated logic, no dead or commented-out code, brief comments only where intent is non-obvious.
 - Read data ONLY through the selector hooks in `src/store` (never `useAppStore(s => s)`).
   Write data ONLY through store actions (`useAppActions()`).
-- Do not edit foundation files (section 3). If you truly need a new shared helper, add it inside your own
-  feature folder; if it must be shared, add a NEW file and mention it in your summary.
 
-## 2. Ownership (three parallel builders)
-
-| Builder | Owns (creates/replaces) |
-|---|---|
-| **shell** | `src/features/shell/**` (AppLayout: black sidebar + logo + nav, mobile bottom nav, header with coach switcher, undo/redo buttons, saved pill; NotFoundPage), `src/features/coaches/**` (CoachPickerPage "¿Quién eres?", add/edit coach modal), `src/features/clients/**` (ClientsPage list/search/plan filter/add/edit/archive; ClientDetailPage: info, programs list + history, create/duplicate/delete/mark current, notes timeline, pinned alerts, "Abrir pantalla"), `src/features/settings/**` (SettingsPage tabs marca / biblioteca / monitores / datos) |
-| **editor** | `src/features/editor/**` (ProgramEditorPage: header with dates/name, day tabs, blocks, exercise rows, autocomplete, chips, progression strip, per-exercise private note, dnd + up/down, block picker, mobile bottom-sheet row editor, embeds `RoutinePreview`) |
-| **display** | `src/features/display/**` (RoutineDisplay pure view, RoutinePreview for the editor, DisplayPage, TvPage, auto-fit, live-sync listener/flash, A-/A+, controls that fade, keyboard) |
-
-Each builder replaces the placeholder files of its feature and keeps the export names/props listed in
-section 6. Nobody edits `App.tsx`, `src/app/**`, `src/store/**`, `src/persistence/**`, `src/lib/**`,
-`src/config/**`, `src/hooks/**`, `src/components/ui/**`, `src/types.ts`, `src/data/**`, `src/index.css`.
-
-## 3. Folder structure (foundation = done)
+## 2. Folder structure
 
 ```
 src/
-  main.tsx, App.tsx            route switch: screen routes vs dashboard (fixed)
+  main.tsx, App.tsx            route switch: screen routes vs dashboard
   app/DashboardRoot.tsx        bootstrap data + autosave/sync, branding vars, Ctrl+Z, coach guard
   app/DashboardPage.tsx        dashboard route → page
   app/ScreenRoutes.tsx         display/tv routes → pages (no private data loaded)
@@ -50,11 +36,11 @@ src/
   components/ui/  Button IconButton Input Textarea Select Field SegmentedControl Chip Badge Avatar Card
                   EmptyState Switch HelpTip Privacy(PrivacyLabel, PrivateSurface) Modal ConfirmDialog(ConfirmHost)
                   Toaster DropdownMenu styles
-  components/PagePlaceholder.tsx   (delete usages as you replace placeholders)
+  components/ColorSwatchPicker.tsx   colour swatch radio group (coach + client forms)
   features/{shell,coaches,clients,settings,editor,display}/
 ```
 
-## 4. Routes (`src/lib/routes.ts`)
+## 3. Routes (`src/lib/routes.ts`)
 
 | Hash | Route | Page (props) |
 |---|---|---|
@@ -71,7 +57,7 @@ Helpers: `paths.*` builders, `navigate(path)`, `replaceRoute(path)` (no history 
 Hook: `useHashRoute(): Route`. Without a valid current coach every dashboard route renders the picker;
 the picker must `navigate(paths.clients())` after choosing when the route is `#/`.
 
-## 5. Store (`src/store`, import from `'../../store'`)
+## 4. Store (`src/store`, import from `'../../store'`)
 
 Data store = zustand + zundo; only `data: AppData` is tracked (limit 100). UI state (current coach,
 save status), toasts and confirm requests live in separate stores and are never undone.
@@ -113,7 +99,7 @@ Selector hooks: `useAppData(selector)`, `useAppActions()`, `useCoaches()`, `useC
 Pure selectors: `findCoach`, `findClient`, `findProgram`, `sortClients`, `selectClientNotes`, `countPinnedNotes`,
 `findDayContext`, `findBlockContext`, `findExerciseContext`.
 
-## 6. Feature contracts (exact exports)
+## 5. Feature contracts (exact exports)
 
 | Import from | Export | Props |
 |---|---|---|
@@ -127,7 +113,7 @@ Pure selectors: `findCoach`, `findClient`, `findProgram`, `sortClients`, `select
 | `features/display` | `DisplayPage` | `{ clientId: string; day: number \| null; programId: string \| null }` |
 | `features/display` | `TvPage` | `{ slots: TvSlot[] }` |
 | `features/display` | `RoutineDisplay` | `{ routine: DisplayRoutine; dayNumber: number; layout?: 'column'\|'full'\|'preview'; fontScale?: number; flashBlockIds?: ReadonlySet<string> }` (pure) |
-| `features/display` | `RoutinePreview` | `{ programId: string; dayId: string; className?: string }` (editor embeds it; reads store, sanitises with `toDisplayData`) |
+| `features/display` | `RoutinePreview` | `{ programId: string; dayId: string | null; className?: string }` (editor embeds it; owns its 640×1080 frame; reads store, sanitises with `toPublicClient` / `toPublicProgram`) |
 
 Opening displays from anywhere (shell client page, editor header): `useDisplayWindow()` →
 `openDisplay(clientId, day?, programId?)`, `openTv(slots?)`. Call directly in the click handler; a blocked popup
@@ -136,7 +122,7 @@ shows a toast with an "Abrir pantalla" retry. Display windows read ONLY `useDisp
 `getDisplayableClients(data)`, `clampDayNumber(routine, day)` from `lib/display`. They must apply branding with
 `useBrandingStyles(data.branding)` when data exists. Persist TV slot changes with `replaceRoute(paths.tv(slots))`.
 
-## 7. Shared primitives (`components/ui`)
+## 6. Shared primitives (`components/ui`)
 
 `Button {variant: primary|secondary|ghost|danger|dark, size: sm|md|lg, leftIcon?, rightIcon?, fullWidth?}` ·
 `IconButton {icon, label (required), variant?, size: sm|md}` · `Input {label?, hint?, error?, leftIcon?, suffix?, nativeUndo?}` ·
@@ -151,7 +137,7 @@ shows a toast with an "Abrir pantalla" retry. Display windows read ONLY `useDisp
 `useConfirm() → (options) => Promise<boolean>`, `useDisclosure`, `useIsMobile`, `useMediaQuery`, `useDebouncedValue`,
 `useClickOutside`, `useModalBehavior`.
 
-## 8. Lib & config cheat-sheet
+## 7. Lib & config cheat-sheet
 
 - Dates (local, never `new Date('YYYY-MM-DD')`): `todayISO, addDays, addWeeks, diffDays, endDateFor, weeksBetween,
   isValidISODate, parseISODate, toISODate, formatDateShort ('31 oct'), formatDateLong, formatDateWithWeekday,
@@ -176,7 +162,7 @@ shows a toast with an "Abrir pantalla" retry. Display windows read ONLY `useDisp
 - Misc: `cn`, `pickColor`, `readableTextOn`, `AVATAR_COLORS`, `fileToDataUrl` (logo upload ≤ 1,5 MB), `DEFAULT_BRANDING`,
   persistence `downloadBackup(data)`, `readBackupFile(file) → Promise<AppData>`, timings in `config/app.ts`.
 
-## 9. Persistence & sync
+## 8. Persistence & sync
 
 `Repository` interface (`load`, `loadSync`, `save(data, {source, revision})`, `clear`, `subscribe`) with
 `LocalStorageRepository` (key `p33:data:v1`); swap in `persistence/repositoryInstance.ts` for Supabase.
@@ -188,12 +174,12 @@ First run seeds demo data relative to today (Carla & Dani; Laura week 2/4 with p
 block; Javier expires in 3 days; Marta elite 4 days with every block type; Carlos expired; Lucía no routine;
 Andrés 1 day; Sergio archived).
 
-## 10. Design tokens & UI conventions
+## 9. Design tokens & UI conventions
 
 Tailwind tokens (`src/index.css`): `brand` #f79cce (ONLY on black: sidebar, TV), `brand-strong` #d6449a (text/buttons on white),
 `brand-soft`, `brand-line`, `ink` #0b0b0c (sidebar/TV bg), `ink-soft`, `ink-line`, `ink-muted`, `canvas` (app bg), `surface`,
 `line`, `line-strong`, `fg`, `fg-muted`, `fg-subtle`, `private` / `private-bg` / `private-line` / `private-icon` (amber),
-shadows `shadow-card`, `shadow-pop`, animations `animate-fade-in|slide-up|pop-in|flash`, utilities `tabular`, `scrollbar-none`.
+spacing `header` / `bottom-nav` (chrome sizes for sticky offsets), shadows `shadow-card`, `shadow-pop`, animations `animate-fade-in|slide-up|pop-in|flash`, utilities `tabular`, `scrollbar-none`.
 Font Jost (400–800). Brand colours follow Ajustes at runtime via CSS variables.
 
 - Light, calm dashboard (Linear/Notion-like): canvas background, white cards, hairline borders, rounded-2xl cards,

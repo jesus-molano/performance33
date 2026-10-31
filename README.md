@@ -1,32 +1,32 @@
-# React + TypeScript + Vite
+# Performance33 · Rutinas
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Panel para los monitores de Performance33: rutinas personalizadas por cliente, notas internas y
+pantallas para las teles del gimnasio (una columna por cliente o Modo TV con 3 columnas).
 
-Currently, two official plugins are available:
+## Cómo arrancarlo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Necesitas Node.js 20 o superior.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev       # abre http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Otros comandos
+
+```bash
+npm run build     # comprueba tipos y genera la versión final en dist/
+npm run preview   # sirve dist/ en local
+npm run lint      # revisa el código con oxlint
+```
+
+`dist/` es una web estática (rutas con `#`), así que se puede subir a cualquier hosting.
+
+## Datos
+
+Esta demo guarda todo en el navegador (localStorage); la primera vez carga datos de ejemplo.
+En **Ajustes → Datos** puedes descargar una copia, restaurarla o volver a los datos de ejemplo.
+El acceso a los datos pasa por una interfaz `Repository` (`src/persistence`) para poder cambiarlo
+por Supabase u otro backend sin tocar las pantallas.
+
+La arquitectura y las normas de código están en [ARCHITECTURE.md](./ARCHITECTURE.md).

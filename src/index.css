@@ -35,6 +35,10 @@
   --color-private-line: #fcd34d;
   --color-private-icon: #d97706;
 
+  /* Chrome sizes: sticky header (top) and mobile bottom nav, used for sticky offsets. */
+  --spacing-header: 4rem;
+  --spacing-bottom-nav: 4rem;
+
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.02);
   --shadow-pop: 0 12px 32px -8px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.06);
 
