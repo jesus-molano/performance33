@@ -327,7 +327,7 @@ max_frequency = "5s"
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
 # Client ID y secret de Google Cloud Console: en el entorno al ejecutar `supabase config push`, nunca en este archivo.
 [auth.external.google]
-enabled = true
+enabled = false
 client_id = "env(GOOGLE_OAUTH_CLIENT_ID)"
 secret = "env(GOOGLE_OAUTH_SECRET)"
 
