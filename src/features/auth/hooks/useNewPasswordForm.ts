@@ -1,19 +1,19 @@
 import { useState, type FormEvent } from 'react'
-import { auth, finishRecovery } from '@/auth'
-import { errorText, newPasswordError } from '@/features/auth/utils/credentials'
+import { errorText, newPasswordError, passwordStrength, type PasswordStrength } from '@/features/auth/utils/credentials'
 
-export interface SetPasswordApi {
+export interface NewPasswordFormApi {
   password: string
   setPassword: (password: string) => void
   repeated: string
   setRepeated: (repeated: string) => void
+  strength: PasswordStrength
   error: string | null
   busy: boolean
   submit: (event: FormEvent) => Promise<void>
 }
 
-/** New password after following the reset link, then into the app. */
-export function useSetPassword(): SetPasswordApi {
+/** New password + confirmation, used by the first login and by 'Mi perfil'. `save` rejects with a Spanish message. */
+export function useNewPasswordForm(save: (password: string) => Promise<void>): NewPasswordFormApi {
   const [password, setPassword] = useState('')
   const [repeated, setRepeated] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -26,8 +26,9 @@ export function useSetPassword(): SetPasswordApi {
     if (invalid) return
     setBusy(true)
     try {
-      await auth.updatePassword(password)
-      await finishRecovery()
+      await save(password)
+      setPassword('')
+      setRepeated('')
     } catch (failure) {
       setError(errorText(failure))
     } finally {
@@ -35,5 +36,5 @@ export function useSetPassword(): SetPasswordApi {
     }
   }
 
-  return { password, setPassword, repeated, setRepeated, error, busy, submit }
+  return { password, setPassword, repeated, setRepeated, strength: passwordStrength(password), error, busy, submit }
 }

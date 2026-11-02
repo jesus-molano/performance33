@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { EXERCISE_PAGE_SIZE } from '@/config/app'
 import { collectEquipment, EMPTY_EXERCISE_FILTERS, filterExercises, type ExerciseFilters } from '@/lib/exerciseLibrary'
 import { useExerciseLibrary } from '@/store'
-import type { AnyLibraryExercise } from '@/types'
+import type { LibraryExercise } from '@/types'
 import { usePagination, type PaginationApi } from './usePagination'
 
 export interface ExerciseBrowserApi {
@@ -10,7 +10,7 @@ export interface ExerciseBrowserApi {
   /** Changing a filter goes back to the first page. */
   setFilter: <K extends keyof ExerciseFilters>(key: K, value: ExerciseFilters[K]) => void
   equipment: string[]
-  pagination: PaginationApi<AnyLibraryExercise>
+  pagination: PaginationApi<LibraryExercise>
 }
 
 /** Filters + pagination over the whole library (Ajustes → Ejercicios and the editor's 'Ver todos'). */

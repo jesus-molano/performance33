@@ -9,8 +9,8 @@ import type {
   Branding,
   ClientPatch,
   CreateProgramOptions,
-  CustomExerciseInput,
-  CustomExercisePatch,
+  LibraryExerciseInput,
+  LibraryExercisePatch,
   DayPatch,
   ExerciseEntry,
   ExercisePatch,
@@ -108,9 +108,9 @@ export interface NoteActions {
 export interface SettingsActions {
   updateBranding: (patch: Partial<Branding>) => void
   resetBranding: () => void
-  addCustomExercise: (input: CustomExerciseInput) => string
-  updateCustomExercise: (id: string, patch: CustomExercisePatch) => void
-  deleteCustomExercise: (id: string) => void
+  addLibraryExercise: (input: LibraryExerciseInput) => string
+  updateLibraryExercise: (id: string, patch: LibraryExercisePatch) => void
+  deleteLibraryExercise: (id: string) => void
   /** Replaces everything with a validated backup (see normalizeAppData). Clears undo history. */
   importData: (data: AppData) => void
   /** Fresh demo data relative to today, replacing everything. Clears undo history. */

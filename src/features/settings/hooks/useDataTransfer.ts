@@ -10,7 +10,7 @@ export interface DataStats {
   clients: number
   programs: number
   notes: number
-  customExercises: number
+  exercises: number
 }
 
 export interface DataTransferApi {
@@ -76,7 +76,7 @@ export function useDataTransfer(): DataTransferApi {
       clients: data.clients.length,
       programs: data.programs.length,
       notes: data.notes.length,
-      customExercises: data.customExercises.length,
+      exercises: data.library.length,
     },
     exportBackup,
     importInputRef,

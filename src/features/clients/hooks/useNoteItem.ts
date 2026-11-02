@@ -3,7 +3,7 @@ import { useDisclosure, useToast } from '@/hooks'
 import { UNKNOWN_AUTHOR_COLOR } from '@/config/colors'
 import { formatDateTime } from '@/lib/dates'
 import { canEditNote } from '@/lib/ownership'
-import { breakUndoGroup, useAppActions, useCurrentStaff, useStaffMember } from '@/store'
+import { breakUndoGroup, useAppActions, useCurrentProfile, useTeamMember } from '@/store'
 import type { ClientNote } from '@/types'
 
 export interface NoteItemApi {
@@ -22,8 +22,8 @@ export interface NoteItemApi {
 }
 
 export function useNoteItem(note: ClientNote): NoteItemApi {
-  const author = useStaffMember(note.authorId)
-  const canEdit = canEditNote(note, useCurrentStaff())
+  const author = useTeamMember(note.authorId)
+  const canEdit = canEditNote(note, useCurrentProfile())
   const { updateNote, deleteNote } = useAppActions()
   const { toastUndo } = useToast()
   const { isOpen, open, close } = useDisclosure()

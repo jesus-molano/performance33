@@ -1,12 +1,20 @@
 import { isAuthError, isAuthRetryableFetchError, type SupabaseClient, type User } from '@supabase/supabase-js'
 import { STORAGE_KEYS } from '@/config/app'
+import { isEmailIdentifier } from '@/lib/accountRules'
 import { removeStorage } from '@/lib/safeStorage'
-import { authErrorMessage } from './messages'
+import { invokeFunction } from './edgeFunctions'
+import { authErrorMessage, isSamePasswordError, SamePasswordError } from './messages'
+import { signInMethodsFrom } from './signInMethods'
 import type { AuthEvent, AuthService, AuthUser } from './types'
 
 interface ServerError {
   code?: string
   message?: string
+}
+
+interface SessionTokens {
+  access_token: string
+  refresh_token: string
 }
 
 function failIf(error: ServerError | null): void {
@@ -16,6 +24,14 @@ function failIf(error: ServerError | null): void {
 const toAuthUser = (user: User): AuthUser => ({ id: user.id, email: user.email ?? null })
 
 export function createSupabaseAuth(client: SupabaseClient): AuthService {
+  const loadIdentities = async () => {
+    const { data, error } = await client.auth.getUserIdentities()
+    failIf(error)
+    return data?.identities ?? []
+  }
+  // The gym computer is shared: always ask which account, or Google signs the last person back in.
+  const googleOptions = () => ({ redirectTo: window.location.origin, queryParams: { prompt: 'select_account' } })
+
   return {
     isLocal: false,
 
@@ -31,34 +47,46 @@ export function createSupabaseAuth(client: SupabaseClient): AuthService {
         let next: AuthEvent | null = null
         if (event === 'SIGNED_OUT') next = { type: 'signed-out' }
         else if (session && event === 'SIGNED_IN') next = { type: 'signed-in', user: toAuthUser(session.user) }
-        else if (session && event === 'PASSWORD_RECOVERY') next = { type: 'recovery', user: toAuthUser(session.user) }
         // Deferred: the client must not be called from inside its own callback (it would deadlock).
         if (next) setTimeout(() => listener(next), 0)
       })
       return () => data.subscription.unsubscribe()
     },
 
-    async signInWithPassword(email, password) {
-      const { error } = await client.auth.signInWithPassword({ email, password })
+    async signIn(identifier, password) {
+      if (isEmailIdentifier(identifier)) {
+        const { error } = await client.auth.signInWithPassword({ email: identifier.trim(), password })
+        failIf(error)
+        return
+      }
+      const { session } = await invokeFunction<{ session: SessionTokens }>(client, 'login-username', { username: identifier, password })
+      const { error } = await client.auth.setSession(session)
       failIf(error)
     },
 
     async signInWithGoogle() {
-      const { error } = await client.auth.signInWithOAuth({
-        provider: 'google',
-        // The gym computer is shared: always ask which account, or Google signs the last person back in.
-        options: { redirectTo: window.location.origin, queryParams: { prompt: 'select_account' } },
-      })
+      const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: googleOptions() })
       failIf(error)
     },
 
-    async requestPasswordReset(email) {
-      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
-      failIf(error)
-    },
-
-    async updatePassword(password) {
+    async changePassword(password) {
       const { error } = await client.auth.updateUser({ password })
+      if (error && isSamePasswordError(error)) throw new SamePasswordError()
+      failIf(error)
+    },
+
+    getSignInMethods: async () => signInMethodsFrom((await loadIdentities()).map((identity) => identity.provider)),
+
+    async connectGoogle() {
+      const { error } = await client.auth.linkIdentity({ provider: 'google', options: googleOptions() })
+      failIf(error)
+    },
+
+    async disconnectGoogle() {
+      const identities = await loadIdentities()
+      const google = identities.find((identity) => identity.provider === 'google')
+      if (!google || !signInMethodsFrom(identities.map((identity) => identity.provider)).canDisconnectGoogle) return
+      const { error } = await client.auth.unlinkIdentity(google)
       failIf(error)
     },
 

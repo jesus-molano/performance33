@@ -13,16 +13,22 @@ npm install
 npm run dev       # abre http://localhost:5173
 ```
 
-Sin configurar nada, en tu ordenador arranca en **Modo local de pruebas**: entras con los botones
-«Entrar como administrador» o «Entrar como monitor», sin contraseña, y los datos se quedan solo en ese
-navegador. En cuanto configuras la conexión (más abajo), ese modo desaparece por completo.
+Sin configurar nada, en tu ordenador arranca en **Modo local de pruebas**: entras con el formulario normal y
+las cuentas de prueba que aparecen en la misma pantalla, y los datos se quedan solo en ese navegador. En cuanto
+configuras la conexión (más abajo), ese modo desaparece por completo.
+
+| Usuario | Contraseña | Para probar |
+|---|---|---|
+| `admin` | `admin1234` | Administrador |
+| `monitor` | `monitor1234` | Monitor |
+| `nueva` | `nueva1234` | Primer acceso: te pide crear una contraseña |
 
 ## Enseñar la demo en Vercel, sin configurar nada más
 
 Para que lo prueben y den su opinión, sin base de datos: en [vercel.com](https://vercel.com), **Add New →
 Project**, importa el repositorio, añade la variable `VITE_ALLOW_LOCAL_DEMO` con el valor `true` y pulsa **Deploy**.
 
-- Entra quien tenga el enlace, sin contraseña, como administrador o como monitor.
+- Entra quien tenga el enlace, con las cuentas de prueba que aparecen en la pantalla de entrada.
 - Cada navegador tiene sus propios datos: no se comparten entre monitores ni dispositivos.
 - **No metas datos reales de clientes**: se quedan en ese navegador y los verá quien entre después.
 
@@ -38,39 +44,32 @@ npm run lint      # revisa el código
 
 ## Puesta en marcha con datos compartidos
 
-Se hace una sola vez. Calcula unos 30 minutos.
+Se hace una sola vez. Calcula unos 45 minutos.
 
 ### 1. Crear el proyecto de Supabase
 
 1. Entra en [supabase.com](https://supabase.com) y crea un proyecto nuevo.
-2. En **Region** elige **Central EU (Frankfurt)**. No se puede cambiar después.
+2. En **Region** elige **West EU (Paris)** (`eu-west-3`). No se puede cambiar después.
 3. Guarda la contraseña de la base de datos en un sitio seguro.
 
 ### 2. Crear las tablas y los permisos
 
-1. En Supabase ve a **SQL Editor → New query**, pega el archivo `supabase/schema.sql` entero y pulsa **Run**.
-   Se puede volver a ejecutar sin romper nada.
-2. En otra consulta nueva, añade al primer administrador con **tu email de Google** y pulsa **Run**:
+En Supabase ve a **SQL Editor → New query**, pega el archivo `supabase/schema.sql` entero y pulsa **Run**.
+Se puede volver a ejecutar sin romper nada.
 
-   ```sql
-   insert into public.staff (email, name, role)
-   values (lower('tu.email@gmail.com'), 'Tu nombre', 'admin');
-   ```
+### 3. Ajustes de acceso
 
-Tu email no se guarda en el repositorio: solo en la base de datos.
+Si usas la CLI de Supabase, `supabase/config.toml` ya los trae; cambia las líneas marcadas con `CAMBIAR` y
+ejecuta `supabase config push`. Si prefieres el panel, en **Authentication**:
 
-### 3. Direcciones permitidas
+- **Sign In / Providers**: desactiva **Allow new users to sign up**. Las cuentas solo las crea el administrador.
+- **Sign In / Providers**: activa **Allow manual linking** (para «Conectar con Google» en Mi perfil).
+- **Sign In / Providers → Email**: mínimo de 8 caracteres en la contraseña. **Confirm email** da igual: el
+  administrador crea las cuentas ya confirmadas y nunca se envía ningún correo.
+- **URL Configuration → Site URL**: la dirección de tu web, por ejemplo `https://performance33.vercel.app`.
+- **URL Configuration → Redirect URLs**: añade esa misma dirección y, para probar en local, `http://localhost:5173`.
 
-En **Authentication → URL Configuration**:
-
-- **Site URL**: la dirección de tu web, por ejemplo `https://performance33.vercel.app`.
-- **Redirect URLs**: añade esa misma dirección y, para probar en local, `http://localhost:5173`.
-
-### 4. Comprobar la confirmación de email (importante)
-
-En **Authentication → Sign In / Providers → Email**, deja **Confirm email** activado (viene así).
-
-### 5. Entrar con Google
+### 4. Entrar con Google
 
 En [Google Cloud Console](https://console.cloud.google.com):
 
@@ -86,7 +85,37 @@ En [Google Cloud Console](https://console.cloud.google.com):
 
 En Supabase, ve a **Authentication → Sign In / Providers → Google**, actívalo y pega los dos datos.
 
-### 6. Publicar en Vercel
+### 5. Publicar las dos funciones del servidor
+
+Crean las cuentas y permiten entrar con usuario. Con la [CLI de Supabase](https://supabase.com/docs/guides/cli):
+
+```bash
+supabase login
+supabase link --project-ref TU_REFERENCIA
+supabase secrets set ALLOWED_ORIGINS="https://performance33.vercel.app,http://localhost:5173"
+supabase functions deploy admin-users
+supabase functions deploy login-username
+```
+
+`ALLOWED_ORIGINS` son las direcciones desde las que se puede llamar a las funciones. `SUPABASE_URL`,
+`SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` ya las pone Supabase dentro de cada función: la clave
+`service_role` nunca llega a la web. Si cambias de dominio, vuelve a ejecutar la línea de `ALLOWED_ORIGINS`.
+
+### 6. Crear la primera cuenta de administrador
+
+1. En Supabase, **Authentication → Users → Add user → Create new user**, con tu email, una contraseña y
+   **Auto Confirm User** activado.
+2. En **SQL Editor**, una sola instrucción, con tu email, el usuario y el nombre que quieras:
+
+   ```sql
+   insert into public.profiles (user_id, username, email, name, role)
+   select id, 'tuusuario', email, 'Tu nombre', 'admin'
+   from auth.users where email = 'tu.email@gmail.com';
+   ```
+
+Tu email no se guarda en el repositorio: solo en la base de datos. Todas las demás cuentas se crean desde la app.
+
+### 7. Publicar en Vercel
 
 1. En [vercel.com](https://vercel.com), **Add New → Project** e importa el repositorio.
 2. Vercel detecta Vite solo. En **Environment Variables** añade estas dos:
@@ -108,81 +137,84 @@ en `connect-src`; si no, la web no podrá conectar.
 
 Para usar la nube desde tu ordenador, copia `.env.example` como `.env.local` y rellénalo.
 
-### 7. Primer acceso
+### 8. Primer acceso
 
-1. Entra con Google usando el email que pusiste en el paso 2.
-2. Si la base de datos está vacía, verás **Cargar datos de demostración**. Es opcional.
-3. En **Ajustes → Equipo**, añade a cada monitor con su email, su nombre y su rol.
+1. Entra con tu email y la contraseña del paso 6, o con Google si es esa misma cuenta.
+2. La biblioteca de ejercicios se carga sola en esa primera sesión, una única vez.
+3. Si la base de datos está vacía, verás **Cargar datos de demostración**. Es opcional.
+4. En **Ajustes → Equipo**, crea la cuenta de cada monitor.
 
 ## Cómo entra cada persona
 
-Solo entra quien esté activo en **Ajustes → Equipo**. Cualquier otra cuenta ve «Tu cuenta no tiene
-acceso», con el email con el que ha entrado, y ningún dato.
+Nadie se puede registrar: **cada cuenta la crea un administrador** en **Ajustes → Equipo**, con nombre, usuario,
+rol y, si quiere, email. Al crearla se muestra una contraseña temporal **una sola vez**, para dársela en persona.
+La primera vez que entre tendrá que elegir la suya, y hasta entonces no ve ningún dato.
 
-- **Con Google**: basta con que el administrador añada su email en Equipo. Es lo más sencillo.
-- **Con email y contraseña**: hoy no se puede hacer desde la aplicación. Además de añadirla en Equipo, quien
-  gestiona Supabase tiene que hacer dos cosas, en este orden:
-  1. **Authentication → Users → Add user → Create new user**, con ese mismo email, una contraseña y
-     **Auto Confirm User** activado.
-  2. En **SQL Editor**: `select public.allow_password_account('su.email@ejemplo.com');`
+Hay un único formulario, para administradores y monitores por igual:
 
-  Después la persona puede cambiarla desde «He olvidado mi contraseña».
+- **Email o usuario, y contraseña.** Se entra con cualquiera de los dos. El usuario no revela el email de nadie.
+- **Continuar con Google.** Funciona si el email de Google es el de su cuenta (se conectan solos la primera vez),
+  o si ha pulsado **Conectar con Google** en **Mi perfil**. Quien entra con Google no tiene que crear contraseña.
+  Una cuenta de Google que no está en el equipo ve «Tu cuenta no tiene acceso».
 
-**Por qué el segundo paso.** Registrarse no se puede desactivar solo para las contraseñas (Google lo
-necesita), así que alguien podría crear una cuenta con el email de un monitor y una contraseña suya, y
-esperar a que el monitor confirme el correo. Por eso el primer acceso solo se concede a cuentas de
-Google con ese mismo email o a las autorizadas así. **Avisa al equipo: que no pulse un correo de
-confirmación que no haya pedido.**
+Tras 5 intentos fallidos con un usuario, ese usuario queda bloqueado 15 minutos.
 
-## Correos de contraseña
+**¿Ha olvidado su contraseña?** No hay correos: un administrador pulsa **Dar una contraseña nueva** en
+**Ajustes → Equipo**, y esa persona vuelve a elegir la suya al entrar.
 
-El correo que trae Supabase de serie es solo para probar: **solo envía a direcciones de tu equipo**
-(las que estén en la organización de Supabase) y muy pocos mensajes por hora. Para que «He olvidado mi
-contraseña» funcione con cualquier monitor, configura un proveedor propio en **Authentication → Emails → SMTP Settings**.
-
-El enlace del correo hay que abrirlo en el mismo navegador en el que se pidió, y deja de valer pasado un tiempo.
+Cada uno puede cambiar en **Mi perfil** su nombre, su color y su contraseña, y conectar o desconectar Google
+(nunca su única forma de entrar).
 
 ## Roles
 
 | | Monitor | Administrador |
 |---|---|---|
-| Clientes, rutinas y biblioteca de ejercicios | Sí | Sí |
+| Clientes y rutinas | Sí | Sí |
+| Biblioteca de ejercicios: añadir, editar y borrar cualquiera | Sí | Sí |
 | Eliminar un cliente (se lleva sus notas) | No: lo archiva | Sí |
 | Leer todas las notas internas | Sí | Sí |
 | Escribir notas firmadas por uno mismo | Sí | Sí |
 | Editar o borrar notas | Solo las suyas | Todas |
-| Su propio nombre y color (Mi perfil), sin repetir el nombre de otro | Sí | Sí |
+| Su propio nombre, color y contraseña (Mi perfil), sin repetir el nombre de otro | Sí | Sí |
 | Marca, equipo, copias de seguridad, restablecer datos | No | Sí |
 
-Nadie puede cambiar su propio rol, desactivarse ni borrarse, y siempre queda al menos un administrador activo que ya haya entrado.
-Estas reglas las aplica la base de datos, no solo la pantalla: las pruebas de `supabase/schema.test.ts` lo comprueban.
+Nadie puede cambiar su propio rol, desactivarse ni borrarse, y siempre queda al menos un administrador activo.
+Estas reglas las aplican la base de datos y las funciones del servidor, no solo la pantalla: las pruebas de
+`supabase/schema.test.ts` y `supabase/functions/_shared/` lo comprueban. Un monitor no puede ver el usuario ni el email de los demás.
+
+## La biblioteca de ejercicios
+
+Vive en la base de datos y es de todo el equipo: cualquier ejercicio, también los unos 300 de la carga inicial, se
+puede editar o borrar. Cada uno puede tener un **enlace** a un vídeo o una explicación: el icono del ejercicio lo
+abre en otra pestaña, y si no tiene, lo busca en Google. Si borras uno que ya está en una rutina, la fila se queda
+con su nombre como texto libre.
 
 ## Las pantallas del gimnasio
 
-Las ventanas de las teles comparten la sesión del navegador y solo reciben los datos que se pueden
+Las ventanas de las teles comparten la sesión del navegador y solo guardan los datos que se pueden
 ver en público: nunca notas, objetivos ni comentarios internos. Si se cierra la sesión, muestran
 «Inicia sesión» y se borra su copia.
 
-**Deja abierto el panel en ese ordenador.** Es el que recibe los cambios que se hacen desde otros
-dispositivos y los pasa a las teles. Si se cierra, las teles siguen mostrando lo último que recibieron,
-sin actualizarse.
+**Una vez abiertas, se valen solas.** Puedes cerrar el panel: la tele sigue en directo y muestra lo que cambie
+cualquier monitor desde su móvil. Solo necesita internet y que nadie cierre la sesión en ese navegador. Sin
+conexión sigue mostrando lo último que recibió.
 
 ## Antes de usar datos reales
 
 Esto es una demo. **Mientras lo sea, no metas datos reales de clientes**, y menos de salud (lesiones,
 molestias): en Europa son datos de categoría especial según el RGPD. Antes de usarla de verdad:
 
-- Proyecto de Supabase en región de la UE (Frankfurt), como en el paso 1.
+- Proyecto de Supabase en región de la UE (París), como en el paso 1.
 - Acepta el acuerdo de tratamiento de datos (DPA) de Supabase y el de Vercel: los dos se piden desde su panel.
 - Actualiza el registro de actividades y la información que das a los clientes, y pide su consentimiento
   explícito para los datos de salud. Consúltalo con quien os lleve la protección de datos.
 - Revisa que el plan de Supabase incluya las copias de seguridad que necesitas. Entretanto, descarga
   copias de vez en cuando desde **Ajustes → Datos** (solo administradores) y guárdalas en un sitio seguro:
   contienen datos privados.
-- Da de baja en **Ajustes → Equipo** a quien deje de trabajar en el gimnasio.
+- Desactiva en **Ajustes → Equipo** a quien deje de trabajar en el gimnasio.
 - En el ordenador compartido, cierra sesión al acabar si no vas a dejar las teles funcionando.
 
-Antes de abrirlo a más gente, comprueba en el proyecto real, con una cuenta nueva que no esté en Equipo, que
-no ve ningún dato. Esto no se puede probar sin un proyecto de Supabase: ver la lista al final de [ARCHITECTURE.md](./ARCHITECTURE.md).
+Antes de abrirlo a más gente, comprueba en el proyecto real, con una cuenta de Google que no esté en Equipo, que
+no entra y no ve ningún dato. Esto no se puede probar sin un proyecto de Supabase: ver la lista al final de [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 La arquitectura y las normas de código están en [ARCHITECTURE.md](./ARCHITECTURE.md).

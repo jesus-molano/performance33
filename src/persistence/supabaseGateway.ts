@@ -12,7 +12,7 @@ const COLUMNS: Record<DomainTable, string> = {
   library_exercises: 'id,data',
   clients: 'id,data',
   programs: 'id,data',
-  notes: 'id,data,author_staff_id,client_id',
+  notes: 'id,data,author_profile_id,client_id',
 }
 
 interface DbError {
@@ -55,13 +55,29 @@ export function createSupabaseGateway(client: SupabaseClient): RowGateway {
       if (error) throwWriteError(error)
     },
 
+    async insertMissing(table, rows) {
+      const { error } = await client.from(table).upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
+      if (error) throw new Error(error.message)
+    },
+
+    async librarySeedPending() {
+      const { data, error } = await client.rpc('library_seed_pending')
+      if (error) throw new Error(error.message)
+      return data === true
+    },
+
+    async finishLibrarySeed() {
+      const { error } = await client.rpc('finish_library_seed')
+      if (error) throw new Error(error.message)
+    },
+
     async remove(table, ids) {
       const { data, error } = await client.from(table).delete().in('id', ids).select('id')
       if (error) throwWriteError(error)
       return (data ?? []).map((row) => String(row.id))
     },
 
-    subscribe(onEvent, onMissed) {
+    subscribe(onEvent, onMissed, tables = DOMAIN_TABLES) {
       const toEvent = (table: DomainTable, payload: Payload): RowEvent | null => {
         if (payload.errors?.length) return null
         if (payload.eventType === 'DELETE') {
@@ -71,7 +87,7 @@ export function createSupabaseGateway(client: SupabaseClient): RowGateway {
         const row = payload.new as unknown as DbRow
         return row.data ? { table, id: row.id, row } : null
       }
-      const channel = DOMAIN_TABLES.reduce(
+      const channel = tables.reduce(
         (builder, table) =>
           builder.on('postgres_changes', { event: '*', schema: 'public', table }, (payload: Payload) => {
             const event = toEvent(table, payload)

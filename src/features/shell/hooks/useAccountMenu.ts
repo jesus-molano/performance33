@@ -2,11 +2,11 @@ import { useCallback } from 'react'
 import { signOut } from '@/auth'
 import { useConfirm, useDisclosure } from '@/hooks'
 import { flushDashboardSaves } from '@/persistence'
-import { useCurrentStaff } from '@/store'
-import type { StaffMember } from '@/types'
+import { useCurrentProfile } from '@/store'
+import type { Profile } from '@/types'
 
 export interface AccountMenuApi {
-  staff: StaffMember | null
+  profile: Profile | null
   profileOpen: boolean
   openProfile: () => void
   closeProfile: () => void
@@ -15,9 +15,9 @@ export interface AccountMenuApi {
 
 /** Header account: 'Mi perfil' and 'Cerrar sesión', which tries to save first and warns if it cannot. */
 export function useAccountMenu(): AccountMenuApi {
-  const staff = useCurrentStaff()
+  const profile = useCurrentProfile()
   const confirm = useConfirm()
-  const profile = useDisclosure()
+  const disclosure = useDisclosure()
 
   const leave = useCallback(async () => {
     const saved = await flushDashboardSaves()
@@ -33,5 +33,5 @@ export function useAccountMenu(): AccountMenuApi {
     await signOut()
   }, [confirm])
 
-  return { staff, profileOpen: profile.isOpen, openProfile: profile.open, closeProfile: profile.close, signOut: leave }
+  return { profile, profileOpen: disclosure.isOpen, openProfile: disclosure.open, closeProfile: disclosure.close, signOut: leave }
 }

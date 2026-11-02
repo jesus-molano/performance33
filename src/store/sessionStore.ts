@@ -1,15 +1,15 @@
 // Who is signed in on this window. Written only by auth/session.ts. Never in undo history.
 
 import { create } from 'zustand'
-import type { StaffMember } from '@/types'
+import type { Profile, TeamMember } from '@/types'
 
 export type SessionStatus =
   | 'loading'
   | 'signed-out'
-  /** Signed in, but the email is not on the active staff list. */
+  /** Signed in, but this login has no active account. */
   | 'no-access'
-  /** Came from a password-reset link: must choose a new password. */
-  | 'recovery'
+  /** Signed in with a temporary password: must choose their own before anything else. */
+  | 'must-change-password'
   /** Signed in, but the access check could not reach the server. */
   | 'offline'
   | 'ready'
@@ -17,12 +17,12 @@ export type SessionStatus =
 interface SessionState {
   status: SessionStatus
   userId: string | null
-  /** Email of the signed-in account, on the list or not. */
+  /** Email of the signed-in login, with an account or not. */
   email: string | null
-  /** The signed-in coach once the status is 'ready'. */
-  staff: StaffMember | null
-  team: StaffMember[]
-  /** Message to show on the login page (e.g. an expired link). */
+  /** The signed-in person's own account. */
+  profile: Profile | null
+  team: TeamMember[]
+  /** Message to show on the login page (e.g. Google refused). */
   notice: string | null
 }
 
@@ -30,11 +30,11 @@ export const useSessionStore = create<SessionState>()(() => ({
   status: 'loading',
   userId: null,
   email: null,
-  staff: null,
+  profile: null,
   team: [],
   notice: null,
 }))
 
 /** Non-hook accessors (used by store actions to stamp authorship). */
-export const getCurrentStaffId = (): string | null => useSessionStore.getState().staff?.id ?? null
+export const getCurrentProfileId = (): string | null => useSessionStore.getState().profile?.id ?? null
 export const getTeamIds = (): ReadonlySet<string> => new Set(useSessionStore.getState().team.map((member) => member.id))

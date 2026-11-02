@@ -3,7 +3,7 @@
 // never overwrite each other. Pure functions, no React.
 
 import { deepEqual } from '@/lib/deepEqual'
-import type { AppData, Branding, Client, ClientNote, CustomExercise, Program } from '@/types'
+import type { AppData, Branding, Client, ClientNote, LibraryExercise, Program } from '@/types'
 
 /** Write order: a note needs its client to exist. Deletes go in reverse. */
 export const DOMAIN_TABLES = ['settings', 'library_exercises', 'clients', 'programs', 'notes'] as const
@@ -13,7 +13,7 @@ export const SETTINGS_ROW_ID = 'main'
 
 interface RowByTable {
   settings: Branding
-  library_exercises: CustomExercise
+  library_exercises: LibraryExercise
   clients: Client
   programs: Program
   notes: ClientNote
@@ -42,7 +42,7 @@ function tableRows(data: AppData, table: DomainTable): Map<string, DomainRow> {
     case 'settings':
       return new Map<string, DomainRow>([[SETTINGS_ROW_ID, data.branding]])
     case 'library_exercises':
-      return byId(data.customExercises)
+      return byId(data.library)
     case 'clients':
       return byId(data.clients)
     case 'programs':
@@ -96,7 +96,7 @@ function applyRowChange(data: AppData, change: RowChange): AppData {
     case 'settings':
       return change.row ? { ...data, branding: change.row } : data
     case 'library_exercises':
-      return { ...data, customExercises: placeRow(data.customExercises, change.id, change.row) }
+      return { ...data, library: placeRow(data.library, change.id, change.row) }
     case 'clients':
       return { ...data, clients: placeRow(data.clients, change.id, change.row) }
     case 'programs':

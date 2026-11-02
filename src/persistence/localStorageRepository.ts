@@ -32,6 +32,11 @@ export class LocalStorageRepository implements Repository {
     writeDisplayCache(toDisplayData(data), meta)
   }
 
+  /** The first run's demo data already has the library. */
+  async seedLibrary(): Promise<null> {
+    return null
+  }
+
   async saveDisplay(data: DisplayData, meta: ChangeMeta): Promise<void> {
     writeDisplayCache(data, meta)
   }

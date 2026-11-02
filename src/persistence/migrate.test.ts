@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR } from '@/config/branding'
+import { EXERCISE_LIBRARY } from '@/data/exercises'
 import { createSeedData } from '@/data/seed'
 import { normalizeAppData } from './migrate'
 
@@ -40,6 +41,17 @@ describe('normalizeAppData', () => {
   it('keeps day names as they are', () => {
     const raw = { clients: [], programs: [{ id: 'p', days: [{ id: 'd1', name: '' }, { id: 'd2', name: 'Día 7' }] }] }
     expect(normalizeAppData(raw)?.programs[0].days.map((d) => d.name)).toEqual(['', 'Día 7'])
+  })
+
+  it('data from before the library was editable keeps its own exercises and gets the initial ones', () => {
+    const own = { id: 'custom_1', name: 'Propio', category: 'Core', equipment: [], defaultMeasure: 'reps', custom: true, createdAt: 'x' }
+    const library = normalizeAppData({ clients: [], customExercises: [own] })?.library ?? []
+    expect(library.length).toBe(EXERCISE_LIBRARY.length + 1)
+    expect(library[0]).toEqual({ id: 'custom_1', name: 'Propio', category: 'Core', equipment: [], defaultMeasure: 'reps', createdAt: 'x' })
+  })
+
+  it('an empty library stays empty: nobody deleted it by accident', () => {
+    expect(normalizeAppData({ clients: [], library: [] })?.library).toEqual([])
   })
 
   it('migrates the old low-contrast accent colour', () => {

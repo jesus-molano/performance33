@@ -27,7 +27,7 @@ function SessionMessage({ title, description, onRetry, retryLabel }: SessionMess
   )
 }
 
-/** Signed in, but this email is not on the active staff list. */
+/** Signed in, but this login has no active account. */
 export function NoAccessPage() {
   const email = useSessionEmail()
   return (

@@ -14,7 +14,7 @@ export function AuthShell({ title, description, badge, children }: AuthShellProp
   return (
     <div className="flex min-h-dvh flex-col items-center bg-ink px-4 py-10">
       <BrandLogo className="h-14 sm:h-16" />
-      {badge && <div className="mt-4">{badge}</div>}
+      {badge && <div className="mt-4 flex w-full justify-center">{badge}</div>}
       <main className="flex w-full max-w-md flex-1 animate-fade-in flex-col justify-center py-8">
         <div className="flex flex-col gap-5 rounded-2xl bg-surface p-6 shadow-pop sm:p-8">
           <div>

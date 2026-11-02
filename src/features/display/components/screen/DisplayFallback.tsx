@@ -21,7 +21,7 @@ export function DisplayFallback({ hasData, name, branding, theme }: DisplayFallb
         theme={theme}
         icon={MonitorOff}
         title="Sin datos todavía"
-        description="Abre el panel de monitores en este navegador y vuelve a abrir la pantalla."
+        description="Se cargará en cuanto haya conexión. Si no aparece nada, comprueba que el gimnasio ya tiene clientes en el panel."
       />
     )
   }

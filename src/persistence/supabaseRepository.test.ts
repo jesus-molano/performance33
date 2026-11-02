@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CLOUD_REFETCH_RETRY_MS, REMOTE_BATCH_MS, STORAGE_KEYS } from '@/config/app'
+import { CLOUD_REFETCH_RETRY_MS, CLOUD_WRITE_BATCH_SIZE, REMOTE_BATCH_MS, STORAGE_KEYS } from '@/config/app'
 import { createSeedData } from '@/data/seed'
 import { DOMAIN_TABLES, type DomainTable } from '@/lib/dataRows'
 import type { AppData } from '@/types'
 import type { DbRow } from './dbRows'
-import type { RemoteChange } from './repository'
+import type { DisplayChange, RemoteChange } from './repository'
 import { PermanentWriteError, type RowEvent, type RowGateway } from './rowGateway'
 import { SupabaseRepository } from './supabaseRepository'
 
@@ -15,9 +15,22 @@ class FakeServer {
   writes: Array<{ table: DomainTable; ids: string[] }> = []
   offline = false
   refuse = new Set<string>()
+  seedPending = true
 
   gateway(): RowGateway {
     return {
+      insertMissing: async (table, rows) => {
+        this.failIfOffline()
+        this.writes.push({ table, ids: rows.map((r) => r.id) })
+        for (const row of rows) if (!this.tables[table].has(row.id)) this.tables[table].set(row.id, row)
+      },
+      librarySeedPending: async () => {
+        this.failIfOffline()
+        return this.seedPending
+      },
+      finishLibrarySeed: async () => {
+        this.seedPending = false
+      },
       fetchAll: async (table) => {
         this.failIfOffline()
         return [...this.tables[table].values()]
@@ -404,10 +417,79 @@ describe('SupabaseRepository', () => {
     const server = await serverWithSeed()
     const note = seed.notes[0]
     const stored = server.tables.notes.get(note.id)
-    expect(stored?.author_staff_id).toBe(note.authorId)
+    expect(stored?.author_profile_id).toBe(note.authorId)
     expect(stored?.client_id).toBe(note.clientId)
     server.tables.notes.set(note.id, { ...(stored as DbRow), data: { ...note, authorId: 'falsificado' } })
     const data = await new SupabaseRepository(server.gateway(), 'x').load()
     expect(data.notes.find((n) => n.id === note.id)?.authorId).toBe(note.authorId)
+  })
+})
+
+describe('SupabaseRepository initial library', () => {
+  const library = seed.library
+
+  beforeEach(() => {
+    stubBrowser()
+  })
+
+  it('uploads it once in batches and comes back with the whole dataset', async () => {
+    const server = new FakeServer()
+    const { repo } = await connect(server, 'a')
+    const data = await repo.seedLibrary(library)
+    expect(data?.library).toHaveLength(library.length)
+    const batches = server.writes.filter((write) => write.table === 'library_exercises')
+    expect(batches.length).toBeGreaterThan(1)
+    expect(Math.max(...batches.map((batch) => batch.ids.length))).toBeLessThanOrEqual(CLOUD_WRITE_BATCH_SIZE)
+    expect(server.seedPending).toBe(false)
+    expect(await repo.seedLibrary(library)).toBeNull()
+  })
+
+  it('does nothing when it is not pending: an emptied library stays empty', async () => {
+    const server = new FakeServer()
+    server.seedPending = false
+    const { repo } = await connect(server, 'a')
+    expect(await repo.seedLibrary(library)).toBeNull()
+    expect(server.writes).toEqual([])
+  })
+
+  it('a failed upload stays pending, and the retry keeps what was already there', async () => {
+    const server = new FakeServer()
+    server.tables.library_exercises.set(library[0].id, { id: library[0].id, data: { ...library[0], name: 'Editado' } })
+    const { repo } = await connect(server, 'a')
+    server.offline = true
+    await expect(repo.seedLibrary(library)).rejects.toThrow()
+    server.offline = false
+    expect(server.seedPending).toBe(true)
+    const data = await repo.seedLibrary(library)
+    expect(data?.library.find((exercise) => exercise.id === library[0].id)?.name).toBe('Editado')
+  })
+
+  it('big saves go in batches too', async () => {
+    const server = new FakeServer()
+    const { repo } = await connect(server, 'a')
+    await push(repo, { ...(await repo.load()), library })
+    const batches = server.writes.filter((write) => write.table === 'library_exercises')
+    expect(batches.flatMap((batch) => batch.ids)).toHaveLength(library.length)
+    expect(Math.max(...batches.map((batch) => batch.ids.length))).toBeLessThanOrEqual(CLOUD_WRITE_BATCH_SIZE)
+  })
+})
+
+describe('SupabaseRepository display windows', () => {
+  it('read by themselves, with no dashboard, and only ever store sanitised data', async () => {
+    const store = stubBrowser()
+    const server = new FakeServer()
+    const [client] = seed.clients
+    server.tables.clients.set(client.id, { id: client.id, data: { ...client, goal: 'SECRETO' } })
+    server.tables.notes.set('n1', { id: 'n1', data: { text: 'NOTA SECRETA' }, client_id: client.id })
+    const repo = new SupabaseRepository(server.gateway(), 'ventana-a')
+    const received: DisplayChange[] = []
+    const stop = repo.subscribeDisplay((change) => received.push(change))
+    await vi.waitFor(() => expect(received).toHaveLength(1))
+    expect(received[0].data.clients.map((c) => c.id)).toEqual([client.id])
+    expect(received[0].source).toContain('ventana-a')
+    expect(JSON.stringify(received)).not.toContain('SECRETO')
+    expect(store.get(STORAGE_KEYS.display)).toContain(client.id)
+    expect(store.get(STORAGE_KEYS.display)).not.toContain('SECRETO')
+    stop()
   })
 })

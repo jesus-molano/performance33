@@ -36,7 +36,7 @@ export function subscribeRemoteChanges(listener: (change: RemoteChange) => void)
   }
 }
 
-/** Display/TV windows: only ever receive the SANITISED copy (display channel + display key). */
+/** Display/TV windows: only ever receive the SANITISED copy (display channel + display key + their own feed in the cloud). */
 export function subscribeDisplayChanges(listener: (data: DisplayData) => void): () => void {
   const accept = createChangeFilter()
   const onChange = (change: DisplayChange) => {

@@ -6,7 +6,9 @@ import { DEFAULT_PROGRAM_WEEKS } from '@/config/app'
 import { BLOCK_TYPE_META } from '@/config/blockTypes'
 import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR } from '@/config/branding'
 import { UNKNOWN_AUTHOR_COLOR } from '@/config/colors'
+import { MEASURE_META } from '@/config/exerciseFields'
 import { PLAN_BY_ID } from '@/config/plans'
+import { EXERCISE_LIBRARY } from '@/data/exercises'
 import { endDateFor, isValidISODate, todayISO } from '@/lib/dates'
 import { createBlock, createExercise } from '@/lib/factories'
 import {
@@ -16,9 +18,9 @@ import {
   type Branding,
   type Client,
   type ClientNote,
-  type CustomExercise,
   type Day,
   type ExerciseEntry,
+  type LibraryExercise,
   type Program,
 } from '@/types'
 
@@ -96,6 +98,30 @@ export function normalizeNote(raw: UnknownRecord & { id: string }): ClientNote {
   return { ...(raw as unknown as ClientNote), text: text(raw.text), pinned: raw.pinned === true }
 }
 
+const textList = (value: unknown): string[] => (Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [])
+
+/** Only known fields: older data marked some exercises as `custom`, and every row is the same now. */
+export function normalizeLibraryExercise(raw: UnknownRecord & { id: string }): LibraryExercise {
+  const exercise = raw as unknown as LibraryExercise
+  return {
+    id: raw.id,
+    name: text(raw.name),
+    category: exercise.category,
+    equipment: textList(raw.equipment),
+    defaultMeasure: exercise.defaultMeasure in MEASURE_META ? exercise.defaultMeasure : 'reps',
+    ...(Array.isArray(raw.aliases) ? { aliases: textList(raw.aliases) } : {}),
+    ...(raw.perSide === true ? { perSide: true } : {}),
+    ...(typeof raw.link === 'string' && raw.link ? { link: raw.link } : {}),
+    ...(typeof raw.createdAt === 'string' ? { createdAt: raw.createdAt } : {}),
+  }
+}
+
+/** Data from before the library was editable has only the coach's own exercises: the initial ones join them. */
+function normalizeLibrary(raw: UnknownRecord): LibraryExercise[] {
+  if (Array.isArray(raw.library)) return normalizeList(raw.library, normalizeLibraryExercise)
+  return [...normalizeList(raw.customExercises, normalizeLibraryExercise), ...EXERCISE_LIBRARY.map((exercise) => ({ ...exercise }))]
+}
+
 export function normalizeBranding(raw: unknown): Branding {
   const branding = { ...DEFAULT_BRANDING, ...(isRecord(raw) ? (raw as Partial<Branding>) : {}) }
   return branding.accentColor === LEGACY_ACCENT_COLOR ? { ...branding, accentColor: DEFAULT_BRANDING.accentColor } : branding
@@ -115,7 +141,7 @@ export function normalizeAppData(raw: unknown): AppData | null {
     clients: normalizeList(raw.clients, normalizeClient),
     programs: normalizeList(raw.programs, normalizeProgram),
     notes: normalizeList(raw.notes, normalizeNote),
-    customExercises: normalizeList(raw.customExercises, (e) => e as unknown as CustomExercise),
+    library: normalizeLibrary(raw),
     branding: normalizeBranding(raw.branding),
   }
 }

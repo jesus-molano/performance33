@@ -5,15 +5,15 @@ export const STORAGE_KEYS = {
   data: 'p33:data:v2',
   /** Sanitised copy for Pantalla / TV windows (no private fields). Removed on sign-out. */
   display: 'p33:display:v1',
-  /** Local test mode only: fake session and team. */
+  /** Local test mode only: session and test accounts. */
   localSession: 'p33:local:session',
-  localTeam: 'p33:local:team',
+  localTeam: 'p33:local:accounts',
   /** Session of the cloud login, shared by every window of this browser (popups included). */
   cloudSession: 'p33:session',
 } as const
 
-/** Left by older versions (dataset with coach profiles, picked profile). Removed on start-up. */
-export const LEGACY_STORAGE_KEYS = ['p33:data:v1', 'p33:currentCoach'] as const
+/** Left by older versions (dataset with coach profiles, picked profile, team without passwords). Removed on start-up. */
+export const LEGACY_STORAGE_KEYS = ['p33:data:v1', 'p33:currentCoach', 'p33:local:team'] as const
 
 export const SYNC_CHANNELS = {
   data: 'p33-data',
@@ -38,11 +38,15 @@ export const CLOUD_REFETCH_MIN_GAP_MS = 10_000
 export const ACCESS_RECHECK_MIN_GAP_MS = 60_000
 /** Rows per request when reading a table. */
 export const CLOUD_PAGE_SIZE = 1000
+/** Rows per request when writing or deleting (a whole library, a restored backup). */
+export const CLOUD_WRITE_BATCH_SIZE = 200
 /** Consecutive edits of the same field within this window form ONE undo step. */
 export const UNDO_GROUP_MS = 1000
 export const UNDO_LIMIT = 100
 
 export const TOAST_DURATION_MS = 6000
+/** How long a 'Copiada' button stays that way. */
+export const COPIED_FLAG_MS = 2000
 /** Programs ending within this many days are flagged 'Termina en N días'. */
 export const EXPIRING_THRESHOLD_DAYS = 5
 export const DEFAULT_PROGRAM_WEEKS = 4

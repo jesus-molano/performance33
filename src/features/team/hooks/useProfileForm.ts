@@ -2,8 +2,9 @@ import { useState, type FormEvent } from 'react'
 import { refreshTeamQuietly, teamService } from '@/auth'
 import { useToast } from '@/hooks'
 import { useTeam } from '@/store'
-import type { StaffMember } from '@/types'
-import { isStaffNameTaken } from '@/features/team/utils/staffForm'
+import type { Profile } from '@/types'
+import { TEAM_COPY } from '@/features/team/config'
+import { isNameTaken } from '@/features/team/utils/accountForm'
 
 export interface ProfileFormApi {
   name: string
@@ -15,12 +16,12 @@ export interface ProfileFormApi {
   submit: (event: FormEvent) => Promise<void>
 }
 
-/** 'Mi perfil': own name and colour only. */
-export function useProfileForm(staff: StaffMember, onDone: () => void): ProfileFormApi {
+/** 'Mi perfil': own name and colour. */
+export function useProfileForm(profile: Profile, onDone: () => void): ProfileFormApi {
   const { toast } = useToast()
   const team = useTeam()
-  const [name, setName] = useState(staff.name)
-  const [color, setColor] = useState(staff.color)
+  const [name, setName] = useState(profile.name)
+  const [color, setColor] = useState(profile.color)
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
 
@@ -30,19 +31,19 @@ export function useProfileForm(staff: StaffMember, onDone: () => void): ProfileF
       setError('Escribe un nombre.')
       return
     }
-    if (isStaffNameTaken(name, team, staff.id)) {
+    if (isNameTaken(name, team, profile.id)) {
       setError('Ya hay alguien en el equipo con ese nombre.')
       return
     }
     setError(undefined)
     setBusy(true)
     try {
-      await teamService.updateOwnProfile(staff.id, { name: name.trim(), color })
+      await teamService.updateOwnProfile(profile.id, { name: name.trim(), color })
       await refreshTeamQuietly()
       toast({ message: 'Perfil actualizado', tone: 'success' })
       onDone()
     } catch (failure) {
-      toast({ message: failure instanceof Error ? failure.message : 'No se ha podido guardar.', tone: 'error' })
+      toast({ message: failure instanceof Error ? failure.message : TEAM_COPY.saveFailed, tone: 'error' })
     } finally {
       setBusy(false)
     }

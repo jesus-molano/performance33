@@ -1,3 +1,3 @@
 export { auth, teamService } from './instance'
-export { finishRecovery, refreshTeam, refreshTeamQuietly, retrySession, signOut, startSession, watchTeam } from './session'
-export type { AuthService, TeamService } from './types'
+export { finishPasswordChange, refreshTeam, refreshTeamQuietly, retrySession, signOut, startSession, watchTeam } from './session'
+export type { AuthService, NewAccountInput, SignInMethods, TeamService } from './types'

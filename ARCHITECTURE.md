@@ -26,29 +26,31 @@ Pure functions have unit tests next to them (`*.test.ts`, run with `npm test`).
 ```
 src/
   main.tsx, App.tsx            refuses a half-configured build; starts the session; route switch: screen routes vs dashboard
-  app/DashboardGate.tsx        session status → login / new password / no access / offline / dashboard
+  app/DashboardGate.tsx        session status → login / create password / no access / offline / dashboard
   app/DashboardRoot.tsx        bootstrap data + autosave/sync, branding vars, Ctrl+Z
   app/DashboardPage.tsx        dashboard route → page
-  app/ScreenRoutes.tsx         display/tv routes → pages, behind the session (no private data loaded)
+  app/ScreenRoutes.tsx         display/tv routes → pages, behind the session (sanitised data only)
   index.css                    Tailwind v4 @theme tokens
   types.ts                     domain types
   config/  app.ts backend.ts (cloud | local | invalid, from env vars) blockTypes.ts capacity.ts branding.ts colors.ts exerciseFields.ts plans.ts synonyms.ts
-  data/    exercises.ts (294 exercises, EXERCISE_LIBRARY, EXERCISE_CATEGORIES)  seed/ (createSeedData, SEED_TEAM)
-  lib/     arrays blocks branding capacity cloudClient cn color dataRows dates debounce deepEqual displayWindow exerciseLibrary factories files ids numbers ownership pagination
+  data/    exercises.ts (EXERCISE_LIBRARY, 294 exercises: only the initial seed)  seed/ (createSeedData, SEED_TEAM, LOCAL_TEST_PASSWORDS)
+  lib/     accountRules (re-exports functions/_shared/accounts) accountMessages arrays blocks branding capacity cloudClient cn color dataRows dates debounce deepEqual displayWindow exerciseLibrary factories files ids numbers ownership pagination
            plans program programDates progression routes search  format/  display/
-  auth/    types instance session messages supabaseAuth supabaseTeam localBackend
+  auth/    types instance session messages signInMethods edgeFunctions supabaseAuth supabaseTeam localBackend localAccounts localTeam
   store/   appStore history rebase hooks selectors locate types undoGroup uiStore sessionStore toastStore confirmStore slices/*
   persistence/ repository repositoryInstance localStorageRepository supabaseRepository rowGateway supabaseGateway dbRows
-           displayCache migrate backup channels sync dashboardSync tabId
+           cloudDisplayFeed displayCache migrate backup channels sync dashboardSync tabId
   hooks/   usePagination useExerciseBrowser useHashRoute useDisclosure useMediaQuery(useIsMobile) useDebouncedValue useClickOutside useToast
            useConfirm useUndoRedo useUndoShortcuts useDisplayWindow useDisplayData useBrandingStyles
            useDashboardBootstrap useSessionBootstrap useModalBehavior
   components/ui/  Button IconButton Input Textarea Select Field SegmentedControl Chip Badge Avatar Card
                   EmptyState Switch HelpTip Privacy(PrivacyLabel, PrivateSurface) Modal ConfirmDialog(ConfirmHost)
                   Toaster DropdownMenu Pagination PaginatedList styles
-  components/  exercises/ (ExerciseSearchLink, ExerciseFilterFields), GoogleIcon, ColorSwatchPicker (profile + client forms), SplashScreen, ConfigErrorScreen, AppErrorBoundary
+  components/  exercises/ (ExerciseLink, ExerciseFilterFields), GoogleIcon, ColorSwatchPicker (profile + client forms), SplashScreen, ConfigErrorScreen, AppErrorBoundary
   features/{auth,team,shell,clients,settings,editor,display}/
-supabase/  schema.sql (tables, RLS, triggers, realtime; run once)  schema.test.ts (checks it on real Postgres via PGlite)
+supabase/  schema.sql (tables, RLS, triggers, realtime; run once)  schema.test.ts (checks it on real Postgres via PGlite)  config.toml
+  functions/  admin-users/ login-username/ (thin Deno entry points, outside the Vite and tsc builds)
+              _runtime/ (Deno only: env and clients)  _shared/ (pure TS with injected backends: type-checked by tsconfig.node, tested by vitest)
 ```
 
 ## 3. Routes (`src/lib/routes.ts`)
@@ -70,7 +72,7 @@ matching session screen) and keeps its address, so the person lands where they w
 ## 4. Store (`src/store`, import from `'@/store'`)
 
 Data store = zustand + zundo; only `data: AppData` is tracked (limit 100). Session (`sessionStore`: status,
-signed-in coach, team), save status, toasts and confirm requests live in separate stores and are never undone.
+own profile, team), save status, toasts and confirm requests live in separate stores and are never undone.
 The team is NOT in AppData: not in undo, not in backups.
 Edits to the same id + same fields within 1 s merge into one undo step (typing never undoes one char).
 Call `breakUndoGroup()` on input blur if you want the next edit to start a new step.
@@ -94,18 +96,18 @@ Actions (`useAppActions()`; ids returned are the new entity id, `''` if the pare
   (inherits sets, reps, restSec, loadUnit from the row above), `updateExercise(exerciseId, ExercisePatch)`,
   `duplicateExercise(id) → id`, `deleteExercise(id)`, `moveExercise(id, toBlockId, toIndex)` (cross-block/day ok).
 - Notes (private): `addNote(clientId, text, {pinned?}) → id` (author = signed-in coach), `updateNote(id, {text?,pinned?})`, `deleteNote(id)`.
-- Settings: `updateBranding(Partial<Branding>)`, `resetBranding()`, `addCustomExercise(CustomExerciseInput) → id`,
-  `updateCustomExercise(id, patch)`, `deleteCustomExercise(id)`, `importData(AppData)`, `resetDemoData()` and `loadDemoData()` (all clear history; signatures from people outside the team pass to the signed-in coach, see `adoptImportedData`).
+- Settings: `updateBranding(Partial<Branding>)`, `resetBranding()`, `addLibraryExercise(LibraryExerciseInput) → id`,
+  `updateLibraryExercise(id, patch)` (`link: ''` removes the link), `deleteLibraryExercise(id)` (rows using it become free text), `importData(AppData)`, `resetDemoData()` and `loadDemoData()` (all clear history; signatures from people outside the team pass to the signed-in coach, see `adoptImportedData`).
 
 History: `undo()`, `redo()`, `breakUndoGroup()`, `clearHistory()`; hooks `useUndoRedo() → {canUndo, canRedo, undo, redo}`.
 `applyRemoteRows` / `hydrateData` are for persistence only.
 
-Selector hooks: `useAppData(selector)`, `useAppActions()`, `useSessionStatus()`, `useCurrentStaff()` (signed-in coach),
-`useIsAdmin()`, `useTeam()`, `useStaffMember(id|null)`, `useSessionNotice()`, `useClients({includeArchived?})` (sorted by name),
+Selector hooks: `useAppData(selector)`, `useAppActions()`, `useSessionStatus()`, `useCurrentProfile()` (own `Profile`),
+`useIsAdmin()`, `useTeam()` (`TeamMember[]`), `useTeamMember(id|null)`, `useSessionNotice()`, `useClients({includeArchived?})` (sorted by name),
 `useClient(id)`, `useProgram(id)`, `useClientPrograms(clientId)` (newest first), `useCurrentProgram(clientId)`,
 `useClientNotes(clientId)` (pinned first, newest first), `usePinnedNotes(clientId)`, `usePinnedNoteCounts()`,
-`useSessionEmail()`, `useBranding()`, `useExerciseLibrary()` (custom + built-in), `useSaveStatus() → {status:'idle'|'saving'|'saved'|'error', lastSavedAt}`,
-`useHistoryState()`. Non-hook: `getCurrentStaffId()`.
+`useSessionEmail()`, `useBranding()`, `useExerciseLibrary()`, `useExerciseLibraryLink(id|null)`, `useSaveStatus() → {status:'idle'|'saving'|'saved'|'error', lastSavedAt}`,
+`useHistoryState()`. Non-hook: `getCurrentProfileId()`.
 Pure selectors: `findClient`, `findProgram`, `sortClients`, `selectClientNotes`, `countPinnedNotes`,
 `findDayContext`, `findBlockContext`, `findExerciseContext`.
 
@@ -113,10 +115,10 @@ Pure selectors: `findClient`, `findProgram`, `sortClients`, `selectClientNotes`,
 
 | Import from | Export | Props |
 |---|---|---|
-| `features/auth` | `LoginPage`, `SetPasswordPage`, `NoAccessPage`, `SessionOfflinePage` | none |
+| `features/auth` | `LoginPage`, `CreatePasswordPage`, `NoAccessPage`, `SessionOfflinePage` | none |
 | `features/auth` | `DataLoadFailedPage` | `{ onRetry: () => void }` |
 | `features/team` | `TeamPanel` | none (Ajustes → Equipo) |
-| `features/team` | `ProfileModal` | `{ staff: StaffMember; onClose: () => void }` (Mi perfil; render only while open) |
+| `features/team` | `ProfileModal` | `{ profile: Profile; onClose: () => void }` (Mi perfil; render only while open) |
 | `features/display` | `ScreenSignInRequired` | none (TV window without a session) |
 | `features/shell` | `AppLayout` | `{ route: Route; children: ReactNode }` |
 | `features/shell` | `NotFoundPage` | none |
@@ -200,7 +202,7 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
 - Blocks: `getBlockTitle`, `getAutoBlockTitle`, `shouldSuggestCircuit`, `blockShowsSets`, `isAccessoryBlock`;
   config `BLOCK_TYPE_META[type] {label, acronym?, description, icon, params, defaultParams, rowsHaveSets, allowsText, muted}`,
   `BLOCK_TYPE_ORDER`, `BLOCK_PARAM_META[param] {label, unit, help?}`, `INTERVAL_PRESETS`.
-- Exercises: config `MEASURE_META/ORDER`, `LOAD_UNIT_META/ORDER` (with Spanish help), `PROGRESSION_TARGET_META`, `TEMPO_HELP`,
+- Exercises: lib `normalizeExerciseLink` (http/https or null), `exerciseLinkUrl(name, link)`; config `MEASURE_META/ORDER`, `LOAD_UNIT_META/ORDER` (with Spanish help), `PROGRESSION_TARGET_META`, `TEMPO_HELP`,
   `REP_CHIPS`, `REST_CHIPS`, `TIME_CHIPS`, `DEFAULT_SETS`, `DEFAULT_REPS`, `DEFAULT_PROGRESSION_STEP`;
   lib `createExercise`, `exercisePatchFromLibrary(lib, base?)`, `searchExercises(query, library, limit)` (accent-insensitive,
   synonyms, fuzzy), `findSimilarExercises`, `findExerciseByName`, `findExerciseById`, `matchesQuery` (client search),
@@ -216,13 +218,13 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
 `ConfigErrorScreen` and never loads the app). `lib/cloudClient` is null unless cloud; `auth/instance` and
 `persistence/repositoryInstance` pick from it, so the demo login cannot be reached when the cloud is set.
 
-`Repository`: `load`, `save(getData, {source, revision})`, `saveDisplay`, `clear` (this device only), `release`, `subscribe`,
+`Repository`: `load`, `save(getData, {source, revision})`, `seedLibrary(seed)`, `saveDisplay`, `clear` (this device only), `release`, `subscribe`,
 `loadDisplaySync`, `subscribeDisplay`, `sharesDataAcrossTabs`.
 
 - `normalize*` in `migrate.ts` must be idempotent against what the store writes (`dbRows.test`): a cleared param stays cleared, and day names are not renumbered on read (`settleDayNames` does it when the field is left).
 - `SupabaseRepository` (over a `RowGateway`, faked in its tests): one row per client, program, note, library exercise,
   plus the `settings` row (`lib/dataRows`, translation in `dbRows`). `base` = last version known on the server; `save` upserts or
-  deletes ONLY `diff(base, latest)`, one save at a time. Same row: last write wins. Network errors reject (`dashboardSync` retries
+  deletes ONLY `diff(base, latest)` (at most `CLOUD_WRITE_BATCH_SIZE` rows per request), one save at a time. Same row: last write wins. Network errors reject (`dashboardSync` retries
   with backoff and shows 'Sin conexión, reintentando…'; `beforeunload` warns); refusals (`PermanentWriteError`) put that row back to
   the server version and show a toast. A `save` queued before `release()` never runs, not even once the next session has loaded. It reads nothing from or to
   localStorage but the display copy, whose write never throws (full device: `toCompactDisplayData`, only current routines of active clients).
@@ -234,23 +236,33 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
   and `rebaseSnapshots` puts the same rows in every past/future undo snapshot and drops steps left empty. Undo never overwrites another coach.
 - `LocalStorageRepository` (local test mode, key `p33:data:v2`): whole dataset, shared across tabs by BroadcastChannel `p33-data` + storage
   event; `dashboardSync` turns those snapshots into row changes with `diffData`, so both modes apply remote changes the same way.
-- TV windows: every change (local or remote) goes out on BroadcastChannel `p33-display` and to the sanitised cache
-  (`displayCache`, key `p33:display:v1`). Display windows never load private data: `useDisplayData()` = initial sanitised read +
-  live channel + storage event. They update only while a dashboard is open in that browser.
+- Library: `AppData.library` holds every exercise, one normal row each in `library_exercises`. `dashboardSync` calls `seedLibrary(EXERCISE_LIBRARY)` for an admin: while `settings.library_seeded_at` is empty (`library_seed_pending`) it uploads in batches with `insertMissing` (never overwrites an edit, so a retry after a cut is safe), then `finish_library_seed`. It never runs again, even if the library is emptied. Local mode has the library in its first-run seed. Data without a `library` key (older browsers and backups) gets the initial library plus its `customExercises`.
+- TV windows: `useDisplayData()` = sanitised cache at start + `subscribeDisplay`: BroadcastChannel `p33-display` and the storage event in both modes (instant edits from a dashboard of the same browser) and, in the cloud, `startCloudDisplayFeed`: the window itself reads and follows `settings`, `clients` and `programs` (never `notes` or `library_exercises`), runs each row through `toPublicClient`/`toPublicProgram` as it arrives and keeps only that in memory, with the same catch-up as dashboards (reconnect, focus, `online`, interval). It writes the sanitised cache, so a reopened window has something to show without connection. Duplicates of one change are dropped by `deepEqual`. So a TV stays live with no dashboard open, and an edit from a phone appears on it. The rows come over the network with their private fields, as for any coach of that session; they are never kept or persisted.
 
 Session (`auth/session`, same flow in dashboards and TV windows, results in `useSessionStore`): `loading → signed-out | no-access |
-recovery | offline | ready`. `getUser` rejects when it could not check (expired token, no connection), which never counts as a sign-out: `ready` stays, a cold start
-goes to `offline`. `claim_staff_profile` decides access (re-checked on focus). Its first link needs a Google-only account with that same email or
-`allow_password_account` (run by the database owner): a verified email alone is not enough, anyone can register a coach's address. Leaving removes the display cache; `dashboardSync`
+must-change-password | offline | ready`. `getUser` rejects when it could not check (expired token, no connection), which never counts as a sign-out: `ready` stays, a cold start
+goes to `offline`. `teamService.getOwnProfile` (`my_profile`) decides access (re-checked on focus). Leaving removes the display cache; `dashboardSync`
 watches the status and, in this order, stops listening, `repository.release()`s and empties the store (so emptying can never be saved as a
-mass delete). API: `startSession`, `signOut`, `retrySession`, `finishRecovery`, `refreshTeam`, `watchTeam`, `auth`, `teamService` from `@/auth`;
+mass delete). API: `startSession`, `signOut`, `retrySession`, `finishPasswordChange`, `refreshTeam`, `watchTeam`, `auth`, `teamService` from `@/auth`;
 `flushDashboardSaves()` from `@/persistence`; `refreshTeamQuietly` after a change that already worked. Login uses PKCE (tokens never in the hash the routes use), and Google always asks which account.
 
-Permissions: `supabase/schema.sql` enforces them (RLS + triggers, tested in `schema.test.ts`); `lib/ownership` (`canEditNote`, `accessChangeError`,
+### Accounts
+
+No sign-up (`enable_signup = false`): an admin creates every account. `profiles` has `user_id` (set at creation), `username`, `email` (null = none: the login uses `<username>@accounts.invalid`, only in `auth.users`), `role` (text + check + `PROFILE_ROLES`/`ROLE_LABELS`; a new role gets no staff access until `is_active_staff` lists it), `active`, `must_change_password`. `TeamMember` = what everyone can read (column grants: id, name, color, role, active); `Profile` = the full account, only through `my_profile` and `team_accounts` (admin).
+
+- `TeamService` (cloud: `supabaseTeam`, local: `localTeam`, same interface): `getOwnProfile`, `list`, `updateOwnProfile`, `finishPasswordChange`, `subscribe`; admin: `listAccounts`, `createAccount → temporary password`, `resetPassword → temporary password`, `setRole`, `setActive`, `deleteAccount`. `AuthService`: `signIn(identifier, password)` ('@' = email directly, else the `login-username` function then `setSession`), `signInWithGoogle`, `changePassword`, `getSignInMethods`, `connectGoogle`, `disconnectGoogle`.
+- `admin-users` (POST `{action: create|reset-password|set-role|set-active|delete, ...}`): checks the token with `auth.getUser` and the caller with `current_profile_id` under their own JWT, then re-checks the rules in `accessChangeRefusal`. Errors are codes only (`AccountErrorCode`), worded by `lib/accountMessages`. `set-active` also bans or unbans, and revokes sessions; `reset-password` writes the password, THEN the flag, then revokes.
+- `login-username` (anon): returns `{session: {access_token, refresh_token}}` only. Unknown user, wrong password and banned account give the same `invalid_credentials`, in at least `MIN_RESPONSE_MS`. `login_attempts` locks a username after 5 failures in 15 minutes, counting unknown names too. Service role only.
+- Both: `ALLOWED_ORIGINS` (comma list, default localhost), `verify_jwt = false` in `config.toml` (they check by themselves).
+- First login: while `must_change_password`, `current_profile_id`/`is_active_staff`/`is_admin` are false, so nothing is readable; the session stops at `must-change-password` (`CreatePasswordPage`). `finish_password_change` only clears it if `auth.users.encrypted_password` differs from `temp_password_hash`, which a trigger copies whenever the flag is written: calling the RPC cannot skip the step. A Google session (`amr` claim, signed) is not asked.
+- Google: an account with that verified email auto-links; anyone else is refused by the server (`signup_disabled`), which `readRedirectError` words as 'Tu cuenta no tiene acceso'; a session without a profile gets `NoAccessPage`.
+- Local mode: `localTeam` + `localAccounts` (plain test passwords, key `p33:local:accounts`), same rules through `lib/accountRules`.
+
+Permissions: `supabase/schema.sql` and the functions enforce them (RLS, column grants, triggers; tested in `schema.test.ts` and `functions/_shared/*.test.ts`); `lib/ownership` (`canEditNote`, `accessChangeError`,
 `isActiveAdmin`, `canDeleteClient`) mirrors them for the UI and for local mode. To change a rule, change both and their tests. Only admins delete clients (the cascade
 takes every coach's notes); monitors can still delete routines, since their undo works for them and they could overwrite those rows anyway.
 
-Local mode: `cloud` wins; a production build without env vars is `invalid` unless `VITE_ALLOW_LOCAL_DEMO=true`, because it means a passwordless admin button. `vercel.json` sets the CSP and other headers.
+Local mode: `cloud` wins; a production build without env vars is `invalid` unless `VITE_ALLOW_LOCAL_DEMO=true`, because it means an admin account with its password on the login page. `vercel.json` sets the CSP and other headers.
 
 Local mode seeds demo data on first run. An empty cloud does not: an admin gets 'Cargar datos de demostración' on the clients page (`loadDemoData`: adds clients, routines and notes, keeps branding and library).
 Demo data is relative to today (Carla & Dani, `SEED_TEAM`; Laura week 2/4 with a shoulder important notification and a previous
@@ -259,8 +271,7 @@ Andrés 1 day; Sergio archived). Every routine day has 4–5 realistic blocks (L
 15-line stress case; her programs never contain overhead work, see `seed.test.ts`). Saved data has no seed version:
 an existing browser keeps its old demo until "Restablecer datos de demostración" (admins only, typing `BORRAR`: `requireText` in `useConfirm`).
 
-Not checkable without a real project, so check it there: Google OAuth and its account chooser, `auth.identities` contents for each sign-in path (Google, console-created,
-outside password, and Google linked onto an unconfirmed outside password), password reset links, realtime payloads and reconnect, `schema.sql` under Supabase's own roles and default grants
+Not checkable without a real project, so check it there: both functions running under Deno (they have never been deployed; `_shared` is tested, `index.ts` and `_runtime` are not), Google OAuth and its account chooser, auto-link and `signup_disabled` with sign-ups off and the exact error in the redirect, `linkIdentity`/`unlinkIdentity`, the `amr` claim of a Google session and after a token refresh, `.invalid` addresses accepted by `auth.admin.createUser`, `ban_duration` and whether a banned login gets `user_banned`, `revoke_user_sessions` and `encrypted_password` reads as table owner on the `auth` schema, realtime payloads and reconnect (also with column grants on `profiles`), a TV window surviving token refresh for days, `schema.sql` under Supabase's own roles and default grants
 (`information_schema.role_table_grants`), the last-admin lock under concurrency, and whether a stranger's realtime subscription sees the table and id of deleted rows (documented behaviour for DELETE events).
 
 ## 9. Design tokens & UI conventions
@@ -281,7 +292,7 @@ Font Jost (400–800). Brand colours follow Ajustes at runtime via CSS variables
 - Autosave everywhere, no Save buttons. Row/block/day deletes: no confirm, show `toastUndo('Ejercicio eliminado')`.
   Confirm (`useConfirm`, `danger: true`) only for deleting a program/client, importing or resetting data; offer archive for clients.
 - Pinned private notes are called "notificaciones importantes" in the UI (`ImportantBadge`, `ImportantNotes`, `CompactImportantNotes`); a routine past its end date is "Finalizada", one about to end "Termina en N días".
-- Browsing exercises: `useExerciseBrowser` (filters + `usePagination`, pure logic in `lib/pagination`), `PaginatedList`, `ExerciseFilterFields`. `ExerciseSearchLink` (Google, `exerciseSearchUrl`) is dashboard only, never on the TV, and hidden on collapsed rows on phones (the row's sheet has it).
+- Browsing exercises: `useExerciseBrowser` (filters + `usePagination`, pure logic in `lib/pagination`), `PaginatedList`, `ExerciseFilterFields`. `ExerciseLink` (the exercise's `link`, else a Google search, always a new tab; `EntryExerciseLink` resolves it for a routine row by `libraryId`) is dashboard only, never on the TV, and hidden on collapsed rows on phones (the row's sheet has it).
 - Limited texts: `maxLength` on the field plus `getLengthHint` near the limit; the store clamp is only a safety net. At the limit, phone add buttons stay enabled and explain with a toast (`useDayAddActions`).
 - Spanish labels first, acronym as a badge and `HelpTip` for jargon (EMOM, AMRAP, RPE, RIR, tempo).
 - Free-text friendly inputs (reps '8-10', 'máx'; load 'KB 16'); `inputMode="numeric"` for pure numbers.

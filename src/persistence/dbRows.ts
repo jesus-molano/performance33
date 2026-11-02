@@ -3,8 +3,8 @@
 import { DEFAULT_BRANDING } from '@/config/branding'
 import { createEmptyData } from '@/lib/factories'
 import { applyRowChanges, DOMAIN_TABLES, type DomainRow, type DomainTable, type RowChange } from '@/lib/dataRows'
-import type { AppData, ClientNote, CustomExercise } from '@/types'
-import { normalizeBranding, normalizeClient, normalizeNote, normalizeProgram } from './migrate'
+import type { AppData, ClientNote } from '@/types'
+import { normalizeBranding, normalizeClient, normalizeLibraryExercise, normalizeNote, normalizeProgram } from './migrate'
 
 /** A row as the database stores it. */
 export interface DbRow {
@@ -12,7 +12,7 @@ export interface DbRow {
   data: unknown
   client_origin?: string | null
   /** notes only */
-  author_staff_id?: string | null
+  author_profile_id?: string | null
   /** notes only */
   client_id?: string
 }
@@ -23,7 +23,7 @@ function noteFromDb(raw: DbRow): ClientNote {
   return normalizeNote({
     ...data,
     id: raw.id,
-    authorId: raw.author_staff_id ?? '',
+    authorId: raw.author_profile_id ?? '',
     clientId: raw.client_id ?? data.clientId ?? '',
   })
 }
@@ -34,7 +34,7 @@ export function rowFromDb(table: DomainTable, raw: DbRow): DomainRow {
     case 'settings':
       return normalizeBranding(raw.data)
     case 'library_exercises':
-      return data as unknown as CustomExercise
+      return normalizeLibraryExercise(data)
     case 'clients':
       return normalizeClient(data)
     case 'programs':
@@ -48,7 +48,7 @@ export function rowToDb(change: RowChange & { row: DomainRow }, origin: string):
   const base: DbRow = { id: change.id, data: change.row, client_origin: origin }
   if (change.table !== 'notes') return base
   const note = change.row as ClientNote
-  return { ...base, author_staff_id: note.authorId || null, client_id: note.clientId }
+  return { ...base, author_profile_id: note.authorId || null, client_id: note.clientId }
 }
 
 /** Whole dataset from every table's rows. Without a settings row the branding is the default one. */

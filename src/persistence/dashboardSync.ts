@@ -3,12 +3,14 @@
 // change made elsewhere → applied without undo history and without re-saving (no echo loops), and passed on to TV windows.
 
 import { SAVE_DEBOUNCE_MS, SAVE_RETRY_DELAYS_MS } from '@/config/app'
+import { EXERCISE_LIBRARY } from '@/data/exercises'
 import { createSeedData } from '@/data/seed'
 import { refreshTeam, watchTeam } from '@/auth'
 import { debounce } from '@/lib/debounce'
 import { diffData } from '@/lib/dataRows'
 import { toDisplayData } from '@/lib/display'
 import { createEmptyData } from '@/lib/factories'
+import { isActiveAdmin } from '@/lib/ownership'
 import { applyRemoteRows, hydrateData, useAppStore, useSessionStore, useToastStore, useUiStore } from '@/store'
 import type { AppData } from '@/types'
 import { broadcastChange, broadcastDisplay } from './channels'
@@ -27,10 +29,16 @@ const nextMeta = (): ChangeMeta => ({ source: TAB_ID, revision: ++revision })
 const getData = (): AppData => useAppStore.getState().data
 const setSaveStatus = useUiStore.getState().setSaveStatus
 
+/** A failure is not fatal: the library is still pending, so the next session of an administrator tries again. */
+async function seedLibraryIfAdmin(): Promise<AppData | null> {
+  if (!isActiveAdmin(useSessionStore.getState().profile)) return null
+  return repository.seedLibrary(EXERCISE_LIBRARY).catch(() => null)
+}
+
 /** Reads the dataset and the team. Rejects without connection (the dashboard offers to retry). */
 export async function loadDashboardData(): Promise<AppData | null> {
   const [data] = await Promise.all([repository.load(), refreshTeam()])
-  return data
+  return (await seedLibraryIfAdmin()) ?? data
 }
 
 /** Puts loaded data in the store. Only local mode seeds by itself; an empty cloud waits for an admin. */

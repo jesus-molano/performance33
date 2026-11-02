@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createSeedData } from '@/data/seed'
-import { SEED_ADMIN, SEED_MONITOR } from '@/data/seed/staff'
-import type { StaffMember } from '@/types'
+import { SEED_ADMIN, SEED_MONITOR } from '@/data/seed/team'
+import type { Profile } from '@/types'
 import { accessChangeError, adoptImportedData, canEditNote } from './ownership'
 
-const other: StaffMember = { ...SEED_MONITOR, id: 'otro' }
+const other: Profile = { ...SEED_MONITOR, id: 'otro' }
 
 describe('canEditNote', () => {
   it('allows the author and the admin, nobody else', () => {

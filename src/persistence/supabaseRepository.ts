@@ -2,12 +2,14 @@
 // clients never overwrite each other (same row: last write wins). `base` is the last version known
 // to be on the server; every save and every live update is measured against it.
 
-import { CLOUD_REFETCH_INTERVAL_MS, CLOUD_REFETCH_MIN_GAP_MS, CLOUD_REFETCH_RETRY_MS, REMOTE_BATCH_MS } from '@/config/app'
+import { CLOUD_REFETCH_INTERVAL_MS, CLOUD_REFETCH_MIN_GAP_MS, CLOUD_REFETCH_RETRY_MS, CLOUD_WRITE_BATCH_SIZE, REMOTE_BATCH_MS } from '@/config/app'
+import { chunk } from '@/lib/arrays'
 import { toDisplayData } from '@/lib/display'
 import { deepEqual } from '@/lib/deepEqual'
 import { diffRowSets, DOMAIN_TABLES, toRowSet, type DomainRow, type DomainTable, type RowChange, type RowSet } from '@/lib/dataRows'
-import type { AppData, DisplayData } from '@/types'
+import type { AppData, DisplayData, LibraryExercise } from '@/types'
 import { appDataFromDb, rowFromDb, rowToDb, type DbRow } from './dbRows'
+import { startCloudDisplayFeed } from './cloudDisplayFeed'
 import { clearDisplayCache, listenDisplayCache, readDisplayCache, writeDisplayCache } from './displayCache'
 import type { ChangeMeta, DisplayChange, RemoteChange, Repository } from './repository'
 import { PermanentWriteError, type RowEvent, type RowGateway } from './rowGateway'
@@ -60,6 +62,14 @@ export class SupabaseRepository implements Repository {
     return run
   }
 
+  async seedLibrary(seed: readonly LibraryExercise[]): Promise<AppData | null> {
+    if (!this.base || !(await this.gateway.librarySeedPending())) return null
+    const rows = seed.map((row) => rowToDb({ table: 'library_exercises', id: row.id, row }, this.origin))
+    for (const batch of chunk(rows, CLOUD_WRITE_BATCH_SIZE)) await this.gateway.insertMissing('library_exercises', batch)
+    await this.gateway.finishLibrarySeed()
+    return this.load()
+  }
+
   async saveDisplay(data: DisplayData, meta: ChangeMeta): Promise<void> {
     writeDisplayCache(data, meta)
   }
@@ -81,7 +91,17 @@ export class SupabaseRepository implements Repository {
   }
 
   subscribeDisplay(listener: (change: DisplayChange) => void): () => void {
-    return listenDisplayCache(listener)
+    const stopCache = listenDisplayCache(listener)
+    const stopFeed = startCloudDisplayFeed(this.gateway, (data) => {
+      // Per window: each one counts its own revisions, and receivers compare them by source.
+      const change = { source: `cloud-display:${this.origin}`, revision: ++this.revision, data }
+      writeDisplayCache(data, change)
+      listener(change)
+    })
+    return () => {
+      stopCache()
+      stopFeed()
+    }
   }
 
   subscribe(listener: (change: RemoteChange) => void): () => void {
@@ -151,11 +171,11 @@ export class SupabaseRepository implements Repository {
     let missed = false
     for (const table of DOMAIN_TABLES) {
       const writes = changes.filter((change): change is RowWrite => change.table === table && isWrite(change))
-      if (writes.length > 0) await this.writeRows(table, writes, rejected)
+      for (const batch of chunk(writes, CLOUD_WRITE_BATCH_SIZE)) await this.writeRows(table, batch, rejected)
     }
     for (const table of [...DOMAIN_TABLES].reverse()) {
       const deletes = changes.filter((change) => change.table === table && !isWrite(change))
-      if (deletes.length > 0) missed = (await this.deleteRows(table, deletes)) || missed
+      for (const batch of chunk(deletes, CLOUD_WRITE_BATCH_SIZE)) missed = (await this.deleteRows(table, batch)) || missed
     }
     if (rejected.length > 0) this.emit(rejected, true)
     if (missed) void this.refetch()

@@ -3,7 +3,7 @@
 // they never read private data.
 
 import type { RowChange } from '@/lib/dataRows'
-import type { AppData, DisplayData } from '@/types'
+import type { AppData, DisplayData, LibraryExercise } from '@/types'
 
 /** Identifies one change: who made it and its sequence number at that source. */
 export interface ChangeMeta {
@@ -39,6 +39,11 @@ export interface Repository {
    * Takes a getter because a save can wait its turn: what it compares must include changes that arrived meanwhile.
    */
   save(getData: () => AppData, meta: ChangeMeta): Promise<void>
+  /**
+   * Uploads the initial exercise library the first time an administrator enters a brand-new database, once ever.
+   * The dataset to use from then on, or null when there was nothing to do. Local mode has it in its own first run.
+   */
+  seedLibrary(seed: readonly LibraryExercise[]): Promise<AppData | null>
   /** Persist only the sanitised display copy (start-up, changes made elsewhere). */
   saveDisplay(data: DisplayData, meta: ChangeMeta): Promise<void>
   /** Forget this device's copies. In the cloud the shared data stays untouched. */
@@ -49,6 +54,6 @@ export interface Repository {
   subscribe(listener: (change: RemoteChange) => void): () => void
   /** Sanitised data for display windows, or null if nothing is stored yet. */
   loadDisplaySync(): DisplayData | null
-  /** Sanitised changes for display windows. */
+  /** Sanitised changes for display windows. In the cloud this also reads and follows the server by itself. */
   subscribeDisplay(listener: (change: DisplayChange) => void): () => void
 }

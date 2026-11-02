@@ -2,13 +2,13 @@ import { EXERCISE_NAME_MAX_LENGTH } from '@/config/capacity'
 import { getLengthHint } from '@/lib/capacity'
 import { findExerciseById } from '@/lib/search'
 import { breakUndoGroup, useExerciseLibrary } from '@/store'
-import type { AnyLibraryExercise } from '@/types'
+import type { LibraryExercise } from '@/types'
 import { useExerciseAutocomplete, type AutocompleteOptions, type ExerciseAutocomplete } from './useExerciseAutocomplete'
 
 export interface ExerciseNameFieldApi {
   ac: ExerciseAutocomplete
   /** Library exercise this row came from, if any. */
-  linked: AnyLibraryExercise | null
+  linked: LibraryExercise | null
   lengthHint: string | null
   onBlur: () => void
 }

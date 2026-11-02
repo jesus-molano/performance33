@@ -3,7 +3,7 @@ import { useDisclosure } from '@/hooks'
 import { exercisePatchFromLibrary } from '@/lib/factories'
 import { searchExercises, type ExerciseSearchResult } from '@/lib/search'
 import { useAppActions, useExerciseLibrary } from '@/store'
-import type { AnyLibraryExercise, ExerciseEntry } from '@/types'
+import type { LibraryExercise, ExerciseEntry } from '@/types'
 import { NO_HIGHLIGHT, SEARCH_RESULT_LIMIT } from '@/features/editor/config'
 import { moveHighlight, namePatch } from '@/features/editor/utils'
 
@@ -31,7 +31,7 @@ export interface ExerciseAutocomplete {
   highlight: (index: number) => void
   pickerOpen: boolean
   closePicker: () => void
-  pick: (exercise: AnyLibraryExercise) => void
+  pick: (exercise: LibraryExercise) => void
 }
 
 /** Type-ahead over the exercise library (accent-insensitive, synonyms, typos) with full keyboard support. */
@@ -49,7 +49,7 @@ export function useExerciseAutocomplete({ entry, onDone, onExit }: AutocompleteO
   const isHighlighting = highlighted !== NO_HIGHLIGHT
 
   const close = () => setOpen(false)
-  const pick = (exercise: AnyLibraryExercise) => {
+  const pick = (exercise: LibraryExercise) => {
     updateExercise(entry.id, exercisePatchFromLibrary(exercise, entry))
     close()
     picker.close()

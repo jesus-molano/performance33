@@ -1,6 +1,5 @@
 import { LayoutList, Plus } from 'lucide-react'
-import { ExerciseSearchLink } from '@/components/exercises/ExerciseSearchLink'
-import { Badge } from '@/components/ui'
+import { ExerciseLink } from '@/components/exercises/ExerciseLink'
 import { cn } from '@/lib/cn'
 import type { ExerciseAutocomplete } from '@/features/editor/hooks/useExerciseAutocomplete'
 import { formatExerciseMeta } from '@/lib/exerciseLibrary'
@@ -31,15 +30,10 @@ export function ExerciseSuggestions({ id, query, ac }: ExerciseSuggestionsProps)
             <span className="flex items-center gap-2 text-md font-medium text-fg">
               <span className="truncate">{exercise.name}</span>
               {matchedAlias && <span className="truncate text-sm font-normal text-fg-subtle">· {matchedAlias}</span>}
-              {exercise.custom && (
-                <Badge size="sm" tone="neutral">
-                  Propio
-                </Badge>
-              )}
             </span>
             <span className="truncate text-xs text-fg-muted">{formatExerciseMeta(exercise)}</span>
           </div>
-          <ExerciseSearchLink name={exercise.name} />
+          <ExerciseLink name={exercise.name} link={exercise.link} />
         </li>
       ))}
       {ac.showCustomOption && (

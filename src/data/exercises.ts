@@ -1,4 +1,5 @@
-// Biblioteca de ejercicios por defecto (gimnasio funcional, nombres como se usan en España).
+// Biblioteca inicial de ejercicios (gimnasio funcional, nombres como se usan en España). Solo se usa para llenar una
+// base de datos vacía: a partir de ahí los ejercicios son filas normales que el equipo edita y borra.
 // Los ids son slugs estables: no cambiarlos, las rutinas guardadas los referencian.
 
 import type { ExerciseCategory, LibraryExercise, MeasureType } from '@/types'

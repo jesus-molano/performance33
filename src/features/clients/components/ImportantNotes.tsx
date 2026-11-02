@@ -1,11 +1,11 @@
 import { BellRing } from 'lucide-react'
 import { PrivacyLabel, PrivateSurface } from '@/components/ui'
 import { formatDateTime } from '@/lib/dates'
-import { usePinnedNotes, useStaffMember } from '@/store'
+import { usePinnedNotes, useTeamMember } from '@/store'
 import type { ClientNote } from '@/types'
 
 function ImportantLine({ note }: { note: ClientNote }) {
-  const author = useStaffMember(note.authorId)
+  const author = useTeamMember(note.authorId)
   return (
     <li className="flex flex-col gap-0.5">
       <p className="text-md font-medium whitespace-pre-wrap text-amber-950">{note.text}</p>

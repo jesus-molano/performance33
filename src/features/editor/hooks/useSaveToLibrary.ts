@@ -5,7 +5,7 @@ import { splitList } from '@/lib/exerciseLibrary'
 import { exercisePatchFromLibrary } from '@/lib/factories'
 import { findExerciseByName, findSimilarExercises } from '@/lib/search'
 import { useAppActions, useExerciseLibrary } from '@/store'
-import type { AnyLibraryExercise, ExerciseCategory, ExerciseEntry } from '@/types'
+import type { LibraryExercise, ExerciseCategory, ExerciseEntry } from '@/types'
 import { canSaveToLibrary } from '@/features/editor/utils'
 
 export interface LibraryDraft {
@@ -19,7 +19,7 @@ export interface SaveToLibraryApi {
   /** Free-text row whose name is not already in the library. */
   canSave: boolean
   /** Library entries with a very similar name (offer them before creating a duplicate). */
-  similar: AnyLibraryExercise[]
+  similar: LibraryExercise[]
   draft: LibraryDraft
   /** Starts a new draft from the row's current name (call when opening the dialog). */
   begin: () => void
@@ -27,7 +27,7 @@ export interface SaveToLibraryApi {
   valid: boolean
   /** Saves the draft to the library and links the row to it. Returns false when invalid. */
   submit: () => boolean
-  pickExisting: (exercise: AnyLibraryExercise) => void
+  pickExisting: (exercise: LibraryExercise) => void
 }
 
 const newDraft = (name: string): LibraryDraft => ({ name: name.trim(), category: EXERCISE_CATEGORIES[0], equipment: '' })
@@ -52,7 +52,7 @@ export function useSaveToLibrary(entry: ExerciseEntry): SaveToLibraryApi {
     submit: () => {
       if (!valid) return false
       const name = draft.name.trim()
-      const id = actions.addCustomExercise({
+      const id = actions.addLibraryExercise({
         name,
         category: draft.category,
         equipment: splitList(draft.equipment),

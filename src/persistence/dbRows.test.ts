@@ -36,6 +36,10 @@ describe('rows read back from the server equal what was saved', () => {
     const exerciseId = store().data.programs.find((p) => p.id === program.id)?.days[0].blocks.at(-1)?.exercises[0].id ?? ''
     store().updateExercise(exerciseId, { sets: null, restSec: null, load: '', cue: '', progression: null })
     store().updateBranding({ logoUrl: '' })
+    const [withLink, withoutLink] = store().data.library
+    store().updateLibraryExercise(withLink.id, { link: 'https://youtu.be/abc' })
+    store().updateLibraryExercise(withoutLink.id, { link: 'https://youtu.be/def' })
+    store().updateLibraryExercise(withoutLink.id, { link: '' })
     expectRoundTrip(store().data)
   })
 })

@@ -1,13 +1,13 @@
 import { SearchX } from 'lucide-react'
 import { ExerciseFilterFields } from '@/components/exercises/ExerciseFilterFields'
-import { ExerciseSearchLink } from '@/components/exercises/ExerciseSearchLink'
-import { Badge, EmptyState, Modal, PaginatedList } from '@/components/ui'
+import { ExerciseLink } from '@/components/exercises/ExerciseLink'
+import { EmptyState, Modal, PaginatedList } from '@/components/ui'
 import { useExerciseBrowser, useIsMobile } from '@/hooks'
 import { formatExerciseMeta } from '@/lib/exerciseLibrary'
-import type { AnyLibraryExercise } from '@/types'
+import type { LibraryExercise } from '@/types'
 
 export interface ExercisePickerModalProps {
-  onPick: (exercise: AnyLibraryExercise) => void
+  onPick: (exercise: LibraryExercise) => void
   onClose: () => void
 }
 
@@ -32,11 +32,10 @@ export function ExercisePickerModal({ onPick, onClose }: ExercisePickerModalProp
                 <button type="button" onClick={() => onPick(exercise)} className="flex min-h-12 min-w-0 flex-1 flex-col justify-center rounded-lg px-3 py-1.5 text-left">
                   <span className="flex items-center gap-2 text-md font-medium text-fg">
                     <span className="truncate">{exercise.name}</span>
-                    {exercise.custom && <Badge size="sm">Propio</Badge>}
                   </span>
                   <span className="truncate text-xs text-fg-muted">{formatExerciseMeta(exercise)}</span>
                 </button>
-                <ExerciseSearchLink name={exercise.name} />
+                <ExerciseLink name={exercise.name} link={exercise.link} />
               </div>
             )}
           />

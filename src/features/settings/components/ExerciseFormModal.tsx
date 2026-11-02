@@ -3,18 +3,18 @@ import { Button, Callout, Input, Modal, SegmentedControl, Select, Switch } from 
 import { EXERCISE_NAME_MAX_LENGTH } from '@/config/capacity'
 import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
 import { getLengthHint } from '@/lib/capacity'
-import type { AnyLibraryExercise } from '@/types'
+import type { LibraryExercise } from '@/types'
 import { MEASURE_OPTIONS } from '@/features/settings/config'
 import { useExerciseForm } from '@/features/settings/hooks/useExerciseForm'
 
 export interface ExerciseFormModalProps {
-  /** null = new custom exercise. */
-  exercise: AnyLibraryExercise | null
+  /** null = new exercise. */
+  exercise: LibraryExercise | null
   onClose: () => void
 }
 
 export function ExerciseFormModal({ exercise, onClose }: ExerciseFormModalProps) {
-  const { isEdit, values, setField, nameError, similar, submit } = useExerciseForm(exercise, onClose)
+  const { isEdit, values, setField, nameError, linkError, similar, submit } = useExerciseForm(exercise, onClose)
   const formId = useId()
 
   return (
@@ -68,6 +68,16 @@ export function ExerciseFormModal({ exercise, onClose }: ExerciseFormModalProps)
           hint="Ayudan a encontrarlo al buscar. Separa con comas."
           value={values.aliases}
           onChange={(e) => setField('aliases', e.target.value)}
+        />
+        <Input
+          label="Enlace (vídeo o explicación)"
+          type="url"
+          inputMode="url"
+          placeholder="Ej.: https://youtu.be/abc"
+          hint="Opcional. Sin enlace, el icono del ejercicio lo busca en Google."
+          value={values.link}
+          error={linkError}
+          onChange={(e) => setField('link', e.target.value)}
         />
       </form>
     </Modal>

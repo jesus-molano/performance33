@@ -1,6 +1,5 @@
 import { ChevronUp, Eye, Lock, TrendingUp } from 'lucide-react'
 import type { RefObject } from 'react'
-import { ExerciseSearchLink } from '@/components/exercises/ExerciseSearchLink'
 import { DropdownMenu, type MenuItem } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { formatEntrySummary } from '@/lib/format'
@@ -8,6 +7,7 @@ import type { ExerciseEntry } from '@/types'
 import { UNNAMED_EXERCISE } from '@/features/editor/config'
 import type { DragHandleBindings } from '@/features/editor/hooks/useSortableItem'
 import { DragHandle } from '@/features/editor/components/dnd/DragHandle'
+import { EntryExerciseLink } from './EntryExerciseLink'
 import { RowLabel } from './RowLabel'
 
 export interface ExerciseSummaryProps {
@@ -51,7 +51,7 @@ export function ExerciseSummary({ entry, label, showSets, week, expanded, handle
         <ChevronUp size={18} aria-hidden className="hidden shrink-0 text-fg-subtle md:block" />
       ) : (
         <span className="hidden md:contents">
-          <ExerciseSearchLink name={entry.name} />
+          <EntryExerciseLink entry={entry} />
         </span>
       )}
       <DropdownMenu items={menuItems} label={`Opciones de ${name}`} />

@@ -1,31 +1,29 @@
-// Who may do what, in the same terms as the database rules (supabase/schema.sql).
-// The UI uses these to hide controls; the database is what actually enforces them.
+// Who may do what, in the same terms as the server (supabase/schema.sql and the admin-users function).
+// The UI uses these to hide controls; the server is what actually enforces them.
 
-import type { AppData, ClientNote, StaffAccessPatch, StaffMember } from '@/types'
+import { accountErrorMessage } from './accountMessages'
+import { accessChangeRefusal, type AccessChange } from './accountRules'
+import type { AppData, ClientNote, TeamMember } from '@/types'
 
-export const isActiveAdmin = (staff: StaffMember | null): boolean => staff?.role === 'admin' && staff.active
+export const isActiveAdmin = (member: TeamMember | null): boolean => member?.role === 'admin' && member.active
 
 /** Only the author or an admin can edit or delete a note. */
-export const canEditNote = (note: Pick<ClientNote, 'authorId'>, staff: StaffMember | null): boolean =>
-  staff !== null && (isActiveAdmin(staff) || note.authorId === staff.id)
+export const canEditNote = (note: Pick<ClientNote, 'authorId'>, member: TeamMember | null): boolean =>
+  member !== null && (isActiveAdmin(member) || note.authorId === member.id)
 
 /** Deleting a client takes everyone's notes with it, so only an admin can. Monitors archive. */
 export const canDeleteClient = isActiveAdmin
 
 /** Spanish reason why this access change is not allowed, or null when it is. */
 export function accessChangeError(
-  team: readonly StaffMember[],
-  actor: StaffMember | null,
+  team: readonly TeamMember[],
+  actor: TeamMember | null,
   targetId: string,
-  patch: StaffAccessPatch,
+  change: AccessChange,
 ): string | null {
   if (!isActiveAdmin(actor)) return 'Solo un administrador puede hacer esto.'
-  if (actor?.id === targetId) return 'No puedes cambiar tu propio acceso.'
-  const target = team.find((member) => member.id === targetId)
-  if (!target) return 'Esa persona ya no está en el equipo.'
-  const staysAdmin = (patch.role ?? target.role) === 'admin' && (patch.active ?? target.active)
-  const otherAdmin = team.some((member) => member.id !== targetId && isActiveAdmin(member))
-  return isActiveAdmin(target) && !staysAdmin && !otherAdmin ? 'Tiene que quedar al menos un administrador.' : null
+  const refusal = accessChangeRefusal(team, actor?.id ?? null, targetId, change)
+  return refusal ? accountErrorMessage(refusal) : null
 }
 
 /**

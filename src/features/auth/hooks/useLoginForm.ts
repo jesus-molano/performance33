@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { auth } from '@/auth'
 import { AUTH_COPY } from '@/features/auth/config'
-import { errorText, isValidEmail } from '@/features/auth/utils/credentials'
+import { errorText } from '@/features/auth/utils/credentials'
 
 export interface LoginFormApi {
-  email: string
-  setEmail: (email: string) => void
+  identifier: string
+  setIdentifier: (identifier: string) => void
   password: string
   setPassword: (password: string) => void
   error: string | null
@@ -14,9 +14,9 @@ export interface LoginFormApi {
   continueWithGoogle: () => Promise<void>
 }
 
-/** Email + password or Google. After success the session flow changes the screen by itself. */
+/** Email or username + password, or Google. After success the session flow changes the screen by itself. */
 export function useLoginForm(): LoginFormApi {
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -35,16 +35,16 @@ export function useLoginForm(): LoginFormApi {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!isValidEmail(email) || !password) {
+    if (!identifier.trim() || !password) {
       setError(AUTH_COPY.missingCredentials)
       return
     }
-    await run(() => auth.signInWithPassword(email.trim(), password))
+    await run(() => auth.signIn(identifier.trim(), password))
   }
 
   return {
-    email,
-    setEmail,
+    identifier,
+    setIdentifier,
     password,
     setPassword,
     error,

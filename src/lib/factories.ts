@@ -2,7 +2,7 @@
 // Used by the store and the seed. All return NEW objects with fresh ids.
 
 import { DEFAULT_BRANDING } from '@/config/branding'
-import { SCHEMA_VERSION, type AnyLibraryExercise, type AppData, type Block, type BlockType, type Day, type ExerciseEntry } from '@/types'
+import { SCHEMA_VERSION, type AppData, type Block, type BlockType, type Day, type ExerciseEntry, type LibraryExercise } from '@/types'
 import { BLOCK_TYPE_META } from '@/config/blockTypes'
 import { DEFAULT_REPS, DEFAULT_SETS } from '@/config/exerciseFields'
 import { defaultDayName } from './days'
@@ -33,7 +33,7 @@ export function createExercise(init: Partial<ExerciseEntry> = {}): ExerciseEntry
 }
 
 /** Sensible measure defaults when picking a library exercise (keeps sets/rest from `base`). */
-export function exercisePatchFromLibrary(lib: AnyLibraryExercise, base?: Partial<ExerciseEntry>): Partial<ExerciseEntry> {
+export function exercisePatchFromLibrary(lib: LibraryExercise, base?: Partial<ExerciseEntry>): Partial<ExerciseEntry> {
   const patch: Partial<ExerciseEntry> = {
     libraryId: lib.id,
     name: lib.name,
@@ -89,7 +89,7 @@ export function createEmptyData(): AppData {
     clients: [],
     programs: [],
     notes: [],
-    customExercises: [],
+    library: [],
     branding: { ...DEFAULT_BRANDING },
   }
 }

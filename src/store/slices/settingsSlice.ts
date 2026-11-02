@@ -4,12 +4,12 @@ import { removeById, updateById } from '@/lib/arrays'
 import { newId } from '@/lib/ids'
 import { adoptImportedData } from '@/lib/ownership'
 import { mapProgramExercises } from '@/lib/programTree'
-import type { AppData, CustomExercise, CustomExerciseInput } from '@/types'
-import { getCurrentStaffId, getTeamIds } from '@/store/sessionStore'
+import type { AppData, LibraryExercise, LibraryExerciseInput } from '@/types'
+import { getCurrentProfileId, getTeamIds } from '@/store/sessionStore'
 import type { SettingsActions, SliceContext } from '@/store/types'
 import { groupKey } from '@/store/undoGroup'
 
-function buildCustomExercise(id: string, input: CustomExerciseInput): CustomExercise {
+function buildLibraryExercise(id: string, input: LibraryExerciseInput): LibraryExercise {
   return {
     id,
     name: input.name.trim(),
@@ -18,34 +18,42 @@ function buildCustomExercise(id: string, input: CustomExerciseInput): CustomExer
     defaultMeasure: input.defaultMeasure ?? 'reps',
     ...(input.perSide ? { perSide: true } : {}),
     ...(input.aliases?.length ? { aliases: input.aliases } : {}),
-    custom: true,
+    ...(input.link ? { link: input.link } : {}),
     createdAt: new Date().toISOString(),
   }
 }
 
+/** A removed link leaves no empty key behind: the saved row must read back equal. */
+function withoutEmptyLink(exercise: LibraryExercise): LibraryExercise {
+  if (exercise.link) return exercise
+  const clean = { ...exercise }
+  delete clean.link
+  return clean
+}
+
 /** Notes and routines signed by people outside this team pass to whoever loads them. */
-const adopt = (data: AppData): AppData => adoptImportedData(data, getTeamIds(), getCurrentStaffId())
+const adopt = (data: AppData): AppData => adoptImportedData(data, getTeamIds(), getCurrentProfileId())
 
 export function createSettingsSlice({ commit, clearHistory }: SliceContext): SettingsActions {
   return {
     updateBranding: (patch) =>
       commit((d) => ({ ...d, branding: { ...d.branding, ...patch } }), groupKey('branding', '', patch)),
     resetBranding: () => commit((d) => ({ ...d, branding: { ...DEFAULT_BRANDING } })),
-    addCustomExercise: (input) => {
-      const id = newId('custom')
-      commit((d) => ({ ...d, customExercises: [...d.customExercises, buildCustomExercise(id, input)] }))
+    addLibraryExercise: (input) => {
+      const id = newId('exercise')
+      commit((d) => ({ ...d, library: [...d.library, buildLibraryExercise(id, input)] }))
       return id
     },
-    updateCustomExercise: (id, patch) =>
+    updateLibraryExercise: (id, patch) =>
       commit(
-        (d) => ({ ...d, customExercises: updateById(d.customExercises, id, (e) => ({ ...e, ...patch })) }),
-        groupKey('custom', id, patch),
+        (d) => ({ ...d, library: updateById(d.library, id, (e) => withoutEmptyLink({ ...e, ...patch })) }),
+        groupKey('library', id, patch),
       ),
     // Rows that used it become free text (so 'Guardar en biblioteca' works again); one undo restores both.
-    deleteCustomExercise: (id) =>
+    deleteLibraryExercise: (id) =>
       commit((d) => ({
         ...d,
-        customExercises: removeById(d.customExercises, id),
+        library: removeById(d.library, id),
         programs: d.programs.map((p) =>
           mapProgramExercises(p, (e) => (e.libraryId === id ? { ...e, libraryId: null } : e)),
         ),

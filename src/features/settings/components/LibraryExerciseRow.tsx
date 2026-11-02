@@ -1,17 +1,17 @@
 import { Pencil, Trash2 } from 'lucide-react'
-import { ExerciseSearchLink } from '@/components/exercises/ExerciseSearchLink'
+import { ExerciseLink } from '@/components/exercises/ExerciseLink'
 import { Badge, DropdownMenu, type MenuItem } from '@/components/ui'
 import { MEASURE_META } from '@/config/exerciseFields'
-import type { AnyLibraryExercise } from '@/types'
+import type { LibraryExercise } from '@/types'
 import { formatExerciseMeta } from '@/lib/exerciseLibrary'
 
 export interface LibraryExerciseRowProps {
-  exercise: AnyLibraryExercise
-  onEdit: (exercise: AnyLibraryExercise) => void
-  onDelete: (exercise: AnyLibraryExercise) => void
+  exercise: LibraryExercise
+  onEdit: (exercise: LibraryExercise) => void
+  onDelete: (exercise: LibraryExercise) => void
 }
 
-/** Library entry. Only custom exercises can be edited or deleted. */
+/** Library entry: every exercise can be edited or deleted. */
 export function LibraryExerciseRow({ exercise, onEdit, onDelete }: LibraryExerciseRowProps) {
   const menu: MenuItem[] = [
     { label: 'Editar', icon: Pencil, onSelect: () => onEdit(exercise) },
@@ -26,17 +26,8 @@ export function LibraryExerciseRow({ exercise, onEdit, onDelete }: LibraryExerci
       <Badge size="sm" className="hidden sm:inline-flex">
         {MEASURE_META[exercise.defaultMeasure].label}
       </Badge>
-      <ExerciseSearchLink name={exercise.name} />
-      {exercise.custom ? (
-        <>
-          <Badge tone="brand" size="sm">
-            Propio
-          </Badge>
-          <DropdownMenu items={menu} label={`Opciones de ${exercise.name}`} />
-        </>
-      ) : (
-        <span className="hidden w-11 text-center text-xs text-fg-subtle sm:block">Incluido</span>
-      )}
+      <ExerciseLink name={exercise.name} link={exercise.link} />
+      <DropdownMenu items={menu} label={`Opciones de ${exercise.name}`} />
     </div>
   )
 }

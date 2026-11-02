@@ -30,7 +30,7 @@ export const metaOf = (envelope: Partial<ChangeMeta>): ChangeMeta => ({
 /** Normalised and re-sanitised on read (even a tampered key cannot carry private fields). */
 function normalizeDisplayData(raw: unknown): DisplayData | null {
   if (typeof raw !== 'object' || raw === null) return null
-  const data = normalizeAppData({ notes: [], customExercises: [], ...raw })
+  const data = normalizeAppData({ notes: [], library: [], ...raw })
   return data ? toDisplayData(data) : null
 }
 

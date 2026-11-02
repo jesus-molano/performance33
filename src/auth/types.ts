@@ -1,17 +1,19 @@
-// Contracts of the login and the team list, implemented for the cloud and for local test mode.
+// Contracts of the login and the team, implemented for the cloud and for local test mode.
 
-import type { NewStaffInput, StaffAccessPatch, StaffMember, StaffProfilePatch, StaffRole } from '@/types'
+import type { OwnProfilePatch, Profile, ProfileRole, TeamMember } from '@/types'
 
 export interface AuthUser {
   id: string
   email: string | null
 }
 
-export type AuthEvent =
-  | { type: 'signed-in'; user: AuthUser }
-  | { type: 'signed-out' }
-  /** Arrived through a password-reset link. */
-  | { type: 'recovery'; user: AuthUser }
+export type AuthEvent = { type: 'signed-in'; user: AuthUser } | { type: 'signed-out' }
+
+export interface SignInMethods {
+  google: boolean
+  /** Never true when Google is the only way in. */
+  canDisconnectGoogle: boolean
+}
 
 export interface AuthService {
   readonly isLocal: boolean
@@ -19,25 +21,46 @@ export interface AuthService {
   getUser(): Promise<AuthUser | null>
   /** Also fires when another window of this browser signs in or out. */
   onChange(listener: (event: AuthEvent) => void): () => void
-  /** All of these reject with a Spanish message. */
-  signInWithPassword(email: string, password: string): Promise<void>
+  /** Email or username (it has an '@' or it does not). This and all below reject with a Spanish message. */
+  signIn(identifier: string, password: string): Promise<void>
   signInWithGoogle(): Promise<void>
-  requestPasswordReset(email: string): Promise<void>
-  updatePassword(password: string): Promise<void>
+  /** Rejects with SamePasswordError when it is the password already in place. */
+  changePassword(password: string): Promise<void>
+  getSignInMethods(): Promise<SignInMethods>
+  /** Leaves for Google and comes back to this site. */
+  connectGoogle(): Promise<void>
+  disconnectGoogle(): Promise<void>
   /** Signs out on this device only. Always leaves this device signed out, even without connection. */
   signOut(): Promise<void>
-  /** Exists ONLY in local test mode: sign in as a demo person, without a password. */
-  readonly demoSignIn?: (role: StaffRole) => Promise<void>
+}
+
+export interface NewAccountInput {
+  name: string
+  username: string
+  email: string | null
+  role: ProfileRole
+  color: string
 }
 
 export interface TeamService {
-  /** Links the account to its staff row on first sign-in. null = not on the active list. Rejects without connection. */
-  claimProfile(): Promise<StaffMember | null>
-  list(): Promise<StaffMember[]>
+  /** The signed-in person's account. null = no access. Rejects without connection. */
+  getOwnProfile(): Promise<Profile | null>
+  /** What everyone can see of everyone (note signatures). */
+  list(): Promise<TeamMember[]>
   /** The methods below reject with a Spanish message. */
-  add(input: NewStaffInput, color: string): Promise<void>
-  updateAccess(id: string, patch: StaffAccessPatch): Promise<void>
-  updateOwnProfile(id: string, patch: StaffProfilePatch): Promise<void>
-  /** Someone changed the team list. */
+  updateOwnProfile(id: string, patch: OwnProfilePatch): Promise<void>
+  /** Ends the first-login step; refused while the password is still the temporary one. */
+  finishPasswordChange(): Promise<void>
+  /** Someone changed the team. */
   subscribe(listener: () => void): () => void
+
+  // Administrators only (Ajustes → Equipo). The server checks it.
+  listAccounts(): Promise<Profile[]>
+  /** Returns the temporary password: this is the only time anyone can see it. */
+  createAccount(input: NewAccountInput): Promise<string>
+  /** Returns the new temporary password and closes that person's sessions. */
+  resetPassword(id: string): Promise<string>
+  setRole(id: string, role: ProfileRole): Promise<void>
+  setActive(id: string, active: boolean): Promise<void>
+  deleteAccount(id: string): Promise<void>
 }

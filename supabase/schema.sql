@@ -1,27 +1,36 @@
 -- Performance33 · Rutinas: base de datos, permisos y tiempo real.
 -- Ejecútalo en el SQL Editor de Supabase (se puede repetir sin romper nada).
--- El primer administrador se añade aparte, con la instrucción del README.md.
+-- La primera cuenta de administrador se crea aparte, como explica el README.md.
 
 -- ── Tablas ──────────────────────────────────────────────────────────────────
 
--- Lista de acceso: solo entra quien tenga aquí una fila activa con su email.
-create table if not exists public.staff (
+-- Una fila por persona con cuenta. Las cuentas las crea el administrador (función admin-users) y el rol
+-- decide qué puede hacer cada una. Para añadir un rol: amplía el check, is_active_staff y lo que le toque.
+create table if not exists public.profiles (
   id uuid primary key default gen_random_uuid(),
-  email text not null unique check (email = lower(email)),
-  name text not null default '',
-  color text not null default '#d6449a',
+  user_id uuid not null unique references auth.users (id) on delete cascade,
+  username text not null unique check (username ~ '^[a-z0-9][a-z0-9._-]{2,29}$'),
+  -- Vacío en las cuentas sin email: su dirección interna (.invalid) solo existe en auth.users.
+  email text unique check (email = lower(email)),
+  name text not null default '' check (char_length(name) <= 60),
+  color text not null default '#d6449a' check (color ~ '^#[0-9a-fA-F]{6}$'),
   role text not null default 'monitor' check (role in ('admin', 'monitor')),
   active boolean not null default true,
-  user_id uuid unique references auth.users (id) on delete set null,
+  must_change_password boolean not null default false,
+  -- La contraseña temporal vigente (su hash): así se sabe si de verdad la ha cambiado. Nadie la lee desde la app.
+  temp_password_hash text,
   created_at timestamptz not null default now()
 );
 
-alter table public.staff drop constraint if exists staff_name_length;
-alter table public.staff add constraint staff_name_length check (char_length(name) <= 60);
-alter table public.staff drop constraint if exists staff_color_hex;
-alter table public.staff add constraint staff_color_hex check (color ~ '^#[0-9a-fA-F]{6}$');
 -- Las notas firman con el nombre y el color: nadie puede ponerse el nombre de otro.
-create unique index if not exists staff_name_unique on public.staff (lower(trim(name))) where trim(name) <> '';
+create unique index if not exists profiles_name_unique on public.profiles (lower(trim(name))) where trim(name) <> '';
+
+-- Intentos fallidos de entrar con usuario. El límite de intentos del servidor de acceso solo vería la IP de la función.
+create table if not exists public.login_attempts (
+  username text primary key,
+  failures integer not null default 1,
+  first_failed_at timestamptz not null default now()
+);
 
 -- Una fila por entidad; `data` guarda el objeto de la app tal cual. `client_origin` identifica la
 -- ventana que escribió (para ignorar el eco de sus propios cambios en tiempo real).
@@ -30,7 +39,7 @@ create table if not exists public.clients (
   data jsonb not null,
   client_origin text,
   updated_at timestamptz not null default now(),
-  updated_by uuid references public.staff (id) on delete set null
+  updated_by uuid references public.profiles (id) on delete set null
 );
 
 create table if not exists public.programs (
@@ -38,7 +47,7 @@ create table if not exists public.programs (
   data jsonb not null,
   client_origin text,
   updated_at timestamptz not null default now(),
-  updated_by uuid references public.staff (id) on delete set null
+  updated_by uuid references public.profiles (id) on delete set null
 );
 
 create table if not exists public.library_exercises (
@@ -46,7 +55,7 @@ create table if not exists public.library_exercises (
   data jsonb not null,
   client_origin text,
   updated_at timestamptz not null default now(),
-  updated_by uuid references public.staff (id) on delete set null
+  updated_by uuid references public.profiles (id) on delete set null
 );
 
 -- Al borrar un cliente sus notas se borran con él, sean de quien sean: una nota de salud no debe
@@ -54,34 +63,48 @@ create table if not exists public.library_exercises (
 create table if not exists public.notes (
   id text primary key,
   data jsonb not null,
-  author_staff_id uuid references public.staff (id) on delete set null,
+  author_profile_id uuid references public.profiles (id) on delete set null,
   client_id text not null references public.clients (id) on delete cascade,
   client_origin text,
   updated_at timestamptz not null default now(),
-  updated_by uuid references public.staff (id) on delete set null
+  updated_by uuid references public.profiles (id) on delete set null
 );
 
 create index if not exists notes_client_id_idx on public.notes (client_id);
 
--- Una sola fila: la marca del gimnasio.
+-- Una sola fila: la marca del gimnasio, y cuándo se cargó la biblioteca inicial (solo una vez, aunque luego se vacíe).
 create table if not exists public.settings (
   id text primary key default 'main' check (id = 'main'),
   data jsonb not null,
+  library_seeded_at timestamptz,
   client_origin text,
   updated_at timestamptz not null default now(),
-  updated_by uuid references public.staff (id) on delete set null
+  updated_by uuid references public.profiles (id) on delete set null
 );
 
 -- ── Funciones de ayuda para los permisos ───────────────────────────────────
 
-create or replace function public.current_staff_id()
+-- Quien entra con Google no tiene contraseña temporal que cambiar. El dato viene firmado en su sesión.
+create or replace function public.signed_in_with_google()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(auth.jwt() -> 'amr' @> '[{"method": "oauth"}]'::jsonb or auth.jwt() -> 'amr' @> '["oauth"]'::jsonb, false)
+$$;
+
+-- Mientras tenga que cambiar la contraseña temporal, la cuenta no cuenta como equipo: no lee ni escribe nada.
+create or replace function public.current_profile_id()
 returns uuid
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select id from public.staff where user_id = auth.uid() and active
+  select id from public.profiles
+  where user_id = auth.uid() and active and (not must_change_password or public.signed_in_with_google())
 $$;
 
 create or replace function public.is_active_staff()
@@ -91,7 +114,10 @@ stable
 security definer
 set search_path = ''
 as $$
-  select exists (select 1 from public.staff where user_id = auth.uid() and active)
+  select exists (
+    select 1 from public.profiles
+    where id = public.current_profile_id() and role in ('admin', 'monitor')
+  )
 $$;
 
 create or replace function public.is_admin()
@@ -101,150 +127,207 @@ stable
 security definer
 set search_path = ''
 as $$
-  select exists (select 1 from public.staff where user_id = auth.uid() and active and role = 'admin')
+  select exists (select 1 from public.profiles where id = public.current_profile_id() and role = 'admin')
 $$;
 
--- Primer acceso: enlaza la cuenta con su fila de `staff`, solo si el email está verificado y además la
--- cuenta es de fiar. Un email verificado no basta: cualquiera puede registrar el email de un monitor con
--- su propia contraseña, y el monitor confirmarlo sin darse cuenta. Son de fiar las cuentas solo de Google
--- con ese mismo email, y las autorizadas con allow_password_account. Una fila ya enlazada a otra cuenta
--- no se puede reclamar. Devuelve la fila activa, o nada si no hay acceso.
-create or replace function public.claim_staff_profile()
-returns setof public.staff
-language plpgsql
+-- La cuenta de quien ha entrado, aunque aún tenga que cambiar la contraseña: nada si no tiene acceso.
+create or replace function public.my_profile()
+returns table (
+  id uuid, username text, email text, name text, color text, role text, active boolean, must_change_password boolean
+)
+language sql
+stable
 security definer
 set search_path = ''
 as $$
-declare
-  verified_email text;
-begin
-  select lower(u.email) into verified_email
-  from auth.users u
-  where u.id = auth.uid()
-    and u.email_confirmed_at is not null
-    and lower(u.email) = lower(auth.jwt() ->> 'email')
-    and (
-      u.raw_app_meta_data ->> 'p33_password_allowed' = 'true'
-      or (
-        exists (select 1 from auth.identities i where i.user_id = u.id)
-        and not exists (
-          select 1 from auth.identities i
-          where i.user_id = u.id
-            and (i.provider <> 'google' or lower(i.identity_data ->> 'email') is distinct from lower(u.email))
-        )
-      )
-    );
-
-  if verified_email is not null then
-    update public.staff
-    set user_id = auth.uid()
-    where email = verified_email and active and user_id is null;
-  end if;
-
-  return query select * from public.staff where user_id = auth.uid() and active;
-end;
+  select p.id, p.username, p.email, p.name, p.color, p.role, p.active,
+    p.must_change_password and not public.signed_in_with_google()
+  from public.profiles p
+  where p.user_id = auth.uid() and p.active
 $$;
 
--- Autoriza una cuenta con contraseña creada a mano en el panel de Supabase. Se ejecuta en el SQL Editor,
--- nunca desde la app: solo el dueño de la base de datos puede llamarla.
-create or replace function public.allow_password_account(account_email text)
+-- Ajustes → Equipo: los datos de acceso de todos, solo para administradores.
+create or replace function public.team_accounts()
+returns table (
+  id uuid, username text, email text, name text, color text, role text, active boolean, must_change_password boolean
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.id, p.username, p.email, p.name, p.color, p.role, p.active, p.must_change_password
+  from public.profiles p
+  where public.is_admin()
+  order by p.name
+$$;
+
+-- Termina el primer acceso. Solo funciona si la contraseña ya no es la temporal: llamarla no basta para saltárselo.
+create or replace function public.finish_password_change()
 returns void
 language plpgsql
+security definer
 set search_path = ''
 as $$
 begin
-  update auth.users
-  set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"p33_password_allowed": true}'::jsonb
-  where lower(email) = lower(trim(account_email));
+  update public.profiles p
+  set must_change_password = false
+  where p.user_id = auth.uid()
+    and p.active
+    and p.must_change_password
+    and p.temp_password_hash is distinct from (select u.encrypted_password from auth.users u where u.id = auth.uid());
   if not found then
-    raise exception 'No hay ninguna cuenta con ese email: créala primero en Authentication > Users.';
+    raise exception 'password_not_changed' using errcode = 'P0001';
   end if;
 end;
 $$;
 
-revoke all on function public.allow_password_account(text) from public, anon, authenticated;
-revoke all on function public.current_staff_id() from public, anon;
+-- La biblioteca inicial se sube una sola vez, en la primera sesión de un administrador.
+create or replace function public.library_seed_pending()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.is_admin()
+    and not exists (select 1 from public.settings where library_seeded_at is not null)
+$$;
+
+create or replace function public.finish_library_seed()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'not_admin' using errcode = '42501';
+  end if;
+  insert into public.settings (id, data, library_seeded_at) values ('main', '{}', now())
+  on conflict (id) do update set library_seeded_at = coalesce(public.settings.library_seeded_at, now());
+end;
+$$;
+
+-- Cierra las sesiones de una cuenta (nueva contraseña temporal, desactivada). Solo la función admin-users.
+create or replace function public.revoke_user_sessions(target uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from auth.sessions where user_id = target;
+  delete from auth.refresh_tokens where user_id = target::text;
+end;
+$$;
+
+-- Bloqueo por usuario: 5 fallos en 15 minutos. Solo la función login-username.
+create or replace function public.login_is_locked(p_username text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.login_attempts
+    where username = p_username and failures >= 5 and first_failed_at > now() - interval '15 minutes'
+  )
+$$;
+
+create or replace function public.login_record_failure(p_username text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from public.login_attempts where first_failed_at <= now() - interval '15 minutes';
+  insert into public.login_attempts (username) values (p_username)
+  on conflict (username) do update set failures = public.login_attempts.failures + 1;
+end;
+$$;
+
+create or replace function public.login_clear_failures(p_username text)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from public.login_attempts where username = p_username
+$$;
+
+revoke all on function public.signed_in_with_google() from public, anon, authenticated;
+revoke all on function public.current_profile_id() from public, anon;
 revoke all on function public.is_active_staff() from public, anon;
 revoke all on function public.is_admin() from public, anon;
-revoke all on function public.claim_staff_profile() from public, anon;
-grant execute on function public.current_staff_id() to authenticated;
+revoke all on function public.my_profile() from public, anon;
+revoke all on function public.team_accounts() from public, anon;
+revoke all on function public.finish_password_change() from public, anon;
+revoke all on function public.library_seed_pending() from public, anon;
+revoke all on function public.finish_library_seed() from public, anon;
+revoke all on function public.revoke_user_sessions(uuid) from public, anon, authenticated;
+revoke all on function public.login_is_locked(text) from public, anon, authenticated;
+revoke all on function public.login_record_failure(text) from public, anon, authenticated;
+revoke all on function public.login_clear_failures(text) from public, anon, authenticated;
+
+grant execute on function public.current_profile_id() to authenticated;
 grant execute on function public.is_active_staff() to authenticated;
 grant execute on function public.is_admin() to authenticated;
-grant execute on function public.claim_staff_profile() to authenticated;
+grant execute on function public.my_profile() to authenticated;
+grant execute on function public.team_accounts() to authenticated;
+grant execute on function public.finish_password_change() to authenticated;
+grant execute on function public.library_seed_pending() to authenticated;
+grant execute on function public.finish_library_seed() to authenticated;
+grant execute on function public.revoke_user_sessions(uuid) to service_role;
+grant execute on function public.login_is_locked(text) to service_role;
+grant execute on function public.login_record_failure(text) to service_role;
+grant execute on function public.login_clear_failures(text) to service_role;
 
--- ── Reglas del equipo (triggers) ────────────────────────────────────────────
+-- ── Reglas de las cuentas (triggers) ────────────────────────────────────────
 
--- Estos triggers NO son security definer: así `current_user` distingue a quien usa la app
--- ('authenticated') de claim_staff_profile y del borrado en cascada de una cuenta, que actúan como dueño.
-create or replace function public.staff_normalize_email()
+create or replace function public.profiles_normalize()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
 begin
-  new.email := lower(trim(new.email));
-  if tg_op = 'INSERT' and current_user = 'authenticated' then
-    new.user_id := null;
-  end if;
+  new.username := lower(trim(new.username));
+  new.email := nullif(lower(trim(new.email)), '');
   return new;
 end;
 $$;
 
-create or replace function public.staff_guard_update()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-begin
-  if current_user <> 'authenticated' then
-    return new;
-  end if;
-  if new.id <> old.id or new.created_at <> old.created_at
-    or new.email is distinct from old.email
-    or new.user_id is distinct from old.user_id then
-    raise exception 'staff_field_locked' using errcode = 'P0001';
-  end if;
-  if old.user_id = auth.uid() and (new.role <> old.role or new.active <> old.active) then
-    raise exception 'staff_own_access_locked' using errcode = 'P0001';
-  end if;
-  if not public.is_admin() and (new.role <> old.role or new.active <> old.active) then
-    raise exception 'staff_own_access_locked' using errcode = 'P0001';
-  end if;
-  return new;
-end;
-$$;
-
--- Nadie puede borrarse a sí mismo: quedaría fuera sin poder volver a entrar.
-create or replace function public.staff_guard_delete()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-begin
-  if current_user = 'authenticated' and old.user_id = auth.uid() then
-    raise exception 'staff_own_access_locked' using errcode = 'P0001';
-  end if;
-  return old;
-end;
-$$;
-
--- Siempre tiene que quedar un administrador activo que ya haya entrado: una fila sin reclamar no cuenta,
--- y se puede quitar (por si se escribió mal un email). El bloqueo evita que dos admins se quiten a la vez.
-create or replace function public.staff_keep_last_admin()
+-- Cada vez que se marca el cambio obligatorio se apunta la contraseña que hay en ese momento: por eso la
+-- función admin-users cambia primero la contraseña y después la marca.
+create or replace function public.profiles_remember_temp_password()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  if old.role = 'admin' and old.active and old.user_id is not null
+  new.temp_password_hash := case
+    when new.must_change_password then (select u.encrypted_password from auth.users u where u.id = new.user_id)
+  end;
+  return new;
+end;
+$$;
+
+-- Siempre tiene que quedar un administrador activo. El bloqueo evita que dos admins se quiten a la vez.
+create or replace function public.profiles_keep_last_admin()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if old.role = 'admin' and old.active
     and (tg_op = 'DELETE' or new.role <> 'admin' or not new.active) then
-    perform pg_advisory_xact_lock(hashtext('public.staff.admins'));
-    if not exists (
-      select 1 from public.staff
-      where id <> old.id and active and role = 'admin' and user_id is not null
-    ) then
-      raise exception 'staff_last_admin' using errcode = 'P0001';
+    perform pg_advisory_xact_lock(hashtext('public.profiles.admins'));
+    if not exists (select 1 from public.profiles where id <> old.id and active and role = 'admin') then
+      raise exception 'profile_last_admin' using errcode = 'P0001';
     end if;
   end if;
   if tg_op = 'DELETE' then
@@ -254,24 +337,17 @@ begin
 end;
 $$;
 
--- Sustituida por la comprobación de arriba: ya no hace falta exponerla a la app.
-drop function if exists public.other_active_admin_exists(uuid);
+drop trigger if exists profiles_normalize on public.profiles;
+create trigger profiles_normalize before insert or update of email, username on public.profiles
+  for each row execute function public.profiles_normalize();
 
-drop trigger if exists staff_normalize_email on public.staff;
-create trigger staff_normalize_email before insert or update of email on public.staff
-  for each row execute function public.staff_normalize_email();
+drop trigger if exists profiles_remember_temp_password on public.profiles;
+create trigger profiles_remember_temp_password before insert or update of must_change_password on public.profiles
+  for each row execute function public.profiles_remember_temp_password();
 
-drop trigger if exists staff_guard_update on public.staff;
-create trigger staff_guard_update before update on public.staff
-  for each row execute function public.staff_guard_update();
-
-drop trigger if exists staff_guard_delete on public.staff;
-create trigger staff_guard_delete before delete on public.staff
-  for each row execute function public.staff_guard_delete();
-
-drop trigger if exists staff_keep_last_admin on public.staff;
-create trigger staff_keep_last_admin before update or delete on public.staff
-  for each row execute function public.staff_keep_last_admin();
+drop trigger if exists profiles_keep_last_admin on public.profiles;
+create trigger profiles_keep_last_admin before update or delete on public.profiles
+  for each row execute function public.profiles_keep_last_admin();
 
 -- Fecha y autor los pone siempre el servidor (no se pueden falsificar desde el navegador).
 create or replace function public.stamp_row()
@@ -281,7 +357,7 @@ set search_path = ''
 as $$
 begin
   new.updated_at := now();
-  new.updated_by := public.current_staff_id();
+  new.updated_by := public.current_profile_id();
   return new;
 end;
 $$;
@@ -299,29 +375,31 @@ $$;
 
 -- ── Permisos por fila (RLS) ─────────────────────────────────────────────────
 
-alter table public.staff enable row level security;
+alter table public.profiles enable row level security;
+alter table public.login_attempts enable row level security;
 alter table public.clients enable row level security;
 alter table public.programs enable row level security;
 alter table public.library_exercises enable row level security;
 alter table public.notes enable row level security;
 alter table public.settings enable row level security;
 
-revoke all on public.staff, public.clients, public.programs, public.library_exercises, public.notes, public.settings from anon, authenticated;
+revoke all on public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings from anon, authenticated;
 grant select, insert, update, delete
-  on public.staff, public.clients, public.programs, public.library_exercises, public.notes, public.settings
+  on public.clients, public.programs, public.library_exercises, public.notes, public.settings
   to authenticated;
+grant all on public.profiles, public.login_attempts to service_role;
 
--- Equipo: lo ve el equipo; altas y bajas, el admin; cada uno edita su fila (el trigger limita a nombre y color).
-drop policy if exists staff_select on public.staff;
-create policy staff_select on public.staff for select to authenticated using (public.is_active_staff());
-drop policy if exists staff_insert on public.staff;
-create policy staff_insert on public.staff for insert to authenticated with check (public.is_admin());
-drop policy if exists staff_update on public.staff;
-create policy staff_update on public.staff for update to authenticated
-  using (public.is_admin() or (active and user_id = auth.uid()))
-  with check (public.is_admin() or (active and user_id = auth.uid()));
-drop policy if exists staff_delete on public.staff;
-create policy staff_delete on public.staff for delete to authenticated using (public.is_admin());
+-- El equipo ve de los demás solo lo que firma una nota. Cada uno cambia su nombre y su color; lo demás
+-- (altas, bajas, roles) pasa por la función admin-users. Email y usuario se leen con my_profile y team_accounts.
+grant select (id, name, color, role, active) on public.profiles to authenticated;
+grant update (name, color) on public.profiles to authenticated;
+
+drop policy if exists profiles_select on public.profiles;
+create policy profiles_select on public.profiles for select to authenticated using (public.is_active_staff());
+drop policy if exists profiles_update on public.profiles;
+create policy profiles_update on public.profiles for update to authenticated
+  using (id = public.current_profile_id())
+  with check (id = public.current_profile_id());
 
 -- Rutinas y biblioteca: todo el equipo activo.
 do $$
@@ -339,7 +417,6 @@ end;
 $$;
 
 -- Clientes: todo el equipo; borrarlos, solo el admin, porque se llevan las notas de todos. Los monitores archivan.
-drop policy if exists clients_all on public.clients;
 drop policy if exists clients_select on public.clients;
 create policy clients_select on public.clients for select to authenticated using (public.is_active_staff());
 drop policy if exists clients_insert on public.clients;
@@ -355,14 +432,14 @@ drop policy if exists notes_select on public.notes;
 create policy notes_select on public.notes for select to authenticated using (public.is_active_staff());
 drop policy if exists notes_insert on public.notes;
 create policy notes_insert on public.notes for insert to authenticated
-  with check (public.is_admin() or (public.is_active_staff() and author_staff_id = public.current_staff_id()));
+  with check (public.is_admin() or (public.is_active_staff() and author_profile_id = public.current_profile_id()));
 drop policy if exists notes_update on public.notes;
 create policy notes_update on public.notes for update to authenticated
-  using (public.is_admin() or (public.is_active_staff() and author_staff_id = public.current_staff_id()))
-  with check (public.is_admin() or (public.is_active_staff() and author_staff_id = public.current_staff_id()));
+  using (public.is_admin() or (public.is_active_staff() and author_profile_id = public.current_profile_id()))
+  with check (public.is_admin() or (public.is_active_staff() and author_profile_id = public.current_profile_id()));
 drop policy if exists notes_delete on public.notes;
 create policy notes_delete on public.notes for delete to authenticated
-  using (public.is_admin() or (public.is_active_staff() and author_staff_id = public.current_staff_id()));
+  using (public.is_admin() or (public.is_active_staff() and author_profile_id = public.current_profile_id()));
 
 -- Marca: la lee el equipo, la cambia el admin.
 drop policy if exists settings_select on public.settings;
@@ -380,7 +457,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['staff', 'clients', 'programs', 'library_exercises', 'notes', 'settings'] loop
+  foreach t in array array['profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

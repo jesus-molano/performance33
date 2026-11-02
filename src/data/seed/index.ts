@@ -4,11 +4,12 @@
 // never replaced, since persistence has no seed version to tell an old demo from user edits.
 
 import { DEFAULT_BRANDING } from '@/config/branding'
+import { EXERCISE_LIBRARY } from '@/data/exercises'
 import { addDays, todayISO } from '@/lib/dates'
 import { newId } from '@/lib/ids'
 import { SCHEMA_VERSION, type AppData, type Client, type ClientNote, type ISODate, type PlanId } from '@/types'
 import { program } from './builders'
-import { SEED_ADMIN as carla, SEED_MONITOR as dani } from './staff'
+import { SEED_ADMIN as carla, SEED_MONITOR as dani } from './team'
 import { lauraCurrentDays, lauraPreviousDays } from './lauraRoutines'
 import { martaDays } from './martaRoutine'
 import { andresDays, carlosDays, javierDays } from './otherRoutines'
@@ -83,7 +84,7 @@ export function createSeedData(today: ISODate = todayISO()): AppData {
     clients,
     programs,
     notes,
-    customExercises: [],
+    library: EXERCISE_LIBRARY.map((exercise) => ({ ...exercise })),
     branding: { ...DEFAULT_BRANDING },
   }
 }

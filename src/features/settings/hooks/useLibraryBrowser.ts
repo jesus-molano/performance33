@@ -1,29 +1,27 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useExerciseBrowser, useToast, type ExerciseBrowserApi } from '@/hooks'
 import { useAppActions, useExerciseLibrary } from '@/store'
-import type { AnyLibraryExercise } from '@/types'
+import type { LibraryExercise } from '@/types'
 
 export interface LibraryBrowserApi extends ExerciseBrowserApi {
-  customCount: number
   totalCount: number
-  remove: (exercise: AnyLibraryExercise) => void
+  remove: (exercise: LibraryExercise) => void
 }
 
-/** Ajustes → Ejercicios: filtered, paginated library + delete of custom exercises (with undo). */
+/** Ajustes → Ejercicios: filtered, paginated library + delete (with undo). */
 export function useLibraryBrowser(): LibraryBrowserApi {
   const library = useExerciseLibrary()
   const browser = useExerciseBrowser()
-  const { deleteCustomExercise } = useAppActions()
+  const { deleteLibraryExercise } = useAppActions()
   const { toastUndo } = useToast()
-  const customCount = useMemo(() => library.filter((e) => e.custom).length, [library])
 
   const remove = useCallback(
-    (exercise: AnyLibraryExercise) => {
-      deleteCustomExercise(exercise.id)
+    (exercise: LibraryExercise) => {
+      deleteLibraryExercise(exercise.id)
       toastUndo(`«${exercise.name}» eliminado de la biblioteca`)
     },
-    [deleteCustomExercise, toastUndo],
+    [deleteLibraryExercise, toastUndo],
   )
 
-  return { ...browser, customCount, totalCount: library.length, remove }
+  return { ...browser, totalCount: library.length, remove }
 }

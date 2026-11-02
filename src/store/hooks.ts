@@ -3,8 +3,7 @@
 import { useMemo } from 'react'
 import { useStore } from 'zustand'
 import { getClientPrograms, getCurrentProgram } from '@/lib/program'
-import { getFullLibrary } from '@/lib/search'
-import type { AnyLibraryExercise, AppData, Branding, Client, ClientNote, Program, StaffMember } from '@/types'
+import type { AppData, Branding, Client, ClientNote, LibraryExercise, Profile, Program, TeamMember } from '@/types'
 import { useAppStore } from './appStore'
 import { countPinnedNotes, findClient, findProgram, selectClientNotes, sortClients } from './selectors'
 import type { AppActions } from './types'
@@ -23,13 +22,13 @@ export function useAppActions(): AppActions {
 
 export const useSessionStatus = (): SessionStatus => useSessionStore((s) => s.status)
 /** The signed-in coach (null until the session is ready). */
-export const useCurrentStaff = (): StaffMember | null => useSessionStore((s) => s.staff)
-export const useIsAdmin = (): boolean => useSessionStore((s) => s.staff?.role === 'admin')
+export const useCurrentProfile = (): Profile | null => useSessionStore((s) => s.profile)
+export const useIsAdmin = (): boolean => useSessionStore((s) => s.profile?.role === 'admin')
 export const useSessionNotice = (): string | null => useSessionStore((s) => s.notice)
 export const useSessionEmail = (): string | null => useSessionStore((s) => s.email)
-/** Everyone on the staff list, deactivated people included. */
-export const useTeam = (): StaffMember[] => useSessionStore((s) => s.team)
-export const useStaffMember = (id: string | null): StaffMember | null =>
+/** Everyone on the team, deactivated people included. */
+export const useTeam = (): TeamMember[] => useSessionStore((s) => s.team)
+export const useTeamMember = (id: string | null): TeamMember | null =>
   useSessionStore((s) => s.team.find((member) => member.id === id) ?? null)
 
 export function useClients(opts: { includeArchived?: boolean } = {}): Client[] {
@@ -73,11 +72,12 @@ export function usePinnedNoteCounts(): Record<string, number> {
 
 export const useBranding = (): Branding => useAppStore((s) => s.data.branding)
 
-/** Built-in + custom exercises (custom first, flagged custom: true). */
-export function useExerciseLibrary(): AnyLibraryExercise[] {
-  const custom = useAppStore((s) => s.data.customExercises)
-  return useMemo(() => getFullLibrary(custom), [custom])
-}
+/** The whole exercise library. */
+export const useExerciseLibrary = (): LibraryExercise[] => useAppStore((s) => s.data.library)
+
+/** The link saved on a library exercise, if it has one and still exists. */
+export const useExerciseLibraryLink = (id: string | null): string | null =>
+  useAppStore((s) => (id ? (s.data.library.find((exercise) => exercise.id === id)?.link ?? null) : null))
 
 export function useSaveStatus(): { status: SaveStatus; lastSavedAt: number | null } {
   const status = useUiStore((s) => s.saveStatus)

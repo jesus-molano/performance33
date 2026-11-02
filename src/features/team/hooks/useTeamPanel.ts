@@ -1,70 +1,123 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { refreshTeamQuietly, teamService } from '@/auth'
 import { useConfirm, useToast } from '@/hooks'
+import type { AccessChange } from '@/lib/accountRules'
 import { accessChangeError } from '@/lib/ownership'
-import { useCurrentStaff, useTeam } from '@/store'
-import type { StaffAccessPatch, StaffMember, StaffRole } from '@/types'
-import { ROLE_LABELS } from '@/features/team/config'
+import { useCurrentProfile } from '@/store'
+import type { Profile, ProfileRole } from '@/types'
+import { ROLE_LABELS, TEAM_COPY } from '@/features/team/config'
+import { useTeamAccounts } from './useTeamAccounts'
 
-export interface TeamPanelApi {
-  members: StaffMember[]
-  currentId: string | null
-  busy: boolean
-  changeRole: (member: StaffMember, role: StaffRole) => void
-  changeActive: (member: StaffMember, active: boolean) => Promise<void>
+export interface TemporaryPassword {
+  name: string
+  username: string
+  password: string
 }
 
-const sortMembers = (team: StaffMember[]) =>
-  [...team].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name, 'es'))
+export interface TeamPanelApi {
+  accounts: Profile[]
+  loadFailed: boolean
+  currentId: string | null
+  busy: boolean
+  /** The password to show once; null when there is none. */
+  temporary: TemporaryPassword | null
+  showTemporary: (temporary: TemporaryPassword) => void
+  closeTemporary: () => void
+  changeRole: (account: Profile, role: ProfileRole) => void
+  changeActive: (account: Profile, active: boolean) => Promise<void>
+  resetPassword: (account: Profile) => Promise<void>
+  remove: (account: Profile) => Promise<void>
+}
 
-/** Ajustes → Equipo: role changes and deactivation. The database enforces the same rules. */
+/** Ajustes → Equipo: what an administrator can do to an account. The server enforces the same rules. */
 export function useTeamPanel(): TeamPanelApi {
-  const team = useTeam()
-  const current = useCurrentStaff()
+  const { accounts, loadFailed } = useTeamAccounts()
+  const current = useCurrentProfile()
   const confirm = useConfirm()
   const { toast } = useToast()
   const [busy, setBusy] = useState(false)
-  const members = useMemo(() => sortMembers(team), [team])
+  const [temporary, setTemporary] = useState<TemporaryPassword | null>(null)
 
   const apply = useCallback(
-    async (member: StaffMember, patch: StaffAccessPatch, done: string) => {
-      const refusal = accessChangeError(team, current, member.id, patch)
+    async (account: Profile, change: AccessChange, action: () => Promise<void>) => {
+      const refusal = accessChangeError(accounts, current, account.id, change)
       if (refusal) {
         toast({ message: refusal, tone: 'error' })
         return
       }
       setBusy(true)
       try {
-        await teamService.updateAccess(member.id, patch)
+        await action()
         await refreshTeamQuietly()
-        toast({ message: done, tone: 'success' })
       } catch (error) {
-        toast({ message: error instanceof Error ? error.message : 'No se ha podido guardar.', tone: 'error' })
+        toast({ message: error instanceof Error ? error.message : TEAM_COPY.saveFailed, tone: 'error' })
       } finally {
         setBusy(false)
       }
     },
-    [current, team, toast],
+    [accounts, current, toast],
   )
 
-  const changeActive = async (member: StaffMember, active: boolean) => {
+  const changeRole = (account: Profile, role: ProfileRole) =>
+    void apply(account, { role }, async () => {
+      await teamService.setRole(account.id, role)
+      toast({ message: `${account.name}: ${ROLE_LABELS[role]}`, tone: 'success' })
+    })
+
+  const changeActive = async (account: Profile, active: boolean) => {
     if (!active) {
       const ok = await confirm({
-        title: `¿Desactivar a ${member.name}?`,
-        description: 'Dejará de poder entrar. Sus notas se conservan y puedes devolverle el acceso cuando quieras.',
+        title: `¿Desactivar a ${account.name}?`,
+        description: 'Dejará de poder entrar y se cerrarán sus sesiones. Sus notas se conservan y puedes devolverle el acceso cuando quieras.',
         confirmLabel: 'Desactivar',
         danger: true,
       })
       if (!ok) return
     }
-    await apply(member, { active }, active ? `${member.name} puede volver a entrar` : `${member.name} ya no puede entrar`)
+    await apply(account, { active }, async () => {
+      await teamService.setActive(account.id, active)
+      toast({ message: active ? `${account.name} puede volver a entrar` : `${account.name} ya no puede entrar`, tone: 'success' })
+    })
+  }
+
+  const resetPassword = async (account: Profile) => {
+    const ok = await confirm({
+      title: `¿Dar una contraseña nueva a ${account.name}?`,
+      description: 'La que tiene dejará de funcionar y se cerrarán sus sesiones. La primera vez que entre tendrá que elegir una suya.',
+      confirmLabel: 'Crear contraseña',
+    })
+    if (!ok) return
+    await apply(account, { resetPassword: true }, async () => {
+      const password = await teamService.resetPassword(account.id)
+      setTemporary({ name: account.name, username: account.username, password })
+    })
+  }
+
+  const remove = async (account: Profile) => {
+    const ok = await confirm({
+      title: `¿Eliminar a ${account.name}?`,
+      description: 'Su cuenta se borra para siempre. Sus notas se conservan, pero sin firma. Si solo deja de venir por un tiempo, mejor desactívala.',
+      confirmLabel: 'Eliminar cuenta',
+      danger: true,
+    })
+    if (!ok) return
+    await apply(account, { remove: true }, async () => {
+      await teamService.deleteAccount(account.id)
+      toast({ message: `${account.name} ya no está en el equipo`, tone: 'success' })
+    })
   }
 
   return {
-    members,
+    accounts,
+    loadFailed,
     currentId: current?.id ?? null,
     busy,
-    changeRole: (member, role) => void apply(member, { role }, `${member.name}: ${ROLE_LABELS[role]}`),
+    temporary,
+    showTemporary: setTemporary,
+    closeTemporary: () => setTemporary(null),
+    changeRole,
     changeActive,
+    resetPassword,
+    remove,
   }
 }

@@ -7,6 +7,7 @@
 // for the TV client picker; routine views show the first name.)
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { ProfileRole } from '@/lib/accountRules'
 
 /** Local calendar date, 'YYYY-MM-DD'. */
 export type ISODate = string
@@ -16,21 +17,28 @@ export type ID = string
 
 // ── Team (who can sign in; lives outside AppData, never in undo or backups) ─
 
-export type StaffRole = 'admin' | 'monitor'
+export type { ProfileRole }
 
-export interface StaffMember {
+/** What the whole team can see of each person. */
+export interface TeamMember {
   id: ID
-  email: string
   name: string
   /** Hex colour for avatar, e.g. '#d6449a'. */
   color: string
-  role: StaffRole
+  role: ProfileRole
   active: boolean
 }
 
-export type NewStaffInput = Pick<StaffMember, 'email' | 'name' | 'role'>
-export type StaffAccessPatch = Partial<Pick<StaffMember, 'role' | 'active'>>
-export type StaffProfilePatch = Pick<StaffMember, 'name' | 'color'>
+/** A full account: only its owner and the administrators can read it. */
+export interface Profile extends TeamMember {
+  username: string
+  /** null = account without email (it enters with its username). */
+  email: string | null
+  /** Still on a temporary password: the app shows nothing else until it is replaced. */
+  mustChangePassword: boolean
+}
+
+export type OwnProfilePatch = Pick<TeamMember, 'name' | 'color'>
 
 // ── Clients ─────────────────────────────────────────────────────────────────
 
@@ -60,7 +68,7 @@ export interface Client {
 export interface ClientNote {
   id: ID
   clientId: ID
-  /** Staff id of the author ('' or unknown when that person is gone: show 'Monitor eliminado'). */
+  /** Profile id of the author ('' or unknown when that person is gone: show 'Monitor eliminado'). */
   authorId: ID
   text: string
   /** Pinned = important notification: badge and banner on the client. */
@@ -83,7 +91,7 @@ export interface Program {
   weeks: number
   days: Day[]
   createdAt: ISODateTime
-  /** Staff id of who created it. */
+  /** Profile id of who created it. */
   createdBy: ID | null
 }
 
@@ -224,16 +232,11 @@ export interface LibraryExercise {
   equipment: string[]
   defaultMeasure: MeasureType
   perSide?: boolean
+  /** Video or explanation, http/https only. Without it the row's link icon searches the name. */
+  link?: string
+  /** Absent on the ones loaded from the initial library. */
+  createdAt?: ISODateTime
 }
-
-/** A coach-created library exercise (stored in AppData.customExercises). */
-export interface CustomExercise extends LibraryExercise {
-  custom: true
-  createdAt: ISODateTime
-}
-
-/** Built-in or custom; `custom` is true only for user-created ones. */
-export type AnyLibraryExercise = LibraryExercise & { custom?: boolean }
 
 // ── Branding ────────────────────────────────────────────────────────────────
 
@@ -263,7 +266,8 @@ export interface AppData {
   clients: Client[]
   programs: Program[]
   notes: ClientNote[]
-  customExercises: CustomExercise[]
+  /** The whole exercise library: every row can be edited and deleted (see data/exercises.ts for the initial one). */
+  library: LibraryExercise[]
   branding: Branding
 }
 
@@ -278,9 +282,9 @@ export type DayPatch = Partial<Pick<Day, 'name' | 'label'>>
 export type BlockPatch = Partial<Pick<Block, 'title' | 'note' | 'text'>>
 export type ExercisePatch = Partial<Omit<ExerciseEntry, 'id'>>
 export type NotePatch = Partial<Pick<ClientNote, 'text' | 'pinned'>>
-export type CustomExerciseInput = Pick<LibraryExercise, 'name' | 'category'> &
-  Partial<Pick<LibraryExercise, 'equipment' | 'defaultMeasure' | 'perSide' | 'aliases'>>
-export type CustomExercisePatch = Partial<Omit<LibraryExercise, 'id'>>
+export type LibraryExerciseInput = Pick<LibraryExercise, 'name' | 'category'> &
+  Partial<Pick<LibraryExercise, 'equipment' | 'defaultMeasure' | 'perSide' | 'aliases' | 'link'>>
+export type LibraryExercisePatch = Partial<Omit<LibraryExercise, 'id'>>
 
 export interface ProgramDatesPatch {
   startDate?: ISODate

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
 import { createSeedData } from '@/data/seed'
-import type { CustomExercise } from '@/types'
-import { applyRemoteRows, hydrateData, watchLatestUndoStep } from './history'
+import type { LibraryExercise } from '@/types'
+import { applyRemoteRows, hydrateData, undo, watchLatestUndoStep } from './history'
 import { useAppStore } from './appStore'
 
 const seed = createSeedData('2026-10-31')
@@ -63,13 +63,26 @@ describe('day names', () => {
 })
 
 describe('loadDemoData', () => {
+  it('deleting a library exercise leaves its routines as free text, and undo brings both back', () => {
+    const [program] = seed.programs
+    const entry = program.days[0].blocks.flatMap((block) => block.exercises).find((exercise) => exercise.libraryId)
+    if (!entry?.libraryId) throw new Error('missing linked exercise')
+    hydrateData(seed)
+    useAppStore.getState().deleteLibraryExercise(entry.libraryId)
+    const row = () => useAppStore.getState().data.programs[0].days[0].blocks.flatMap((block) => block.exercises).find((exercise) => exercise.id === entry.id)
+    expect(row()).toMatchObject({ libraryId: null, name: entry.name })
+    undo()
+    expect(row()?.libraryId).toBe(entry.libraryId)
+    expect(useAppStore.getState().data.library.some((exercise) => exercise.id === entry.libraryId)).toBe(true)
+  })
+
   it('fills an empty database and keeps the branding and the library', () => {
-    const custom: CustomExercise = { id: 'x1', name: 'Propio', category: EXERCISE_CATEGORY_OPTIONS[0].value, equipment: [], defaultMeasure: 'reps', custom: true, createdAt: '' }
-    hydrateData({ ...seed, clients: [], programs: [], notes: [], branding: { ...seed.branding, gymName: 'Mi gym' }, customExercises: [custom] })
+    const custom: LibraryExercise = { id: 'x1', name: 'Propio', category: EXERCISE_CATEGORY_OPTIONS[0].value, equipment: [], defaultMeasure: 'reps', createdAt: '' }
+    hydrateData({ ...seed, clients: [], programs: [], notes: [], branding: { ...seed.branding, gymName: 'Mi gym' }, library: [custom] })
     actions().loadDemoData()
     const { data } = actions()
     expect(data.clients.length).toBeGreaterThan(0)
     expect(data.branding.gymName).toBe('Mi gym')
-    expect(data.customExercises).toHaveLength(1)
+    expect(data.library).toHaveLength(1)
   })
 })

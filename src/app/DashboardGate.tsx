@@ -1,5 +1,5 @@
 import { SplashScreen } from '@/components/SplashScreen'
-import { LoginPage, NoAccessPage, SessionOfflinePage, SetPasswordPage } from '@/features/auth'
+import { CreatePasswordPage, LoginPage, NoAccessPage, SessionOfflinePage } from '@/features/auth'
 import type { Route } from '@/lib/routes'
 import { useSessionStatus } from '@/store'
 import { DashboardRoot } from './DashboardRoot'
@@ -11,8 +11,8 @@ export function DashboardGate({ route }: { route: Route }) {
       return <DashboardRoot route={route} />
     case 'signed-out':
       return <LoginPage />
-    case 'recovery':
-      return <SetPasswordPage />
+    case 'must-change-password':
+      return <CreatePasswordPage />
     case 'no-access':
       return <NoAccessPage />
     case 'offline':

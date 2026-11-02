@@ -3,7 +3,7 @@ import { useConfirm, useToast } from '@/hooks'
 import { formatFullName } from '@/lib/format'
 import { canDeleteClient } from '@/lib/ownership'
 import { navigate, paths } from '@/lib/routes'
-import { useAppActions, useCurrentStaff } from '@/store'
+import { useAppActions, useCurrentProfile } from '@/store'
 import type { Client } from '@/types'
 
 export interface ClientActionsApi {
@@ -16,7 +16,7 @@ export interface ClientActionsApi {
 
 export function useClientActions(): ClientActionsApi {
   const { archiveClient, restoreClient, deleteClient } = useAppActions()
-  const canRemove = canDeleteClient(useCurrentStaff())
+  const canRemove = canDeleteClient(useCurrentProfile())
   const { toast, toastUndo } = useToast()
   const confirm = useConfirm()
 

@@ -1,8 +1,7 @@
 // Accent-insensitive fuzzy search over the exercise library, with Spanish/English synonyms.
 
-import { EXERCISE_LIBRARY } from '@/data/exercises'
 import { SEARCH_SYNONYM_GROUPS } from '@/config/synonyms'
-import type { AnyLibraryExercise, CustomExercise } from '@/types'
+import type { LibraryExercise } from '@/types'
 
 /** Lowercase, strip accents/diacritics, collapse whitespace and punctuation. */
 export function normalizeText(s: string): string {
@@ -64,22 +63,17 @@ function scoreText(q: string, text: string): number {
 }
 
 export interface ExerciseSearchResult {
-  exercise: AnyLibraryExercise
+  exercise: LibraryExercise
   score: number
   /** Alias that matched better than the name, if any (to show 'Back squat'). */
   matchedAlias?: string
-}
-
-/** Built-in library + custom exercises (custom flagged with custom: true). */
-export function getFullLibrary(customExercises: CustomExercise[]): AnyLibraryExercise[] {
-  return [...customExercises, ...EXERCISE_LIBRARY]
 }
 
 /**
  * Fuzzy, accent-insensitive search. Empty query returns [] (UI decides what to show).
  * Results sorted by score; ties broken by shorter name.
  */
-export function searchExercises(query: string, library: AnyLibraryExercise[], limit = 8): ExerciseSearchResult[] {
+export function searchExercises(query: string, library: LibraryExercise[], limit = 8): ExerciseSearchResult[] {
   const q = normalizeText(query)
   if (!q) return []
   const variants = expandQuery(q)
@@ -104,26 +98,26 @@ export function searchExercises(query: string, library: AnyLibraryExercise[], li
         }
       }
     }
-    if (best > 0) results.push({ exercise: ex, score: best + (ex.custom ? 5 : 0), matchedAlias })
+    if (best > 0) results.push({ exercise: ex, score: best, matchedAlias })
   }
   results.sort((a, b) => b.score - a.score || a.exercise.name.length - b.exercise.name.length)
   return results.slice(0, limit)
 }
 
 /** Library entries whose normalized name/alias equals or closely matches `name` (for "¿ya existe?" before saving). */
-export function findSimilarExercises(name: string, library: AnyLibraryExercise[], limit = 3): AnyLibraryExercise[] {
+export function findSimilarExercises(name: string, library: LibraryExercise[], limit = 3): LibraryExercise[] {
   return searchExercises(name, library, limit)
     .filter((r) => r.score >= 450)
     .map((r) => r.exercise)
 }
 
 /** Exact (normalized) name match, or undefined. */
-export function findExerciseByName(name: string, library: AnyLibraryExercise[]): AnyLibraryExercise | undefined {
+export function findExerciseByName(name: string, library: LibraryExercise[]): LibraryExercise | undefined {
   const n = normalizeText(name)
   return library.find((e) => normalizeText(e.name) === n)
 }
 
-export function findExerciseById(id: string | null | undefined, library: AnyLibraryExercise[]): AnyLibraryExercise | undefined {
+export function findExerciseById(id: string | null | undefined, library: LibraryExercise[]): LibraryExercise | undefined {
   if (!id) return undefined
   return library.find((e) => e.id === id)
 }

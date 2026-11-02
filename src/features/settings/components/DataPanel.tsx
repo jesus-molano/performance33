@@ -30,7 +30,7 @@ export function DataPanel() {
           <Stat value={stats.clients} label="Clientes" />
           <Stat value={stats.programs} label="Rutinas" />
           <Stat value={stats.notes} label="Notas internas" />
-          <Stat value={stats.customExercises} label="Ejercicios propios" />
+          <Stat value={stats.exercises} label="Ejercicios" />
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button leftIcon={Download} onClick={exportBackup}>
