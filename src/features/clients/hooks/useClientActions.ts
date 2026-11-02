@@ -2,15 +2,15 @@ import { useCallback } from 'react'
 import { useConfirm, useToast } from '@/hooks'
 import { formatFullName } from '@/lib/format'
 import { canDeleteClient } from '@/lib/ownership'
-import { navigate, paths } from '@/lib/routes'
-import { useAppActions, useCurrentProfile } from '@/store'
+import { useAppActions, useAppStore, useCurrentProfile } from '@/store'
 import type { Client } from '@/types'
+import { describeClientDeletion } from '@/features/clients/utils/clientDeletion'
 
 export interface ClientActionsApi {
   archive: (client: Client) => void
   restore: (client: Client) => void
   canRemove: boolean
-  /** Asks first; offers archiving as the gentler option in the description. */
+  /** Asks first, naming what goes with the client. Offered only on archived clients. */
   remove: (client: Client) => Promise<void>
 }
 
@@ -39,13 +39,12 @@ export function useClientActions(): ClientActionsApi {
   const remove = useCallback(
     async (client: Client) => {
       const ok = await confirm({
-        title: `¿Eliminar a ${formatFullName(client.firstName, client.lastName)}?`,
-        description: 'Se borrarán sus rutinas y notas internas. Si solo ha dejado de venir, mejor archívalo.',
-        confirmLabel: 'Eliminar usuario',
+        title: `¿Eliminar definitivamente a ${formatFullName(client.firstName, client.lastName)}?`,
+        description: describeClientDeletion(useAppStore.getState().data, client.id),
+        confirmLabel: 'Eliminar definitivamente',
         danger: true,
       })
       if (!ok) return
-      navigate(paths.clients())
       deleteClient(client.id)
       toastUndo('Usuario eliminado')
     },

@@ -22,6 +22,9 @@ export function useClientList(): ClientListApi {
   const clients = useClients({ includeArchived: true })
   const pinnedCounts = usePinnedNoteCounts()
   const [filters, setFilters] = useState<ClientFilters>(EMPTY_CLIENT_FILTERS)
+  const archivedCount = useMemo(() => countArchived(clients), [clients])
+  // With nobody archived left, its toggle is gone: go back to the active clients.
+  if (filters.archived && archivedCount === 0) setFilters({ ...filters, archived: false })
 
   const setQuery = useCallback((query: string) => setFilters((f) => ({ ...f, query })), [])
   const setPlan = useCallback((plan: PlanFilter) => setFilters((f) => ({ ...f, plan })), [])
@@ -29,7 +32,6 @@ export function useClientList(): ClientListApi {
   const clearFilters = useCallback(() => setFilters((f) => ({ ...EMPTY_CLIENT_FILTERS, archived: f.archived })), [])
 
   const visible = useMemo(() => filterClients(clients, filters), [clients, filters])
-  const archivedCount = useMemo(() => countArchived(clients), [clients])
 
   return {
     filters,

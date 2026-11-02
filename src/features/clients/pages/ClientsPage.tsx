@@ -1,6 +1,7 @@
 import { DatabaseZap, SearchX, UserPlus, Users } from 'lucide-react'
 import { Button, EmptyState } from '@/components/ui'
 import { plural } from '@/lib/format'
+import { useIsAdmin } from '@/store'
 import type { Client } from '@/types'
 import { editedItem, PageContainer, PageHeader, useEditTarget } from '@/features/shell'
 import { ClientFormModal } from '@/features/clients/components/ClientFormModal'
@@ -13,6 +14,7 @@ import { useDemoLoader } from '@/features/clients/hooks/useDemoLoader'
 
 export function ClientsPage() {
   const list = useClientList()
+  const isAdmin = useIsAdmin()
   const form = useEditTarget<Client>()
   const demo = useDemoLoader()
   const { view, setView } = useClientView()
@@ -27,7 +29,7 @@ export function ClientsPage() {
     <PageContainer>
       <PageHeader
         title={list.filters.archived ? 'Usuarios archivados' : 'Usuarios'}
-        description={list.filters.archived ? 'Puedes restaurarlos desde su menú «⋯».' : `${plural(list.activeCount, 'usuario activo', 'usuarios activos')}`}
+        description={list.filters.archived ? isAdmin ? 'Puedes restaurarlos o eliminarlos desde su menú «⋯».' : 'Puedes restaurarlos desde su menú «⋯».' : `${plural(list.activeCount, 'usuario activo', 'usuarios activos')}`}
         actions={addButton}
       />
       <ClientToolbar

@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, MonitorPlay, Pencil } from 'lucide-react'
+import { Archive, ArchiveRestore, MonitorPlay, Pencil, Trash2 } from 'lucide-react'
 import type { MenuItem } from '@/components/ui'
 import { useDisplayWindow } from '@/hooks'
 import type { Client } from '@/types'
@@ -13,7 +13,7 @@ export interface ClientEntry extends ClientStatus {
 /** What a card and a list row share: the routine's status, the '⋯' menu and 'Abrir en pantalla'. */
 export function useClientEntry(client: Client, onEdit: (client: Client) => void): ClientEntry {
   const { program, status } = useClientStatus(client.id)
-  const { archive, restore } = useClientActions()
+  const { archive, restore, canRemove, remove } = useClientActions()
   const { openDisplay } = useDisplayWindow()
   const openOnScreen = () => openDisplay(client.id)
 
@@ -24,6 +24,9 @@ export function useClientEntry(client: Client, onEdit: (client: Client) => void)
     client.archived
       ? { label: 'Restaurar usuario', icon: ArchiveRestore, onSelect: () => restore(client) }
       : { label: 'Archivar usuario', icon: Archive, onSelect: () => archive(client) },
+    ...(client.archived && canRemove
+      ? [{ label: 'Eliminar usuario…', icon: Trash2, danger: true, onSelect: () => remove(client) }]
+      : []),
   ]
 
   return { program, status, menu, openOnScreen }

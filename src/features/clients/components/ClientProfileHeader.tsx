@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, CalendarDays, Lock, Pencil, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, CalendarDays, Lock, Pencil } from 'lucide-react'
 import { Avatar, Badge, Button, DropdownMenu, type MenuItem } from '@/components/ui'
 import { formatDate } from '@/lib/dates'
 import { formatFullName } from '@/lib/format'
@@ -13,12 +13,11 @@ export interface ClientProfileHeaderProps {
 
 /** Avatar, name, plan and the client-level actions. */
 export function ClientProfileHeader({ client, onEdit }: ClientProfileHeaderProps) {
-  const { archive, restore, canRemove, remove } = useClientActions()
+  const { archive, restore } = useClientActions()
   const menu: MenuItem[] = [
     client.archived
       ? { label: 'Restaurar usuario', icon: ArchiveRestore, onSelect: () => restore(client) }
       : { label: 'Archivar usuario', icon: Archive, onSelect: () => archive(client) },
-    ...(canRemove ? (['separator', { label: 'Eliminar usuario…', icon: Trash2, danger: true, onSelect: () => remove(client) }] satisfies MenuItem[]) : []),
   ]
 
   return (
