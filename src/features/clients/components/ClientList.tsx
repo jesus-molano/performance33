@@ -9,7 +9,7 @@ import { ClientRow } from './ClientRow'
 export function ClientList({ clients, pinnedCounts, onEdit }: ClientGridProps) {
   return (
     <Card padding="none">
-      <div aria-hidden className="hidden items-center gap-1 border-b border-line pr-2 lg:flex">
+      <div aria-hidden className="hidden items-center gap-1 border-b border-line pr-2 xl:flex">
         <div className={cn(CLIENT_ROW_COLUMNS, 'min-w-0 flex-1 py-2 pl-4 text-xs font-semibold tracking-wide text-fg-subtle uppercase')}>
           {CLIENT_LIST_COLUMN_TITLES.map((title) => (
             <span key={title}>{title}</span>

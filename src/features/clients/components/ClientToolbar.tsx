@@ -1,6 +1,6 @@
 import { Archive, Search } from 'lucide-react'
 import { Chip, Input, SegmentedControl, Select } from '@/components/ui'
-import { CLIENT_VIEW_OPTIONS, PLAN_FILTER_OPTIONS, PLAN_SELECT_OPTIONS, type ClientView, type PlanFilter } from '@/features/clients/config'
+import { CLIENT_VIEW_OPTIONS, PLAN_FILTER_OPTIONS, type ClientView, type PlanFilter } from '@/features/clients/config'
 import type { ClientFilters } from '@/features/clients/utils/filterClients'
 
 export interface ClientToolbarProps {
@@ -13,13 +13,10 @@ export interface ClientToolbarProps {
   onToggleArchived: () => void
 }
 
-/**
- * Search, plan, archived and Cuadrícula/Lista. Phones: search on its own row, then one row with
- * a plan selector and icons. From md the plans are chips, wrapping rather than scrolling.
- */
+/** Search, plan, archived and Cuadrícula/Lista. One row from md; phones put the search on its own row. */
 export function ClientToolbar({ filters, archivedCount, view, onViewChange, onQueryChange, onPlanChange, onToggleArchived }: ClientToolbarProps) {
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-2 md:gap-3 lg:flex-nowrap">
+    <div className="mb-5 flex flex-wrap items-center gap-2 md:flex-nowrap md:gap-3">
       <Input
         type="search"
         aria-label="Buscar usuario"
@@ -28,14 +25,14 @@ export function ClientToolbar({ filters, archivedCount, view, onViewChange, onQu
         value={filters.query}
         onChange={(e) => onQueryChange(e.target.value)}
         nativeUndo
-        containerClassName="w-full md:w-auto md:min-w-0 md:flex-1 lg:w-72 lg:flex-none"
+        containerClassName="w-full md:w-auto md:min-w-0 md:flex-1"
       />
       <Select
         aria-label="Filtrar por plan"
-        options={PLAN_SELECT_OPTIONS}
+        options={PLAN_FILTER_OPTIONS}
         value={filters.plan}
         onChange={onPlanChange}
-        containerClassName="min-w-0 flex-1 md:hidden"
+        containerClassName="min-w-0 flex-1 md:w-52 md:flex-none"
       />
       {archivedCount > 0 && (
         <Chip
@@ -43,21 +40,14 @@ export function ClientToolbar({ filters, archivedCount, view, onViewChange, onQu
           onClick={onToggleArchived}
           aria-label={`Archivados (${archivedCount})`}
           title="Ver los usuarios archivados"
-          className="h-11 shrink-0 gap-1.5 md:order-3"
+          className="h-11 shrink-0 gap-1.5"
         >
           <Archive size={15} aria-hidden />
-          <span className="hidden md:inline">Archivados</span>
+          <span className="hidden lg:inline">Archivados</span>
           <span className="tabular">{archivedCount}</span>
         </Chip>
       )}
-      <SegmentedControl ariaLabel="Cómo ver los usuarios" options={CLIENT_VIEW_OPTIONS} value={view} onChange={onViewChange} iconsOnMobile className="shrink-0 lg:order-last" />
-      <div className="hidden flex-wrap gap-2 md:order-2 md:flex" role="group" aria-label="Filtrar por plan">
-        {PLAN_FILTER_OPTIONS.map((option) => (
-          <Chip key={option.value} active={filters.plan === option.value} onClick={() => onPlanChange(option.value)} className="h-11 shrink-0">
-            {option.label}
-          </Chip>
-        ))}
-      </div>
+      <SegmentedControl ariaLabel="Cómo ver los usuarios" options={CLIENT_VIEW_OPTIONS} value={view} onChange={onViewChange} iconsOnly className="shrink-0" />
     </div>
   )
 }

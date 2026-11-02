@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { COPY } from '@/config/copy'
-import { displayWindowUrl, isPhoneScreen, openDisplayWindow, openTvWindow, tvWindowUrl } from '@/lib/displayWindow'
+import { isPhoneScreen, openDisplayWindow, openTvWindow } from '@/lib/displayWindow'
 import { navigate, paths, type TvSlot } from '@/lib/routes'
 import { flushDashboardSaves } from '@/persistence/dashboardSync'
 import { useHistoryState } from '@/store/hooks'
@@ -15,7 +15,7 @@ export interface DisplayWindowApi {
 
 /**
  * Opens display windows. If the browser blocks the popup, shows a toast whose 'Abrir pantalla'
- * button retries from a fresh click (which popup blockers allow) in a new tab.
+ * button retries the same window from a fresh click (which popup blockers allow).
  * On a phone there are no popups: the same tab goes to the screen page, once everything is saved (leaving the
  * dashboard stops its retries, so an edit without connection would be lost).
  */
@@ -24,12 +24,12 @@ export function useDisplayWindow(): DisplayWindowApi {
   const { canUndo } = useHistoryState()
 
   const fallback = useCallback(
-    (url: string) =>
+    (retry: () => void) =>
       toast({
         message: COPY.popupBlocked,
         tone: 'error',
         actionLabel: COPY.openScreen,
-        onAction: () => window.open(url, '_blank'),
+        onAction: retry,
       }),
     [toast],
   )
@@ -52,7 +52,7 @@ export function useDisplayWindow(): DisplayWindowApi {
   const openDisplay = useCallback<DisplayWindowApi['openDisplay']>(
     (clientId, day, programId) => {
       if (isPhoneScreen()) goOnPhone(paths.display(clientId, day ?? null, programId ?? null))
-      else if (!openDisplayWindow(clientId, day, programId)) fallback(displayWindowUrl(clientId, day, programId))
+      else if (!openDisplayWindow(clientId, day, programId)) fallback(() => openDisplayWindow(clientId, day, programId))
     },
     [fallback, goOnPhone],
   )
@@ -60,7 +60,7 @@ export function useDisplayWindow(): DisplayWindowApi {
   const openTv = useCallback<DisplayWindowApi['openTv']>(
     (screen, slots = []) => {
       if (isPhoneScreen()) goOnPhone(paths.tv())
-      else if (!openTvWindow(screen, slots)) fallback(tvWindowUrl(screen, slots))
+      else if (!openTvWindow(screen, slots)) fallback(() => openTvWindow(screen, slots))
     },
     [fallback, goOnPhone],
   )

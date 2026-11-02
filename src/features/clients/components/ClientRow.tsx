@@ -19,9 +19,9 @@ export interface ClientRowProps {
 }
 
 function WeekProgress({ status }: { status: ProgramStatus }) {
-  if (!status.info) return <div className="hidden lg:block" />
+  if (!status.info) return <div className="hidden xl:block" />
   return (
-    <div className="order-last flex w-full items-center gap-2 lg:order-none lg:w-auto">
+    <div className="order-last flex w-full items-center gap-2 xl:order-none xl:w-auto">
       <ProgramProgressBar status={status} className="flex-1" />
       <span className="text-sm text-fg-muted tabular">
         {elapsedWeeks(status.info)}/{status.info.totalWeeks}
@@ -42,11 +42,11 @@ export function ClientRow({ client, importantCount, onEdit }: ClientRowProps) {
           <Avatar firstName={client.firstName} lastName={client.lastName} color={client.color} size="md" />
           <div className="min-w-0">
             <p className="truncate font-semibold text-fg">{formatFullName(client.firstName, client.lastName)}</p>
-            <p className="truncate text-sm text-fg-muted lg:hidden">{plan}</p>
+            <p className="truncate text-sm text-fg-muted xl:hidden">{plan}</p>
           </div>
         </div>
-        <p className="hidden truncate text-sm text-fg-muted lg:block">{plan}</p>
-        <div className="flex flex-wrap items-center gap-1.5 lg:contents">
+        <p className="hidden truncate text-sm text-fg-muted xl:block">{plan}</p>
+        <div className="flex flex-wrap items-center gap-1.5 xl:contents">
           <div>
             <Badge tone={status.tone}>{status.label}</Badge>
           </div>
