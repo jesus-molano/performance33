@@ -15,7 +15,6 @@ describe('toDisplayData', () => {
     expect(json).not.toContain('"goal"')
     expect(json).not.toContain('createdBy')
     expect(display).not.toHaveProperty('notes')
-    expect(display).not.toHaveProperty('coaches')
   })
 
   it('sends the surname for the TV client picker', () => {

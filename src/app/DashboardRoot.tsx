@@ -1,21 +1,19 @@
-import { CoachPickerPage } from '@/features/coaches'
+import { SplashScreen } from '@/components/SplashScreen'
+import { DataLoadFailedPage } from '@/features/auth'
 import { AppLayout } from '@/features/shell'
 import { useBrandingStyles, useDashboardBootstrap, useUndoShortcuts } from '@/hooks'
 import type { Route } from '@/lib/routes'
-import { useBranding, useCurrentCoach } from '@/store'
+import { useBranding } from '@/store'
 import { DashboardPage } from './DashboardPage'
 
-/**
- * Dashboard windows: loads data, starts autosave + live sync, applies branding, enables
- * Ctrl+Z / Ctrl+Y. Without a valid current coach every route shows '¿Quién eres?'.
- */
+/** Dashboard windows (signed in): loads data, starts autosave + live sync, applies branding, enables Ctrl+Z / Ctrl+Y. */
 export function DashboardRoot({ route }: { route: Route }) {
-  useDashboardBootstrap()
+  const boot = useDashboardBootstrap()
   useBrandingStyles(useBranding())
   useUndoShortcuts()
-  const coach = useCurrentCoach()
 
-  if (!coach || route.name === 'pick-coach') return <CoachPickerPage />
+  if (boot.status === 'loading') return <SplashScreen />
+  if (boot.status === 'error') return <DataLoadFailedPage onRetry={boot.retry} />
   return (
     <AppLayout route={route}>
       <DashboardPage route={route} />

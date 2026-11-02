@@ -1,3 +1,4 @@
+export { ScreenSignInRequired } from './components/screen/ScreenSignInRequired'
 export { RoutineDisplay, type RoutineDisplayLayout, type RoutineDisplayProps } from './components/RoutineDisplay'
 export { RoutinePreview, type RoutinePreviewProps } from './components/RoutinePreview'
 export { DisplayPage, type DisplayPageProps } from './pages/DisplayPage'

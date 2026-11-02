@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useConfirmStore } from '@/store/confirmStore'
 import { Button } from './Button'
+import { Input } from './Input'
 import { Modal } from './Modal'
 
 export interface ConfirmDialogProps {
@@ -9,6 +11,8 @@ export interface ConfirmDialogProps {
   confirmLabel?: string
   cancelLabel?: string
   danger?: boolean
+  /** Confirm stays disabled until this word is typed. */
+  requireText?: string
   onConfirm: () => void
   onCancel: () => void
 }
@@ -20,27 +24,37 @@ export function ConfirmDialog({
   confirmLabel = 'Confirmar',
   cancelLabel = 'Cancelar',
   danger = false,
+  requireText,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const [typed, setTyped] = useState('')
+  const finish = (action: () => void) => () => {
+    setTyped('')
+    action()
+  }
   return (
     <Modal
       open={open}
-      onClose={onCancel}
+      onClose={finish(onCancel)}
       title={title}
       description={description}
       size="sm"
       footer={
         <>
-          <Button variant="secondary" onClick={onCancel}>
+          <Button variant="secondary" onClick={finish(onCancel)}>
             {cancelLabel}
           </Button>
-          <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm}>
+          <Button variant={danger ? 'danger' : 'primary'} disabled={requireText !== undefined && typed !== requireText} onClick={finish(onConfirm)}>
             {confirmLabel}
           </Button>
         </>
       }
-    />
+    >
+      {requireText && (
+        <Input label={`Escribe ${requireText} para confirmar`} value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoFocus nativeUndo />
+      )}
+    </Modal>
   )
 }
 
@@ -56,6 +70,7 @@ export function ConfirmHost() {
       confirmLabel={pending?.confirmLabel}
       cancelLabel={pending?.cancelLabel}
       danger={pending?.danger}
+      requireText={pending?.requireText}
       onConfirm={() => settle(true)}
       onCancel={() => settle(false)}
     />

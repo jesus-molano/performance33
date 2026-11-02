@@ -1,9 +1,6 @@
 // Pure selectors over AppData (no React). Hooks in ./hooks wrap these with memoisation.
 
-import type { AppData, Client, ClientNote, Coach, Program } from '@/types'
-
-export const findCoach = (data: AppData, id: string | null): Coach | null =>
-  (id && data.coaches.find((c) => c.id === id)) || null
+import type { AppData, Client, ClientNote, Program } from '@/types'
 
 export const findClient = (data: AppData, id: string): Client | null => data.clients.find((c) => c.id === id) ?? null
 

@@ -1,5 +1,6 @@
 import { Download, HardDrive, RotateCcw, Upload } from 'lucide-react'
 import { Button } from '@/components/ui'
+import { DATA_STORAGE_HINT } from '@/features/settings/config'
 import { useDataTransfer } from '@/features/settings/hooks/useDataTransfer'
 import { SettingsSection } from './SettingsSection'
 
@@ -21,7 +22,7 @@ export function DataPanel() {
         title="Tus datos"
         description={
           <span className="inline-flex items-center gap-1.5">
-            <HardDrive size={15} aria-hidden /> Se guardan solos en este navegador. Descarga una copia de vez en cuando.
+            <HardDrive size={15} aria-hidden /> {DATA_STORAGE_HINT}
           </span>
         }
       >
@@ -41,7 +42,7 @@ export function DataPanel() {
           <input ref={importInputRef} type="file" accept="application/json,.json" onChange={onImportFile} className="hidden" tabIndex={-1} aria-hidden />
         </div>
       </SettingsSection>
-      <SettingsSection title="Datos de demostración" description="Vuelve a cargar los clientes y rutinas de ejemplo. Borra todo lo actual.">
+      <SettingsSection title="Datos de demostración" description="Vuelve a cargar los clientes y rutinas de ejemplo. Borra todo lo actual, también para el resto del equipo.">
         <Button variant="danger" leftIcon={RotateCcw} onClick={resetDemo} wrap className="self-start">
           Restablecer datos de demostración
         </Button>

@@ -1,10 +1,9 @@
 // Hash routes (works on any static host).
 //
-//   #/                                       → pick-coach  (¿Quién eres?)
-//   #/clientes                               → clients
+//   #/ or #/clientes                         → clients
 //   #/clientes/:clientId                     → client
 //   #/clientes/:clientId/programa/:programId → program (editor)
-//   #/ajustes?tab=marca|biblioteca|monitores|datos → settings
+//   #/ajustes?tab=marca|biblioteca|equipo|datos → settings
 //   #/pantalla/:clientId?dia=2&programa=pid  → display (single client, no app chrome)
 //   #/tv?slots=cid:1,-,cid:2                 → tv (1-4 columns, '-' = empty, no app chrome)
 
@@ -17,11 +16,10 @@ export interface TvSlot {
   day: number
 }
 
-export const SETTINGS_TABS = ['marca', 'biblioteca', 'monitores', 'datos'] as const
+export const SETTINGS_TABS = ['marca', 'biblioteca', 'equipo', 'datos'] as const
 export type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 export type Route =
-  | { name: 'pick-coach' }
   | { name: 'clients' }
   | { name: 'client'; clientId: string }
   | { name: 'program'; clientId: string; programId: string }
@@ -69,7 +67,6 @@ const enc = encodeURIComponent
 
 /** Hash path builders. Use with navigate() or as <a href>. */
 export const paths = {
-  pickCoach: () => '#/',
   clients: () => '#/clientes',
   client: (clientId: string) => `#/clientes/${enc(clientId)}`,
   program: (clientId: string, programId: string) => `#/clientes/${enc(clientId)}/programa/${enc(programId)}`,
@@ -94,7 +91,7 @@ export function parseRoute(hash: string): Route {
   const query = new URLSearchParams(queryPart)
   const seg = pathPart.split('/').filter(Boolean).map((s) => decodeURIComponent(s))
 
-  if (seg.length === 0) return { name: 'pick-coach' }
+  if (seg.length === 0) return { name: 'clients' }
   if (seg[0] === 'clientes') {
     if (seg.length === 1) return { name: 'clients' }
     if (seg.length === 2) return { name: 'client', clientId: seg[1] }

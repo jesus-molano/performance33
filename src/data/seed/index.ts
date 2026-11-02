@@ -6,8 +6,9 @@
 import { DEFAULT_BRANDING } from '@/config/branding'
 import { addDays, todayISO } from '@/lib/dates'
 import { newId } from '@/lib/ids'
-import { SCHEMA_VERSION, type AppData, type Client, type ClientNote, type Coach, type ISODate, type PlanId } from '@/types'
+import { SCHEMA_VERSION, type AppData, type Client, type ClientNote, type ISODate, type PlanId } from '@/types'
 import { program } from './builders'
+import { SEED_ADMIN as carla, SEED_MONITOR as dani } from './staff'
 import { lauraCurrentDays, lauraPreviousDays } from './lauraRoutines'
 import { martaDays } from './martaRoutine'
 import { andresDays, carlosDays, javierDays } from './otherRoutines'
@@ -47,9 +48,6 @@ function makeNote(clientId: string, authorId: string, text: string, daysAgo: num
 }
 
 export function createSeedData(today: ISODate = todayISO()): AppData {
-  const carla: Coach = { id: newId('coach'), name: 'Carla', color: '#d6449a' }
-  const dani: Coach = { id: newId('coach'), name: 'Dani', color: '#2563eb' }
-
   const laura = makeClient({ firstName: 'Laura', lastName: 'Martín', plan: 'plus', trainingDays: 3, joinedDaysAgo: 210, goal: 'Ganar fuerza y mejorar postura', color: '#d6449a' }, today)
   const javier = makeClient({ firstName: 'Javier', lastName: 'Rodríguez', plan: 'standard', trainingDays: 2, joinedDaysAgo: 95, goal: 'Perder grasa sin perder fuerza', color: '#2563eb' }, today)
   const marta = makeClient({ firstName: 'Marta', lastName: 'Hernández', plan: 'elite', trainingDays: 4, joinedDaysAgo: 400, goal: 'Preparar su primera competición de fitness funcional', color: '#7c3aed' }, today)
@@ -82,7 +80,6 @@ export function createSeedData(today: ISODate = todayISO()): AppData {
 
   return {
     schemaVersion: SCHEMA_VERSION,
-    coaches: [carla, dani],
     clients,
     programs,
     notes,

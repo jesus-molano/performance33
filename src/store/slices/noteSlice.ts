@@ -1,7 +1,7 @@
 import { removeById, updateById } from '@/lib/arrays'
 import { newId } from '@/lib/ids'
 import type { ClientNote } from '@/types'
-import { getCurrentCoachId } from '@/store/uiStore'
+import { getCurrentStaffId } from '@/store/sessionStore'
 import type { NoteActions, SliceContext } from '@/store/types'
 import { groupKey } from '@/store/undoGroup'
 
@@ -12,7 +12,7 @@ export function createNoteSlice({ commit }: SliceContext): NoteActions {
       const note: ClientNote = {
         id: newId('note'),
         clientId,
-        authorId: getCurrentCoachId() ?? '',
+        authorId: getCurrentStaffId() ?? '',
         text: text.trim(),
         pinned: !!opts.pinned,
         createdAt: timestamp,

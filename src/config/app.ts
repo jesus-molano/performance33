@@ -1,11 +1,19 @@
 // App-wide constants (timings, limits, storage keys). No magic numbers elsewhere.
 
 export const STORAGE_KEYS = {
-  data: 'p33:data:v1',
-  /** Sanitised copy for Pantalla / TV windows (no private fields). */
+  /** Local test mode only: the whole dataset. Never used with the cloud. */
+  data: 'p33:data:v2',
+  /** Sanitised copy for Pantalla / TV windows (no private fields). Removed on sign-out. */
   display: 'p33:display:v1',
-  currentCoach: 'p33:currentCoach',
+  /** Local test mode only: fake session and team. */
+  localSession: 'p33:local:session',
+  localTeam: 'p33:local:team',
+  /** Session of the cloud login, shared by every window of this browser (popups included). */
+  cloudSession: 'p33:session',
 } as const
+
+/** Left by older versions (dataset with coach profiles, picked profile). Removed on start-up. */
+export const LEGACY_STORAGE_KEYS = ['p33:data:v1', 'p33:currentCoach'] as const
 
 export const SYNC_CHANNELS = {
   data: 'p33-data',
@@ -14,6 +22,18 @@ export const SYNC_CHANNELS = {
 
 /** Debounce before writing to the repository after a change. */
 export const SAVE_DEBOUNCE_MS = 400
+/** Waits between retries of a failed save; the last one repeats until it works. */
+export const SAVE_RETRY_DELAYS_MS = [2000, 5000, 15000, 30000] as const
+/** Remote row changes arriving this close together are applied as one update. */
+export const REMOTE_BATCH_MS = 100
+/** Safety net: reload shared data this often, in case a live update was missed. */
+export const CLOUD_REFETCH_INTERVAL_MS = 120_000
+/** Coming back to the tab or the network reloads shared data, at most this often. */
+export const CLOUD_REFETCH_MIN_GAP_MS = 10_000
+/** Coming back to the tab re-checks that this person still has access, at most this often. */
+export const ACCESS_RECHECK_MIN_GAP_MS = 60_000
+/** Rows per request when reading a table. */
+export const CLOUD_PAGE_SIZE = 1000
 /** Consecutive edits of the same field within this window form ONE undo step. */
 export const UNDO_GROUP_MS = 1000
 export const UNDO_LIMIT = 100

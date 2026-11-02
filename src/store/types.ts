@@ -8,7 +8,6 @@ import type {
   BlockType,
   Branding,
   ClientPatch,
-  CoachPatch,
   CreateProgramOptions,
   CustomExerciseInput,
   CustomExercisePatch,
@@ -17,18 +16,10 @@ import type {
   ExercisePatch,
   ISODate,
   NewClientInput,
-  NewCoachInput,
   NotePatch,
   ProgramDatesPatch,
   ProgramPatch,
 } from '@/types'
-
-export interface CoachActions {
-  addCoach: (input: NewCoachInput) => string
-  updateCoach: (id: string, patch: CoachPatch) => void
-  /** Returns false (and does nothing) when it is the last coach. */
-  deleteCoach: (id: string) => boolean
-}
 
 export interface ClientActions {
   addClient: (input: NewClientInput) => string
@@ -106,7 +97,7 @@ export interface ExerciseActions {
 }
 
 export interface NoteActions {
-  /** Author = current coach. */
+  /** Author = signed-in coach. */
   addNote: (clientId: string, text: string, opts?: { pinned?: boolean }) => string
   updateNote: (id: string, patch: NotePatch) => void
   deleteNote: (id: string) => void
@@ -124,8 +115,7 @@ export interface SettingsActions {
   resetDemoData: () => void
 }
 
-export type AppActions = CoachActions &
-  ClientActions &
+export type AppActions = ClientActions &
   ProgramActions &
   DayActions &
   BlockActions &

@@ -14,14 +14,23 @@ export type ISODate = string
 export type ISODateTime = string
 export type ID = string
 
-// ── Coaches ─────────────────────────────────────────────────────────────────
+// ── Team (who can sign in; lives outside AppData, never in undo or backups) ─
 
-export interface Coach {
+export type StaffRole = 'admin' | 'monitor'
+
+export interface StaffMember {
   id: ID
+  email: string
   name: string
   /** Hex colour for avatar, e.g. '#d6449a'. */
   color: string
+  role: StaffRole
+  active: boolean
 }
+
+export type NewStaffInput = Pick<StaffMember, 'email' | 'name' | 'role'>
+export type StaffAccessPatch = Partial<Pick<StaffMember, 'role' | 'active'>>
+export type StaffProfilePatch = Pick<StaffMember, 'name' | 'color'>
 
 // ── Clients ─────────────────────────────────────────────────────────────────
 
@@ -51,7 +60,7 @@ export interface Client {
 export interface ClientNote {
   id: ID
   clientId: ID
-  /** Coach id of the author (may refer to a deleted coach; show 'Monitor eliminado'). */
+  /** Staff id of the author ('' or unknown when that person is gone: show 'Monitor eliminado'). */
   authorId: ID
   text: string
   /** Pinned = shown as an alert badge/banner on the client. */
@@ -74,7 +83,7 @@ export interface Program {
   weeks: number
   days: Day[]
   createdAt: ISODateTime
-  /** Coach id who created it. */
+  /** Staff id of who created it. */
   createdBy: ID | null
 }
 
@@ -251,7 +260,6 @@ export const SCHEMA_VERSION = 1
 
 export interface AppData {
   schemaVersion: number
-  coaches: Coach[]
   clients: Client[]
   programs: Program[]
   notes: ClientNote[]
@@ -261,13 +269,10 @@ export interface AppData {
 
 // ── Input helpers ───────────────────────────────────────────────────────────
 
-export type NewCoachInput = Pick<Coach, 'name' | 'color'>
-
 export type NewClientInput = Pick<Client, 'firstName'> &
   Partial<Pick<Client, 'lastName' | 'plan' | 'trainingDays' | 'startDate' | 'goal' | 'color'>>
 
 export type ClientPatch = Partial<Omit<Client, 'id' | 'createdAt'>>
-export type CoachPatch = Partial<Omit<Coach, 'id'>>
 export type ProgramPatch = Partial<Pick<Program, 'name'>>
 export type DayPatch = Partial<Pick<Day, 'name' | 'label'>>
 export type BlockPatch = Partial<Pick<Block, 'title' | 'note' | 'text'>>

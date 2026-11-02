@@ -9,6 +9,8 @@ export interface ConfirmOptions {
   cancelLabel?: string
   /** Red confirm button for destructive actions. */
   danger?: boolean
+  /** For the most destructive actions: confirm stays disabled until this word is typed. */
+  requireText?: string
 }
 
 interface PendingConfirm extends ConfirmOptions {

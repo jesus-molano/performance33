@@ -86,7 +86,6 @@ export function cloneDay(d: Day): Day {
 export function createEmptyData(): AppData {
   return {
     schemaVersion: SCHEMA_VERSION,
-    coaches: [],
     clients: [],
     programs: [],
     notes: [],

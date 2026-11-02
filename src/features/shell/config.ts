@@ -32,5 +32,5 @@ export const SAVE_STATUS_META: Record<SaveStatus, SaveStatusMeta> = {
   idle: { label: 'Guardado', icon: CircleCheck, tone: 'text-fg-subtle' },
   saving: { label: 'Guardando…', icon: LoaderCircle, tone: 'text-fg-muted', spin: true },
   saved: { label: 'Guardado', icon: CircleCheck, tone: 'text-emerald-600' },
-  error: { label: 'No se ha podido guardar', icon: CircleAlert, tone: 'text-red-600' },
+  error: { label: 'Sin conexión, reintentando…', icon: CircleAlert, tone: 'text-red-600' },
 }

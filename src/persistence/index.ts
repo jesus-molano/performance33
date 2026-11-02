@@ -1,5 +1,5 @@
 export { createExportEnvelope, downloadBackup, readBackupFile, resetStoredDataAndReload, type ExportEnvelope } from './backup'
-export { initDashboardData, startDashboardSync } from './dashboardSync'
+export { flushDashboardSaves, hydrateDashboard, loadDashboardData, startDashboardSync } from './dashboardSync'
 export { normalizeAppData } from './migrate'
 export type { ChangeMeta, DisplayChange, RemoteChange, Repository } from './repository'
 export { repository } from './repositoryInstance'

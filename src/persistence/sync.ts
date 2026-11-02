@@ -1,5 +1,5 @@
-// Live cross-tab sync: BroadcastChannel (instant) + repository subscription (storage event /
-// future backend). The same change can arrive through both paths, so every receiver
+// Live sync: BroadcastChannel (instant, same browser) + repository subscription (storage event /
+// the cloud). The same change can arrive through both paths, so every receiver
 // filters by (source, revision) and ignores its own tab.
 
 import type { DisplayData } from '@/types'
@@ -20,15 +20,15 @@ export function createChangeFilter(): (meta: ChangeMeta) => boolean {
 }
 
 /**
- * Dashboard tabs: full data changes from other tabs. The listener must apply the data WITHOUT
- * undo history and WITHOUT saving/broadcasting it again (see startDashboardSync).
+ * Dashboard tabs: data changes made elsewhere. The listener must apply them WITHOUT
+ * undo history and WITHOUT saving them again (see startDashboardSync).
  */
 export function subscribeRemoteChanges(listener: (change: RemoteChange) => void): () => void {
   const accept = createChangeFilter()
   const onChange = (change: RemoteChange) => {
     if (accept(change)) listener(change)
   }
-  const stopChannel = listenDataChannel(onChange)
+  const stopChannel = repository.sharesDataAcrossTabs ? listenDataChannel(onChange) : () => undefined
   const stopRepository = repository.subscribe(onChange)
   return () => {
     stopChannel()

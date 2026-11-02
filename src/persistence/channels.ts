@@ -1,5 +1,5 @@
 // BroadcastChannel transport (same browser, instant). Two channels:
-//   data    → full AppData, for other DASHBOARD tabs.
+//   data    → full AppData, for other DASHBOARD tabs (local test mode only; in the cloud each tab syncs with the server).
 //   display → sanitised DisplayData (no private fields), for Pantalla / TV windows.
 
 import { SYNC_CHANNELS } from '@/config/app'
@@ -39,14 +39,18 @@ function listen<T>(name: string, listener: (message: ChannelMessage<T>) => void)
   return () => channel.removeEventListener('message', onMessage)
 }
 
-/** Sends a local change: full data to dashboards, sanitised data to display windows. */
-export function broadcastChange(data: AppData, meta: ChangeMeta): void {
-  post<AppData>(SYNC_CHANNELS.data, { ...meta, data })
-  post<DisplayData>(SYNC_CHANNELS.display, { ...meta, data: toDisplayData(data) })
+export function broadcastDisplay(data: DisplayData, meta: ChangeMeta): void {
+  post<DisplayData>(SYNC_CHANNELS.display, { ...meta, data })
+}
+
+/** Sends a local change to display windows and, when `shareFullData`, to other dashboards. */
+export function broadcastChange(data: AppData, meta: ChangeMeta, shareFullData: boolean): void {
+  if (shareFullData) post<AppData>(SYNC_CHANNELS.data, { ...meta, data })
+  broadcastDisplay(toDisplayData(data), meta)
 }
 
 export function listenDataChannel(listener: (change: RemoteChange) => void): () => void {
-  return listen<AppData>(SYNC_CHANNELS.data, listener)
+  return listen<AppData>(SYNC_CHANNELS.data, (message) => listener({ ...message, kind: 'snapshot' }))
 }
 
 export function listenDisplayChannel(listener: (change: DisplayChange) => void): () => void {

@@ -33,7 +33,7 @@ export async function readBackupFile(file: File): Promise<AppData> {
   return data
 }
 
-/** Emergency reset (error screen): wipes the stored data so the next load seeds the demo again. */
+/** Emergency reset (error screen): forgets this device's copy. In the cloud the shared data stays untouched. */
 export async function resetStoredDataAndReload(): Promise<void> {
   await repository.clear()
   window.location.reload()

@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn'
 import type { ClientNote } from '@/types'
 import { useNoteItem } from '@/features/clients/hooks/useNoteItem'
 
-/** One private note: author, date, text; pin/edit/delete in the '⋯' menu. Edits autosave. */
+/** One private note: author, date, text; pin/edit/delete in the '⋯' menu (author or admin only). Edits autosave. */
 export function NoteItem({ note }: { note: ClientNote }) {
   const item = useNoteItem(note)
   const menu: MenuItem[] = [
@@ -34,9 +34,9 @@ export function NoteItem({ note }: { note: ClientNote }) {
             Alerta
           </Badge>
         )}
-        <DropdownMenu items={menu} label={`Opciones de la nota de ${item.authorName}`} />
+        {item.canEdit && <DropdownMenu items={menu} label={`Opciones de la nota de ${item.authorName}`} />}
       </div>
-      {item.isEditing ? (
+      {item.isEditing && item.canEdit ? (
         <div className="mt-2 flex flex-col gap-2">
           <Textarea aria-label="Texto de la nota" value={note.text} onChange={(e) => item.changeText(e.target.value)} autoFocus rows={3} />
           <Button size="sm" variant="secondary" onClick={item.finishEditing} className="h-10 self-end">

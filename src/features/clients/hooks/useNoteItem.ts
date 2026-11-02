@@ -2,13 +2,16 @@ import { useCallback } from 'react'
 import { useDisclosure, useToast } from '@/hooks'
 import { UNKNOWN_AUTHOR_COLOR } from '@/config/colors'
 import { formatDateTime } from '@/lib/dates'
-import { breakUndoGroup, useAppActions, useCoach } from '@/store'
+import { canEditNote } from '@/lib/ownership'
+import { breakUndoGroup, useAppActions, useCurrentStaff, useStaffMember } from '@/store'
 import type { ClientNote } from '@/types'
 
 export interface NoteItemApi {
   authorName: string
   authorColor: string
   dateLabel: string
+  /** Only the author or an admin can edit, pin or delete. */
+  canEdit: boolean
   isEditing: boolean
   startEditing: () => void
   /** Store-bound: every keystroke autosaves (grouped into one undo step). */
@@ -19,7 +22,8 @@ export interface NoteItemApi {
 }
 
 export function useNoteItem(note: ClientNote): NoteItemApi {
-  const author = useCoach(note.authorId)
+  const author = useStaffMember(note.authorId)
+  const canEdit = canEditNote(note, useCurrentStaff())
   const { updateNote, deleteNote } = useAppActions()
   const { toastUndo } = useToast()
   const { isOpen, open, close } = useDisclosure()
@@ -39,6 +43,7 @@ export function useNoteItem(note: ClientNote): NoteItemApi {
     authorName: author?.name ?? 'Monitor eliminado',
     authorColor: author?.color ?? UNKNOWN_AUTHOR_COLOR,
     dateLabel: formatDateTime(note.createdAt),
+    canEdit,
     isEditing: isOpen,
     startEditing: open,
     changeText: (text) => updateNote(note.id, { text }),

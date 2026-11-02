@@ -12,7 +12,6 @@ describe('normalizeAppData', () => {
 
   it('fills missing nested collections so the editor and TV cannot crash', () => {
     const raw = {
-      coaches: [{ id: 'c1', name: 'Carla', color: '#000000' }],
       clients: [],
       programs: [{ id: 'p1', clientId: 'x', days: [{ id: 'd1', blocks: [{ id: 'b1', type: 'emom' }] }, { id: 'd2' }] }],
     }
@@ -24,15 +23,15 @@ describe('normalizeAppData', () => {
     expect(data?.programs[0].weeks).toBeGreaterThan(0)
   })
 
-  it('rejects data without coaches and drops items without id', () => {
-    expect(normalizeAppData({ coaches: [], clients: [] })).toBeNull()
-    const data = normalizeAppData({ coaches: [{ id: 'c1' }, { name: 'sin id' }], clients: [{ firstName: 'x' }] })
-    expect(data?.coaches).toHaveLength(1)
-    expect(data?.clients).toHaveLength(0)
+  it('rejects data without clients, drops items without id and ignores old coach lists', () => {
+    expect(normalizeAppData({ programs: [] })).toBeNull()
+    const data = normalizeAppData({ coaches: [{ id: 'c1' }], clients: [{ firstName: 'x' }, { id: 'c2' }] })
+    expect(data?.clients).toHaveLength(1)
+    expect(data).not.toHaveProperty('coaches')
   })
 
   it('migrates the old low-contrast accent colour', () => {
-    const data = normalizeAppData({ coaches: [{ id: 'c1' }], clients: [], branding: { accentColor: LEGACY_ACCENT_COLOR } })
+    const data = normalizeAppData({ clients: [], branding: { accentColor: LEGACY_ACCENT_COLOR } })
     expect(data?.branding.accentColor).toBe(DEFAULT_BRANDING.accentColor)
   })
 })

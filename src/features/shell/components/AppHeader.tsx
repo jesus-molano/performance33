@@ -1,6 +1,6 @@
 import { paths } from '@/lib/routes'
 import { useBranding } from '@/store'
-import { CoachSwitcher } from './CoachSwitcher'
+import { AccountMenu } from './AccountMenu'
 import { SaveIndicator } from './SaveIndicator'
 import { UndoRedoButtons } from './UndoRedoButtons'
 
@@ -14,7 +14,7 @@ function MobileBrand() {
   )
 }
 
-/** Sticky top bar: save status, undo/redo and the coach switcher. */
+/** Sticky top bar: save status, undo/redo and the signed-in coach. */
 export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-header items-center gap-1 border-b border-line bg-canvas/85 px-3 backdrop-blur-md sm:gap-2 md:px-8">
@@ -23,7 +23,7 @@ export function AppHeader() {
       <SaveIndicator />
       <UndoRedoButtons />
       <div className="mx-1 hidden h-6 w-px bg-line sm:block" aria-hidden />
-      <CoachSwitcher />
+      <AccountMenu />
     </header>
   )
 }

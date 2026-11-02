@@ -1,5 +1,5 @@
 // The persisted data store: zustand + zundo. Only `data` is tracked for undo/redo;
-// UI state (current coach, save status, toasts) lives in separate stores.
+// UI state (session, save status, toasts) lives in separate stores.
 
 import { temporal } from 'zundo'
 import { create } from 'zustand'
@@ -7,7 +7,6 @@ import { UNDO_GROUP_MS, UNDO_LIMIT } from '@/config/app'
 import { createEmptyData } from '@/lib/factories'
 import { createBlockSlice } from './slices/blockSlice'
 import { createClientSlice } from './slices/clientSlice'
-import { createCoachSlice } from './slices/coachSlice'
 import { createDaySlice } from './slices/daySlice'
 import { createExerciseSlice } from './slices/exerciseSlice'
 import { createNoteSlice } from './slices/noteSlice'
@@ -50,7 +49,6 @@ export const useAppStore = create<AppState>()(
       }
       return {
         data: createEmptyData(),
-        ...createCoachSlice(ctx),
         ...createClientSlice(ctx),
         ...createProgramSlice(ctx),
         ...createDaySlice(ctx),

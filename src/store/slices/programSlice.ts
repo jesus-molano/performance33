@@ -6,7 +6,7 @@ import { newId } from '@/lib/ids'
 import { getClientPrograms } from '@/lib/program'
 import { applyProgramDates, nextBlockStart } from '@/lib/programDates'
 import type { AppData, Program } from '@/types'
-import { getCurrentCoachId } from '@/store/uiStore'
+import { getCurrentStaffId } from '@/store/sessionStore'
 import type { ProgramActions, SliceContext } from '@/store/types'
 import { groupKey } from '@/store/undoGroup'
 
@@ -50,7 +50,7 @@ export function createProgramSlice({ commit, getData }: SliceContext): ProgramAc
         endDate: endDateFor(startDate, weeks),
         days: Array.from({ length: dayCount }, (_, i) => createDay(i)),
         createdAt: new Date().toISOString(),
-        createdBy: getCurrentCoachId(),
+        createdBy: getCurrentStaffId(),
       }
       commit((d) => addProgram(d, program, opts.makeCurrent ?? true))
       return program.id
@@ -74,7 +74,7 @@ export function createProgramSlice({ commit, getData }: SliceContext): ProgramAc
         endDate: endDateFor(startDate, source.weeks),
         days: source.days.map(cloneDay),
         createdAt: new Date().toISOString(),
-        createdBy: getCurrentCoachId(),
+        createdBy: getCurrentStaffId(),
       }
       commit((d) => addProgram(d, copy, opts.makeCurrent ?? true))
       return copy.id

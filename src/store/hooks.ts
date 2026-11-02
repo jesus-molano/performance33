@@ -4,10 +4,11 @@ import { useMemo } from 'react'
 import { useStore } from 'zustand'
 import { getClientPrograms, getCurrentProgram } from '@/lib/program'
 import { getFullLibrary } from '@/lib/search'
-import type { AnyLibraryExercise, AppData, Branding, Client, ClientNote, Coach, Program } from '@/types'
+import type { AnyLibraryExercise, AppData, Branding, Client, ClientNote, Program, StaffMember } from '@/types'
 import { useAppStore } from './appStore'
-import { countPinnedNotes, findClient, findCoach, findProgram, selectClientNotes, sortClients } from './selectors'
+import { countPinnedNotes, findClient, findProgram, selectClientNotes, sortClients } from './selectors'
 import type { AppActions } from './types'
+import { useSessionStore, type SessionStatus } from './sessionStore'
 import { useUiStore, type SaveStatus } from './uiStore'
 
 /** Generic escape hatch: select a stable slice of the data. */
@@ -20,10 +21,15 @@ export function useAppActions(): AppActions {
   return useAppStore.getState()
 }
 
-export const useCoaches = (): Coach[] => useAppStore((s) => s.data.coaches)
-export const useCoach = (id: string | null): Coach | null => useAppStore((s) => findCoach(s.data, id))
-export const useCurrentCoachId = (): string | null => useUiStore((s) => s.currentCoachId)
-export const useCurrentCoach = (): Coach | null => useCoach(useCurrentCoachId())
+export const useSessionStatus = (): SessionStatus => useSessionStore((s) => s.status)
+/** The signed-in coach (null until the session is ready). */
+export const useCurrentStaff = (): StaffMember | null => useSessionStore((s) => s.staff)
+export const useIsAdmin = (): boolean => useSessionStore((s) => s.staff?.role === 'admin')
+export const useSessionNotice = (): string | null => useSessionStore((s) => s.notice)
+/** Everyone on the staff list, deactivated people included. */
+export const useTeam = (): StaffMember[] => useSessionStore((s) => s.team)
+export const useStaffMember = (id: string | null): StaffMember | null =>
+  useSessionStore((s) => s.team.find((member) => member.id === id) ?? null)
 
 export function useClients(opts: { includeArchived?: boolean } = {}): Client[] {
   const clients = useAppStore((s) => s.data.clients)

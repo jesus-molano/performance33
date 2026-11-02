@@ -1,4 +1,5 @@
 import { Database, Dumbbell, Moon, Palette, Sun, Users, type LucideIcon } from 'lucide-react'
+import { BACKEND } from '@/config/backend'
 import type { SettingsTab } from '@/lib/routes'
 import type { DisplayTheme, MeasureType } from '@/types'
 import { MEASURE_META, MEASURE_ORDER } from '@/config/exerciseFields'
@@ -12,9 +13,20 @@ export interface SettingsTabMeta {
 export const SETTINGS_TAB_META: Record<SettingsTab, SettingsTabMeta> = {
   marca: { label: 'Marca', icon: Palette, description: 'Nombre, logotipo y colores del gimnasio.' },
   biblioteca: { label: 'Ejercicios', icon: Dumbbell, description: 'La biblioteca que aparece al escribir un ejercicio.' },
-  monitores: { label: 'Monitores', icon: Users, description: 'Quién usa la aplicación.' },
+  equipo: { label: 'Equipo', icon: Users, description: 'Quién puede entrar en la aplicación.' },
   datos: { label: 'Datos', icon: Database, description: 'Copias de seguridad y datos de demostración.' },
 }
+
+/** Tabs a monitor can use; administrators see them all. */
+export const MONITOR_SETTINGS_TABS: readonly SettingsTab[] = ['biblioteca']
+
+export const DATA_STORAGE_HINT =
+  BACKEND.mode === 'cloud'
+    ? 'Se guardan solos en la nube y los comparte todo el equipo. Descarga una copia de vez en cuando.'
+    : 'Modo local de pruebas: se guardan solo en este navegador.'
+
+/** What an admin must type to confirm replacing everything for the whole team. */
+export const DANGER_CONFIRM_WORD = 'BORRAR'
 
 export const DISPLAY_THEME_OPTIONS: ReadonlyArray<{ value: DisplayTheme; label: string; icon: LucideIcon }> = [
   { value: 'dark', label: 'Oscuro', icon: Moon },

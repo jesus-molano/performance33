@@ -3,6 +3,7 @@ import { useConfirm, useToast } from '@/hooks'
 import { plural } from '@/lib/format'
 import { downloadBackup, readBackupFile } from '@/persistence'
 import { useAppActions, useAppData } from '@/store'
+import { DANGER_CONFIRM_WORD } from '@/features/settings/config'
 import type { AppData } from '@/types'
 
 export interface DataStats {
@@ -44,9 +45,10 @@ export function useDataTransfer(): DataTransferApi {
       const backup = await readBackupFile(file)
       const ok = await confirm({
         title: '¿Restaurar esta copia?',
-        description: `Se sustituirán los datos actuales por los de la copia (${plural(backup.clients.length, 'cliente', 'clientes')}). Esto no se puede deshacer.`,
+        description: `Se sustituirán los datos de todo el equipo por los de la copia (${plural(backup.clients.length, 'cliente', 'clientes')}). Esto no se puede deshacer.`,
         confirmLabel: 'Restaurar copia',
         danger: true,
+        requireText: DANGER_CONFIRM_WORD,
       })
       if (!ok) return
       importData(backup)
@@ -59,9 +61,10 @@ export function useDataTransfer(): DataTransferApi {
   const resetDemo = async () => {
     const ok = await confirm({
       title: '¿Volver a los datos de demostración?',
-      description: 'Se borrarán todos los clientes, rutinas y notas actuales. Esto no se puede deshacer.',
+      description: 'Se borrarán todos los clientes, rutinas y notas de todo el equipo. Esto no se puede deshacer.',
       confirmLabel: 'Restablecer',
       danger: true,
+      requireText: DANGER_CONFIRM_WORD,
     })
     if (!ok) return
     resetDemoData()

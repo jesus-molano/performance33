@@ -17,7 +17,6 @@ import {
   type Branding,
   type Client,
   type ClientNote,
-  type Coach,
   type CustomExercise,
   type Day,
   type ExerciseEntry,
@@ -61,7 +60,7 @@ function normalizeDay(raw: UnknownRecord & { id: string }): Day {
   return { id: raw.id, name: text(raw.name), label: text(raw.label), blocks: normalizeList(raw.blocks, normalizeBlock) }
 }
 
-function normalizeProgram(raw: UnknownRecord & { id: string }): Program {
+export function normalizeProgram(raw: UnknownRecord & { id: string }): Program {
   const weeks = typeof raw.weeks === 'number' && raw.weeks >= 1 ? raw.weeks : DEFAULT_PROGRAM_WEEKS
   const startDate = isValidISODate(text(raw.startDate)) ? text(raw.startDate) : todayISO()
   const endDate = isValidISODate(text(raw.endDate)) ? text(raw.endDate) : endDateFor(startDate, weeks)
@@ -76,7 +75,7 @@ function normalizeProgram(raw: UnknownRecord & { id: string }): Program {
   }
 }
 
-function normalizeClient(raw: UnknownRecord & { id: string }): Client {
+export function normalizeClient(raw: UnknownRecord & { id: string }): Client {
   const client = raw as Partial<Client>
   const plan = client.plan && client.plan in PLAN_BY_ID ? client.plan : 'custom'
   return {
@@ -92,33 +91,26 @@ function normalizeClient(raw: UnknownRecord & { id: string }): Client {
   }
 }
 
-function normalizeCoach(raw: UnknownRecord & { id: string }): Coach {
-  return { id: raw.id, name: text(raw.name, 'Monitor'), color: text(raw.color, UNKNOWN_AUTHOR_COLOR) }
-}
-
-function normalizeNote(raw: UnknownRecord & { id: string }): ClientNote {
+export function normalizeNote(raw: UnknownRecord & { id: string }): ClientNote {
   return { ...(raw as unknown as ClientNote), text: text(raw.text), pinned: raw.pinned === true }
 }
 
-function normalizeBranding(raw: unknown): Branding {
+export function normalizeBranding(raw: unknown): Branding {
   const branding = { ...DEFAULT_BRANDING, ...(isRecord(raw) ? (raw as Partial<Branding>) : {}) }
   return branding.accentColor === LEGACY_ACCENT_COLOR ? { ...branding, accentColor: DEFAULT_BRANDING.accentColor } : branding
 }
 
 /**
- * Normalised AppData, or null when `raw` is not recognisable as app data (or has no coach, which
- * would leave nobody to pick on '¿Quién eres?'). Accepts the export envelope { app, exportedAt, data }.
+ * Normalised AppData, or null when `raw` is not recognisable as app data. Accepts the export
+ * envelope { app, exportedAt, data }; the coach list of older backups is ignored.
  * Future schema migrations go here (switch on schemaVersion).
  */
 export function normalizeAppData(raw: unknown): AppData | null {
   if (!isRecord(raw)) return null
   if (isRecord(raw.data) && !Array.isArray(raw.clients)) return normalizeAppData(raw.data)
-  if (!Array.isArray(raw.clients) || !Array.isArray(raw.coaches)) return null
-  const coaches = normalizeList(raw.coaches, normalizeCoach)
-  if (coaches.length === 0) return null
+  if (!Array.isArray(raw.clients)) return null
   return {
     schemaVersion: SCHEMA_VERSION,
-    coaches,
     clients: normalizeList(raw.clients, normalizeClient),
     programs: normalizeList(raw.programs, normalizeProgram),
     notes: normalizeList(raw.notes, normalizeNote),

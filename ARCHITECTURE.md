@@ -1,7 +1,8 @@
 # Performance33 · Rutinas — Architecture
 
-Vite 8 + React 19 + TypeScript (strict) + Tailwind v4 + zustand 5 + zundo 2 + @dnd-kit + lucide-react + nanoid.
-All UI text is Spanish (Spain), informal "tú". Hash routing. Data in localStorage behind a `Repository`.
+Vite 8 + React 19 + TypeScript (strict) + Tailwind v4 + zustand 5 + zundo 2 + @dnd-kit + lucide-react + nanoid + supabase-js.
+All UI text is Spanish (Spain), informal "tú", without technical words (never "Supabase"). Hash routing.
+Data lives behind a `Repository`: Supabase when the env vars are set, localStorage in local test mode.
 
 ## 1. Code rules (mandatory)
 
@@ -24,55 +25,58 @@ Pure functions have unit tests next to them (`*.test.ts`, run with `npm test`).
 
 ```
 src/
-  main.tsx, App.tsx            route switch: screen routes vs dashboard
-  app/DashboardRoot.tsx        bootstrap data + autosave/sync, branding vars, Ctrl+Z, coach guard
+  main.tsx, App.tsx            refuses a half-configured build; starts the session; route switch: screen routes vs dashboard
+  app/DashboardGate.tsx        session status → login / new password / no access / offline / dashboard
+  app/DashboardRoot.tsx        bootstrap data + autosave/sync, branding vars, Ctrl+Z
   app/DashboardPage.tsx        dashboard route → page
-  app/ScreenRoutes.tsx         display/tv routes → pages (no private data loaded)
+  app/ScreenRoutes.tsx         display/tv routes → pages, behind the session (no private data loaded)
   index.css                    Tailwind v4 @theme tokens
   types.ts                     domain types
-  config/  app.ts blockTypes.ts branding.ts colors.ts exerciseFields.ts plans.ts synonyms.ts
-  data/    exercises.ts (294 exercises, EXERCISE_LIBRARY, EXERCISE_CATEGORIES)  seed/ (createSeedData)
-  lib/     arrays blocks branding cn color dates debounce displayWindow factories files ids numbers
+  config/  app.ts backend.ts (cloud | local | invalid, from env vars) blockTypes.ts branding.ts colors.ts exerciseFields.ts plans.ts synonyms.ts
+  data/    exercises.ts (294 exercises, EXERCISE_LIBRARY, EXERCISE_CATEGORIES)  seed/ (createSeedData, SEED_TEAM)
+  lib/     arrays blocks branding cloudClient cn color dataRows dates debounce deepEqual displayWindow factories files ids numbers ownership
            plans program programDates progression routes search  format/  display/
-  store/   appStore history hooks selectors locate types undoGroup uiStore toastStore confirmStore slices/*
-  persistence/ repository localStorageRepository repositoryInstance migrate backup channels sync dashboardSync tabId
+  auth/    types instance session messages supabaseAuth supabaseTeam localBackend
+  store/   appStore history rebase hooks selectors locate types undoGroup uiStore sessionStore toastStore confirmStore slices/*
+  persistence/ repository repositoryInstance localStorageRepository supabaseRepository rowGateway supabaseGateway dbRows
+           displayCache migrate backup channels sync dashboardSync tabId
   hooks/   useHashRoute useDisclosure useMediaQuery(useIsMobile) useDebouncedValue useClickOutside useToast
            useConfirm useUndoRedo useUndoShortcuts useDisplayWindow useDisplayData useBrandingStyles
-           useDashboardBootstrap useModalBehavior
+           useDashboardBootstrap useSessionBootstrap useModalBehavior
   components/ui/  Button IconButton Input Textarea Select Field SegmentedControl Chip Badge Avatar Card
                   EmptyState Switch HelpTip Privacy(PrivacyLabel, PrivateSurface) Modal ConfirmDialog(ConfirmHost)
                   Toaster DropdownMenu styles
-  components/ColorSwatchPicker.tsx   colour swatch radio group (coach + client forms)
-  features/{shell,coaches,clients,settings,editor,display}/
+  components/  ColorSwatchPicker (profile + client forms), SplashScreen, ConfigErrorScreen, AppErrorBoundary
+  features/{auth,team,shell,clients,settings,editor,display}/
+supabase/  schema.sql (tables, RLS, triggers, realtime; run once)  schema.test.ts (checks it on real Postgres via PGlite)
 ```
 
 ## 3. Routes (`src/lib/routes.ts`)
 
 | Hash | Route | Page (props) |
 |---|---|---|
-| `#/` | `pick-coach` | `CoachPickerPage` |
-| `#/clientes` | `clients` | `ClientsPage` |
+| `#/`, `#/clientes` | `clients` | `ClientsPage` |
 | `#/clientes/:clientId` | `client` | `ClientDetailPage { clientId }` |
 | `#/clientes/:clientId/programa/:programId` | `program` | `ProgramEditorPage { clientId, programId }` |
-| `#/ajustes?tab=marca\|biblioteca\|monitores\|datos` | `settings` | `SettingsPage { tab: SettingsTab }` (default `marca`) |
+| `#/ajustes?tab=marca\|biblioteca\|equipo\|datos` | `settings` | `SettingsPage { tab: SettingsTab }` (default `marca`; monitors only get `biblioteca`, see `useSettingsTabs`) |
 | `#/pantalla/:clientId?dia=N&programa=pid` | `display` | `DisplayPage { clientId, day: number\|null, programId: string\|null }` |
 | `#/tv?slots=cid:1,-,cid:2` | `tv` | `TvPage { slots: TvSlot[] }` (`TV_MIN_SLOTS`–`TV_MAX_SLOTS` = 1–4 columns, `-` = empty column; missing list → `TV_DEFAULT_SLOTS` = 3; old `cid:1,cid:2,` URLs still give 3) |
 
 Helpers: `paths.*` builders, `navigate(path)`, `replaceRoute(path)` (no history entry), `parseRoute`,
 `isScreenRoute`, `absoluteHashUrl`, `parseTvSlots`/`serializeTvSlots`, `SETTINGS_TABS`.
-Hook: `useHashRoute(): Route`. Without a valid current coach every dashboard route renders the picker;
-the picker must `navigate(paths.clients())` after choosing when the route is `#/`.
+Hook: `useHashRoute(): Route`. Without a ready session every dashboard route renders the login (or the
+matching session screen) and keeps its address, so the person lands where they were going.
 
 ## 4. Store (`src/store`, import from `'@/store'`)
 
-Data store = zustand + zundo; only `data: AppData` is tracked (limit 100). UI state (current coach,
-save status), toasts and confirm requests live in separate stores and are never undone.
+Data store = zustand + zundo; only `data: AppData` is tracked (limit 100). Session (`sessionStore`: status,
+signed-in coach, team), save status, toasts and confirm requests live in separate stores and are never undone.
+The team is NOT in AppData: not in undo, not in backups.
 Edits to the same id + same fields within 1 s merge into one undo step (typing never undoes one char).
 Call `breakUndoGroup()` on input blur if you want the next edit to start a new step.
 
 Actions (`useAppActions()`; ids returned are the new entity id, `''` if the parent was not found):
 
-- Coaches: `addCoach({name,color}) → id`, `updateCoach(id, patch)`, `deleteCoach(id) → boolean` (false if last).
 - Clients: `addClient(NewClientInput) → id`, `updateClient(id, ClientPatch)`, `archiveClient(id)`,
   `restoreClient(id)`, `deleteClient(id)` (cascade programs+notes; confirm first).
 - Programs: `createProgram(clientId, {name?,startDate?,weeks?,dayCount?,makeCurrent?}) → id`
@@ -89,27 +93,31 @@ Actions (`useAppActions()`; ids returned are the new entity id, `''` if the pare
 - Exercises: `addExercise(blockId, init?: Partial<ExerciseEntry>, {index?, inherit = true}) → id`
   (inherits sets, reps, restSec, loadUnit from the row above), `updateExercise(exerciseId, ExercisePatch)`,
   `duplicateExercise(id) → id`, `deleteExercise(id)`, `moveExercise(id, toBlockId, toIndex)` (cross-block/day ok).
-- Notes (private): `addNote(clientId, text, {pinned?}) → id` (author = current coach), `updateNote(id, {text?,pinned?})`, `deleteNote(id)`.
+- Notes (private): `addNote(clientId, text, {pinned?}) → id` (author = signed-in coach), `updateNote(id, {text?,pinned?})`, `deleteNote(id)`.
 - Settings: `updateBranding(Partial<Branding>)`, `resetBranding()`, `addCustomExercise(CustomExerciseInput) → id`,
-  `updateCustomExercise(id, patch)`, `deleteCustomExercise(id)`, `importData(AppData)` and `resetDemoData()` (both clear history).
+  `updateCustomExercise(id, patch)`, `deleteCustomExercise(id)`, `importData(AppData)` and `resetDemoData()` (both clear history; signatures from people outside the team pass to the signed-in coach, see `adoptImportedData`).
 
 History: `undo()`, `redo()`, `breakUndoGroup()`, `clearHistory()`; hooks `useUndoRedo() → {canUndo, canRedo, undo, redo}`.
-`applyRemoteData` / `hydrateData` are for persistence only.
+`applyRemoteRows` / `hydrateData` are for persistence only.
 
-Selector hooks: `useAppData(selector)`, `useAppActions()`, `useCoaches()`, `useCoach(id|null)`,
-`useCurrentCoachId()`, `useCurrentCoach()`, `useClients({includeArchived?})` (sorted by name),
+Selector hooks: `useAppData(selector)`, `useAppActions()`, `useSessionStatus()`, `useCurrentStaff()` (signed-in coach),
+`useIsAdmin()`, `useTeam()`, `useStaffMember(id|null)`, `useSessionNotice()`, `useClients({includeArchived?})` (sorted by name),
 `useClient(id)`, `useProgram(id)`, `useClientPrograms(clientId)` (newest first), `useCurrentProgram(clientId)`,
 `useClientNotes(clientId)` (pinned first, newest first), `usePinnedNotes(clientId)`, `usePinnedNoteCounts()`,
 `useBranding()`, `useExerciseLibrary()` (custom + built-in), `useSaveStatus() → {status:'idle'|'saving'|'saved'|'error', lastSavedAt}`,
-`useHistoryState()`. UI store: `useUiStore(s => s.setCurrentCoach)` to switch coach.
-Pure selectors: `findCoach`, `findClient`, `findProgram`, `sortClients`, `selectClientNotes`, `countPinnedNotes`,
+`useHistoryState()`. Non-hook: `getCurrentStaffId()`.
+Pure selectors: `findClient`, `findProgram`, `sortClients`, `selectClientNotes`, `countPinnedNotes`,
 `findDayContext`, `findBlockContext`, `findExerciseContext`.
 
 ## 5. Feature contracts (exact exports)
 
 | Import from | Export | Props |
 |---|---|---|
-| `features/coaches` | `CoachPickerPage` | none |
+| `features/auth` | `LoginPage`, `SetPasswordPage`, `NoAccessPage`, `SessionOfflinePage` | none |
+| `features/auth` | `DataLoadFailedPage` | `{ onRetry: () => void }` |
+| `features/team` | `TeamPanel` | none (Ajustes → Equipo) |
+| `features/team` | `ProfileModal` | `{ staff: StaffMember; onClose: () => void }` (Mi perfil; render only while open) |
+| `features/display` | `ScreenSignInRequired` | none (TV window without a session) |
 | `features/shell` | `AppLayout` | `{ route: Route; children: ReactNode }` |
 | `features/shell` | `NotFoundPage` | none |
 | `features/clients` | `ClientsPage` | none |
@@ -185,17 +193,43 @@ below 1em (the floor) and the client-visible cue gets its own line (clamped to t
 
 ## 8. Persistence & sync
 
-`Repository` interface (`load`, `loadSync`, `save(data, {source, revision})`, `clear`, `subscribe`) with
-`LocalStorageRepository` (key `p33:data:v1`); swap in `persistence/repositoryInstance.ts` for Supabase.
-Dashboard tabs: every local change is broadcast immediately (BroadcastChannel `p33-data` full data and
-`p33-display` sanitised data) and saved after 400 ms (save pill: saving → saved/error). Remote changes are applied
-without undo history and without re-saving (no echo loops); duplicates are filtered by (source, revision).
-Display windows never load private data: `useDisplayData()` = initial sanitised read + live channel + storage event.
-First run seeds demo data relative to today (Carla & Dani; Laura week 2/4 with pinned shoulder alert and a previous
+`config/backend.ts` decides once: `cloud` (both env vars), `local` (neither) or `invalid` (only one: `main.tsx` shows
+`ConfigErrorScreen` and never loads the app). `lib/cloudClient` is null unless cloud; `auth/instance` and
+`persistence/repositoryInstance` pick from it, so the demo login cannot be reached when the cloud is set.
+
+`Repository`: `load`, `save(getData, {source, revision})`, `saveDisplay`, `clear` (this device only), `release`, `subscribe`,
+`loadDisplaySync`, `subscribeDisplay`, `sharesDataAcrossTabs`.
+
+- `SupabaseRepository` (over a `RowGateway`, faked in its tests): one row per client, program, note, library exercise,
+  plus the `settings` row (`lib/dataRows`, translation in `dbRows`). `base` = last version known on the server; `save` upserts or
+  deletes ONLY `diff(base, latest)`, one save at a time. Same row: last write wins. Network errors reject (`dashboardSync` retries
+  with backoff and shows 'Sin conexión, reintentando…'; `beforeunload` warns); refusals (`PermanentWriteError`) put that row back to
+  the server version and show a toast. `save` is a no-op after `release()`. It reads nothing from or to localStorage but the display copy.
+- Live: realtime row events → `base` and store updated together (batched `REMOTE_BATCH_MS`), own echoes dropped by `client_origin`
+  (deletes by `deleteEchoes`). Catch-up by `refetch()`: on reconnect, on tab focus, on `online`, and every `CLOUD_REFETCH_INTERVAL_MS`.
+- `applyRemoteRows(changes)` (`store/history`): replaces the rows in the store, without undo, keeping rows with unsaved local edits,
+  and `rebaseSnapshots` puts the same rows in every past/future undo snapshot and drops steps left empty. Undo never overwrites another coach.
+- `LocalStorageRepository` (local test mode, key `p33:data:v2`): whole dataset, shared across tabs by BroadcastChannel `p33-data` + storage
+  event; `dashboardSync` turns those snapshots into row changes with `diffData`, so both modes apply remote changes the same way.
+- TV windows: every change (local or remote) goes out on BroadcastChannel `p33-display` and to the sanitised cache
+  (`displayCache`, key `p33:display:v1`). Display windows never load private data: `useDisplayData()` = initial sanitised read +
+  live channel + storage event. They update only while a dashboard is open in that browser.
+
+Session (`auth/session`, same flow in dashboards and TV windows, results in `useSessionStore`): `loading → signed-out | no-access |
+recovery | offline | ready`. `claim_staff_profile` decides access (re-checked on focus). Leaving removes the display cache; `dashboardSync`
+watches the status and, in this order, stops listening, `repository.release()`s and empties the store (so emptying can never be saved as a
+mass delete). API: `startSession`, `signOut`, `retrySession`, `finishRecovery`, `refreshTeam`, `watchTeam`, `auth`, `teamService` from `@/auth`;
+`flushDashboardSaves()` from `@/persistence`. Login uses PKCE (tokens never in the hash the routes use).
+
+Permissions: `supabase/schema.sql` enforces them (RLS + triggers, tested in `schema.test.ts`); `lib/ownership` (`canEditNote`, `accessChangeError`,
+`isActiveAdmin`) mirrors them for the UI and for local mode. To change a rule, change both and their tests.
+
+Local mode seeds demo data on first run. An empty cloud does not: an admin gets 'Cargar datos de demostración' on the clients page.
+Demo data is relative to today (Carla & Dani, `SEED_TEAM`; Laura week 2/4 with pinned shoulder alert and a previous
 block; Javier expires in 3 days; Marta elite 4 days with every block type; Carlos expired; Lucía no routine;
 Andrés 1 day; Sergio archived). Every routine day has 4–5 realistic blocks (Laura's 'Pierna' day is the 5-block,
 15-line stress case; her programs never contain overhead work, see `seed.test.ts`). Saved data has no seed version:
-an existing browser keeps its old demo until "Restablecer datos de demostración".
+an existing browser keeps its old demo until "Restablecer datos de demostración" (admins only, typing `BORRAR`: `requireText` in `useConfirm`).
 
 ## 9. Design tokens & UI conventions
 

@@ -1,4 +1,4 @@
-import { SearchX, UserPlus, Users } from 'lucide-react'
+import { DatabaseZap, SearchX, UserPlus, Users } from 'lucide-react'
 import { Button, EmptyState } from '@/components/ui'
 import { plural } from '@/lib/format'
 import type { Client } from '@/types'
@@ -7,10 +7,12 @@ import { ClientFormModal } from '@/features/clients/components/ClientFormModal'
 import { ClientGrid } from '@/features/clients/components/ClientGrid'
 import { ClientToolbar } from '@/features/clients/components/ClientToolbar'
 import { useClientList } from '@/features/clients/hooks/useClientList'
+import { useDemoLoader } from '@/features/clients/hooks/useDemoLoader'
 
 export function ClientsPage() {
   const list = useClientList()
   const form = useEditTarget<Client>()
+  const demo = useDemoLoader()
   const addButton = (
     <Button leftIcon={UserPlus} onClick={form.openCreate}>
       Nuevo cliente
@@ -41,7 +43,21 @@ export function ClientsPage() {
           action={<Button variant="secondary" onClick={list.clearFilters}>Quitar filtros</Button>}
         />
       ) : (
-        <EmptyState icon={Users} title="Aún no tienes clientes" description="Añade tu primer cliente para crearle su rutina." action={addButton} />
+        <EmptyState
+          icon={Users}
+          title="Aún no hay clientes"
+          description="Cuando alguien del equipo añada un cliente, aparecerá aquí."
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              {addButton}
+              {demo.canLoadDemo && (
+                <Button variant="secondary" leftIcon={DatabaseZap} onClick={demo.loadDemo}>
+                  Cargar datos de demostración
+                </Button>
+              )}
+            </div>
+          }
+        />
       )}
       {form.target && <ClientFormModal client={editedItem(form.target)} onClose={form.close} />}
     </PageContainer>

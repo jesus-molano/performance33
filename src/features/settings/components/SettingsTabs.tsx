@@ -1,13 +1,13 @@
 import { cn } from '@/lib/cn'
-import { paths, SETTINGS_TABS, type SettingsTab } from '@/lib/routes'
+import { paths, type SettingsTab } from '@/lib/routes'
 import { SETTINGS_TAB_META } from '@/features/settings/config'
 
 /** Settings sections as tabs (links, so each tab has its own URL). Scrolls sideways on mobile. */
-export function SettingsTabs({ active }: { active: SettingsTab }) {
+export function SettingsTabs({ tabs, active }: { tabs: readonly SettingsTab[]; active: SettingsTab }) {
   return (
     <nav aria-label="Secciones de ajustes" className="-mx-4 mb-6 overflow-x-auto px-4 scrollbar-none md:mx-0 md:px-0">
       <div className="inline-flex gap-1 rounded-2xl bg-fg/5 p-1">
-        {SETTINGS_TABS.map((tab) => {
+        {tabs.map((tab) => {
           const { label, icon: Icon } = SETTINGS_TAB_META[tab]
           const selected = tab === active
           return (

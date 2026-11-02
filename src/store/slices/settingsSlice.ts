@@ -2,8 +2,10 @@ import { DEFAULT_BRANDING } from '@/config/branding'
 import { createSeedData } from '@/data/seed'
 import { removeById, updateById } from '@/lib/arrays'
 import { newId } from '@/lib/ids'
+import { adoptImportedData } from '@/lib/ownership'
 import { mapProgramExercises } from '@/lib/programTree'
-import type { CustomExercise, CustomExerciseInput } from '@/types'
+import type { AppData, CustomExercise, CustomExerciseInput } from '@/types'
+import { getCurrentStaffId, getTeamIds } from '@/store/sessionStore'
 import type { SettingsActions, SliceContext } from '@/store/types'
 import { groupKey } from '@/store/undoGroup'
 
@@ -20,6 +22,9 @@ function buildCustomExercise(id: string, input: CustomExerciseInput): CustomExer
     createdAt: new Date().toISOString(),
   }
 }
+
+/** Notes and routines signed by people outside this team pass to whoever loads them. */
+const adopt = (data: AppData): AppData => adoptImportedData(data, getTeamIds(), getCurrentStaffId())
 
 export function createSettingsSlice({ commit, clearHistory }: SliceContext): SettingsActions {
   return {
@@ -46,11 +51,11 @@ export function createSettingsSlice({ commit, clearHistory }: SliceContext): Set
         ),
       })),
     importData: (data) => {
-      commit(() => data)
+      commit(() => adopt(data))
       clearHistory()
     },
     resetDemoData: () => {
-      commit(() => createSeedData())
+      commit(() => adopt(createSeedData()))
       clearHistory()
     },
   }

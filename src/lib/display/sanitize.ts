@@ -80,7 +80,7 @@ export function toPublicClient(c: Client): PublicClient {
   }
 }
 
-/** Strip all private data (notes, internal notes, goals, coaches, library). */
+/** Strip all private data (notes, internal notes, goals, library). */
 export function toDisplayData(data: AppData): DisplayData {
   return {
     branding: { ...data.branding },

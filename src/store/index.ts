@@ -1,6 +1,6 @@
 export { useAppStore } from './appStore'
 export {
-  applyRemoteData,
+  applyRemoteRows,
   breakUndoGroup,
   clearHistory,
   currentDataVersion,
@@ -16,4 +16,5 @@ export * from './selectors'
 export type * from './types'
 export { useConfirmStore, type ConfirmOptions } from './confirmStore'
 export { useToastStore, type Toast, type ToastInput, type ToastTone } from './toastStore'
-export { getCurrentCoachId, useUiStore, type SaveStatus } from './uiStore'
+export { getCurrentStaffId, useSessionStore, type SessionStatus } from './sessionStore'
+export { useUiStore, type SaveStatus } from './uiStore'
