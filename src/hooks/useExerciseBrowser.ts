@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { EXERCISE_PAGE_SIZE } from '@/config/app'
-import { collectEquipment, EMPTY_EXERCISE_FILTERS, filterExercises, type ExerciseFilters } from '@/lib/exerciseLibrary'
+import { collectEquipment, EMPTY_EXERCISE_FILTERS, filterExercises, hasActiveFilters, type ExerciseFilters } from '@/lib/exerciseLibrary'
 import { useExerciseLibrary } from '@/store'
 import type { LibraryExercise } from '@/types'
 import { usePagination, type PaginationApi } from './usePagination'
@@ -9,6 +9,9 @@ export interface ExerciseBrowserApi {
   filters: ExerciseFilters
   /** Changing a filter goes back to the first page. */
   setFilter: <K extends keyof ExerciseFilters>(key: K, value: ExerciseFilters[K]) => void
+  /** Any filter or search in use. */
+  filtered: boolean
+  clearFilters: () => void
   equipment: string[]
   pagination: PaginationApi<LibraryExercise>
 }
@@ -30,5 +33,10 @@ export function useExerciseBrowser(): ExerciseBrowserApi {
     [setPage],
   )
 
-  return { filters, setFilter, equipment, pagination }
+  const clearFilters = useCallback(() => {
+    setFilters(EMPTY_EXERCISE_FILTERS)
+    setPage(1)
+  }, [setPage])
+
+  return { filters, setFilter, filtered: hasActiveFilters(filters), clearFilters, equipment, pagination }
 }

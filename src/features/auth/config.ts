@@ -1,7 +1,7 @@
 import type { PasswordStrength } from '@/features/auth/utils/credentials'
 
 export const AUTH_COPY = {
-  missingCredentials: 'Escribe tu email o usuario y tu contraseña.',
+  missingCredentials: 'Escribe tu email o nombre de usuario y tu contraseña.',
   loginDescription: 'Usa tu cuenta del equipo del gimnasio.',
   forgotPassword: 'He olvidado mi contraseña',
   forgotPasswordAnswer: 'Pídele al administrador que te dé una nueva.',
@@ -10,7 +10,9 @@ export const AUTH_COPY = {
   noAccessAs: (email: string) => `Has entrado como ${email}. Pídele al administrador que te cree una cuenta con este email, o entra con otra.`,
   createPasswordTitle: 'Crea tu contraseña',
   createPasswordBody: 'La que te han dado era temporal. Elige una que solo sepas tú para poder seguir.',
-  demoDescription: 'Es una demo: no metas datos reales de clientes. Lo que escribas se queda solo en este navegador, y lo verá quien entre después en él.',
+  expiredPasswordTitle: 'Tu contraseña temporal ya no sirve',
+  expiredPasswordBody: 'Solo vale durante 3 días. Pídele al administrador que te dé una nueva.',
+  demoDescription: 'Es una demo: no metas datos reales de usuarios. Lo que escribas se queda solo en este navegador, y lo verá quien entre después en él.',
   localAccountsTitle: 'Cuentas de prueba',
   localAccountNotes: {
     admin: 'Administrador',

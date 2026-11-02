@@ -2,7 +2,7 @@ import { MonitorPlay, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Route } from '@/lib/routes'
 import { NAV_LINKS, TV_LAUNCHER } from '@/features/shell/config'
-import { useTvLauncher } from '@/features/shell/hooks/useTvLauncher'
+import { usePhoneTvButton } from '@/features/shell/hooks/useTvLauncher'
 import { isNavActive } from '@/features/shell/utils/nav'
 
 const ITEM_CLASSES = 'flex h-bottom-nav flex-1 flex-col items-center justify-center gap-1 text-xs font-medium'
@@ -20,7 +20,7 @@ function ItemBody({ icon: Icon, label, active }: { icon: LucideIcon; label: stri
 
 /** Mobile navigation bar (below 768 px). */
 export function BottomNav({ route }: { route: Route }) {
-  const openTv = useTvLauncher()
+  const openTv = usePhoneTvButton()
   const [clientsLink, settingsLink] = NAV_LINKS
 
   return (
@@ -39,7 +39,7 @@ export function BottomNav({ route }: { route: Route }) {
             <ItemBody icon={link.icon} label={link.label} active={isNavActive(link, route)} />
           </a>
         ) : (
-          <button key="tv" type="button" onClick={openTv} title={TV_LAUNCHER.hint} className={ITEM_CLASSES}>
+          <button key="tv" type="button" onClick={openTv} className={ITEM_CLASSES}>
             <ItemBody icon={MonitorPlay} label={TV_LAUNCHER.label} active={false} />
           </button>
         ),

@@ -7,7 +7,7 @@ type ProgramDates = Pick<Program, 'startDate' | 'endDate' | 'weeks'>
 
 /**
  * Applies a date edit keeping start/end/weeks consistent:
- * weeks → recomputes endDate; endDate → recomputes weeks (end never before start);
+ * weeks → recomputes endDate; endDate → recomputes weeks (end never before start, never past the longest routine);
  * startDate alone → moves the whole block, keeping its exact length. Invalid values are ignored.
  */
 export function applyProgramDates(current: ProgramDates, patch: ProgramDatesPatch): ProgramDates {
@@ -17,7 +17,8 @@ export function applyProgramDates(current: ProgramDates, patch: ProgramDatesPatc
     return { startDate, weeks, endDate: endDateFor(startDate, weeks) }
   }
   if (patch.endDate && isValidISODate(patch.endDate)) {
-    const endDate = diffDays(startDate, patch.endDate) < 0 ? startDate : patch.endDate
+    const latest = endDateFor(startDate, MAX_PROGRAM_WEEKS)
+    const endDate = diffDays(startDate, patch.endDate) < 0 ? startDate : diffDays(latest, patch.endDate) > 0 ? latest : patch.endDate
     return { startDate, endDate, weeks: weeksBetween(startDate, endDate) }
   }
   const length = Math.max(0, diffDays(current.startDate, current.endDate))

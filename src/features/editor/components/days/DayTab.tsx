@@ -9,11 +9,14 @@ export interface DayTabProps {
 }
 
 /**
- * One day pill. Mouse/touch can drag it directly (activation distance/delay keeps clicks working);
+ * One named day. Mouse/touch can drag it directly (activation distance/delay keeps clicks working);
  * keyboard users reorder with the day '⋯' menu, so Enter/Space keep selecting the tab.
+ * Tabs share the row and shorten their names; the tooltip has it all.
  */
 export function DayTab({ day, selected, onSelect }: DayTabProps) {
   const { setNodeRef, style, isDragging, handle } = useSortableItem(day.id)
+  const name = day.name || 'Día'
+  const label = day.label.trim()
   return (
     <button
       ref={(element) => {
@@ -24,20 +27,18 @@ export function DayTab({ day, selected, onSelect }: DayTabProps) {
       type="button"
       role="tab"
       aria-selected={selected}
+      title={label ? `${name} · ${label}` : name}
       onClick={onSelect}
+      onContextMenu={(event) => event.preventDefault()}
       {...pointerListenersOnly(handle.listeners)}
       className={cn(
-        'flex min-h-11 shrink-0 touch-manipulation flex-col items-start justify-center rounded-xl px-4 py-1.5 text-left transition-colors',
+        'flex min-h-11 max-w-56 min-w-0 flex-1 touch-manipulation flex-col items-start justify-center rounded-xl px-2 py-1.5 text-left lg:px-3 transition-colors select-none [-webkit-touch-callout:none]',
         selected ? 'bg-ink text-white shadow-card' : 'text-fg-muted hover:bg-fg/5 hover:text-fg',
         isDragging && 'opacity-80 shadow-pop',
       )}
     >
-      <span className="text-md leading-tight font-semibold whitespace-nowrap">{day.name || 'Día'}</span>
-      {day.label.trim() && (
-        <span className={cn('text-xs leading-tight whitespace-nowrap', selected ? 'text-brand' : 'text-fg-subtle')}>
-          {day.label}
-        </span>
-      )}
+      <span className="w-full truncate text-md leading-tight font-semibold">{name}</span>
+      {label && <span className={cn('w-full truncate text-xs leading-tight', selected ? 'text-brand' : 'text-fg-subtle')}>{label}</span>}
     </button>
   )
 }

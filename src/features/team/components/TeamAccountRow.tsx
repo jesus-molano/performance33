@@ -37,6 +37,7 @@ export function TeamAccountRow({ account, isSelf, busy, onRoleChange, onActiveCh
             {isSelf && <Badge tone="brand">Eres tú</Badge>}
             {!account.active && <Badge tone="neutral">{TEAM_COPY.statusNoAccess}</Badge>}
             {account.active && account.mustChangePassword && <Badge tone="warning">{TEAM_COPY.statusPending}</Badge>}
+            {account.googleConnected && <Badge tone="info">{TEAM_COPY.googleConnectedBadge}</Badge>}
           </div>
         </div>
       </div>

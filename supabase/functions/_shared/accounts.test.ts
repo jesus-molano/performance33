@@ -4,6 +4,7 @@ import {
   findAccountConflict,
   generateTemporaryPassword,
   internalEmail,
+  isAcceptablePassword,
   isEmailIdentifier,
   parseNewAccount,
   suggestUsername,
@@ -37,7 +38,7 @@ describe('parseNewAccount', () => {
 
 describe('usernames and emails', () => {
   it('builds an address that cannot receive mail', () => {
-    expect(internalEmail('ana')).toBe('ana@accounts.invalid')
+    expect(internalEmail((length) => new Uint8Array(length).fill(171))).toBe('abababababababababababababababab@accounts.invalid')
   })
 
   it('tells an email from a username by the @', () => {
@@ -110,7 +111,11 @@ describe('generateTemporaryPassword', () => {
   it('throws away the bytes that would bias it', () => {
     let calls = 0
     const onlyHighBytes = (length: number) => new Uint8Array(length).fill(calls++ === 0 ? 255 : 0)
-    expect(generateTemporaryPassword(onlyHighBytes)).toBe('aaaa-aaaa-aaaa')
-    expect(calls).toBe(2)
+    expect(generateTemporaryPassword(onlyHighBytes)).toBe('2aaa-aaaa-aaaa')
+    expect(calls).toBe(3)
+  })
+
+  it('always has a letter and a digit, as the auth server requires', () => {
+    for (let i = 0; i < 50; i++) expect(isAcceptablePassword(generateTemporaryPassword(random))).toBe(true)
   })
 })

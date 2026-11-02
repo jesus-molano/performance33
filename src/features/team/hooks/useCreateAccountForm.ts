@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { refreshTeamQuietly, teamService } from '@/auth'
-import { useToast } from '@/hooks'
+import { useConfirm, useToast } from '@/hooks'
 import { normalizeEmail, normalizeUsername, suggestUsername } from '@/lib/accountRules'
 import type { Profile, ProfileRole } from '@/types'
 import { TEAM_COPY } from '@/features/team/config'
@@ -22,6 +22,7 @@ export interface CreateAccountFormApi extends AccountFormValues {
 /** 'Crear cuenta': on success hands the temporary password over to be shown once. */
 export function useCreateAccountForm(accounts: readonly Profile[], onCreated: (temporary: TemporaryPassword) => void): CreateAccountFormApi {
   const { toast } = useToast()
+  const confirm = useConfirm()
   const [name, setName] = useState('')
   const [typedUsername, setTypedUsername] = useState<string | null>(null)
   const [email, setEmail] = useState('')
@@ -43,10 +44,17 @@ export function useCreateAccountForm(accounts: readonly Profile[], onCreated: (t
     event.preventDefault()
     setTouched(true)
     if (Object.keys(errors).length > 0) return
+    const clean = { name: name.trim(), username: normalizeUsername(username) }
+    const cleanEmail = normalizeEmail(email) || null
+    if (
+      cleanEmail &&
+      !(await confirm({ title: TEAM_COPY.confirmEmailTitle, description: TEAM_COPY.confirmEmailBody(cleanEmail, clean.name), confirmLabel: TEAM_COPY.confirmEmailAction }))
+    ) {
+      return
+    }
     setBusy(true)
     try {
-      const clean = { name: name.trim(), username: normalizeUsername(username) }
-      const password = await teamService.createAccount({ ...clean, email: normalizeEmail(email) || null, role, color: suggestColor(accounts) })
+      const password = await teamService.createAccount({ ...clean, email: cleanEmail, role, color: suggestColor(accounts) })
       await refreshTeamQuietly()
       onCreated({ ...clean, password })
       reset()

@@ -3,7 +3,8 @@ import type { DisplayDensity } from '@/features/display/utils/autoFit'
 /** Spacing/size classes that differ between the compact (narrow slot) and comfortable layouts. All em. */
 interface DensityStyles {
   content: string
-  columnGap: string
+  /** Gap and divider between the two parts of a split screen. */
+  split: string
   card: string
   blockText: string
   note: string
@@ -21,8 +22,9 @@ interface DensityStyles {
 
 export const DENSITY_STYLES: Record<DisplayDensity, DensityStyles> = {
   compact: {
-    content: 'gap-[0.35em] px-[0.35em] pt-[0.35em] pb-[0.1em]',
-    columnGap: '[column-gap:1em]',
+    // The width limit only acts on a landscape screen: the prescription stays close enough to its name to follow the row.
+    content: 'mx-auto w-full max-w-[62em] gap-[0.35em] px-[0.35em] pt-[0.35em] pb-[0.1em]',
+    split: '',
     card: 'mb-[0.25em] rounded-[0.5em] px-[0.45em] py-[0.15em]',
     blockText: 'line-clamp-3 text-[1.25em] leading-snug',
     note: 'mt-[0.15em] gap-[0.4em] rounded-[0.45em] px-[0.5em] py-[0.1em] text-[1.25em] leading-snug',
@@ -36,7 +38,7 @@ export const DENSITY_STYLES: Record<DisplayDensity, DensityStyles> = {
   },
   comfortable: {
     content: 'gap-[1em] px-[1.2em] pt-[1em] pb-[0.3em]',
-    columnGap: '[column-gap:1.4em]',
+    split: '[column-gap:2.4em] [column-rule-style:solid] [column-rule-width:0.2em]',
     card: 'mb-[0.8em] rounded-[0.9em] px-[1em] py-[0.7em]',
     blockText: 'mt-[0.4em] text-[1.4em] leading-snug whitespace-pre-line',
     note: 'mt-[0.5em] gap-[0.5em] rounded-[0.6em] px-[0.7em] py-[0.4em] text-[1.35em] leading-snug',

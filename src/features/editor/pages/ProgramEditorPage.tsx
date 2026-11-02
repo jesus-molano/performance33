@@ -17,10 +17,10 @@ export function ProgramEditorPage({ clientId, programId }: ProgramEditorPageProp
       <EmptyState
         icon={FileQuestion}
         title="No encontramos esta rutina"
-        description="Puede que se haya eliminado. Vuelve a la ficha del cliente para ver sus rutinas."
+        description="Puede que se haya eliminado. Vuelve a la ficha del usuario para ver sus rutinas."
         action={
           <Button onClick={() => navigate(client ? paths.client(client.id) : paths.clients())}>
-            {client ? `Volver a ${client.firstName}` : 'Ver clientes'}
+            {client ? `Volver a ${client.firstName}` : 'Ver usuarios'}
           </Button>
         }
         className="min-h-[60dvh]"

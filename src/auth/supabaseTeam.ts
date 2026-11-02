@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { TAB_ID } from '@/persistence/tabId'
+import { uniqueChannelTopic } from '@/persistence/tabId'
 import type { Profile, TeamMember } from '@/types'
 import { invokeFunction } from './edgeFunctions'
 import { teamErrorMessage } from './messages'
@@ -14,13 +14,22 @@ interface ProfileRow extends TeamMember {
   username: string
   email: string | null
   must_change_password: boolean
+  has_own_password: boolean
+  temporary_password_expired: boolean
+  google_connected: boolean
 }
 
 function failIf(error: { code?: string; message?: string } | null): void {
   if (error) throw new Error(teamErrorMessage(error))
 }
 
-const toProfile = ({ must_change_password, ...row }: ProfileRow): Profile => ({ ...row, mustChangePassword: must_change_password })
+const toProfile = ({ must_change_password, has_own_password, temporary_password_expired, google_connected, ...row }: ProfileRow): Profile => ({
+  ...row,
+  mustChangePassword: must_change_password,
+  hasOwnPassword: has_own_password,
+  temporaryPasswordExpired: temporary_password_expired,
+  googleConnected: google_connected,
+})
 
 export function createSupabaseTeam(client: SupabaseClient): TeamService {
   const admin = <T>(action: string, fields: object) => invokeFunction<T>(client, ADMIN_FUNCTION, { action, ...fields })
@@ -51,7 +60,7 @@ export function createSupabaseTeam(client: SupabaseClient): TeamService {
 
     subscribe(listener) {
       const channel = client
-        .channel(`p33-team-${TAB_ID}`)
+        .channel(uniqueChannelTopic('p33-team'))
         .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, listener)
         .subscribe()
       return () => void client.removeChannel(channel)

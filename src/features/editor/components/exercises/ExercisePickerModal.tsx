@@ -1,7 +1,7 @@
 import { SearchX } from 'lucide-react'
 import { ExerciseFilterFields } from '@/components/exercises/ExerciseFilterFields'
 import { ExerciseLink } from '@/components/exercises/ExerciseLink'
-import { EmptyState, Modal, PaginatedList } from '@/components/ui'
+import { Button, EmptyState, Modal, PaginatedList } from '@/components/ui'
 import { useExerciseBrowser, useIsMobile } from '@/hooks'
 import { formatExerciseMeta } from '@/lib/exerciseLibrary'
 import type { LibraryExercise } from '@/types'
@@ -13,7 +13,7 @@ export interface ExercisePickerModalProps {
 
 /** 'Ver todos los ejercicios': the whole library, page by page. Phones don't get the keyboard until they tap the search. */
 export function ExercisePickerModal({ onPick, onClose }: ExercisePickerModalProps) {
-  const { filters, setFilter, pagination } = useExerciseBrowser()
+  const { filters, setFilter, filtered, clearFilters, pagination } = useExerciseBrowser()
   const isMobile = useIsMobile()
 
   return (
@@ -40,7 +40,18 @@ export function ExercisePickerModal({ onPick, onClose }: ExercisePickerModalProp
             )}
           />
         ) : (
-          <EmptyState icon={SearchX} title="No hay ejercicios con esa búsqueda" description="Prueba con otra palabra o quita la categoría." />
+          <EmptyState
+            icon={SearchX}
+            title="No hay ejercicios con esa búsqueda"
+            description="Prueba con otra palabra o quita los filtros."
+            action={
+              filtered && (
+                <Button variant="secondary" onClick={clearFilters}>
+                  Quitar filtros
+                </Button>
+              )
+            }
+          />
         )}
       </div>
     </Modal>

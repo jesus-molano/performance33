@@ -16,7 +16,7 @@ export interface VisibleTextFieldProps {
   className?: string
 }
 
-/** Store-bound text that the client WILL see on the TV: pink eye label 'Lo verá el cliente'. */
+/** Store-bound text that the client WILL see on the TV: pink eye label 'Lo verá el usuario'. */
 export function VisibleTextField({ label, value, placeholder, onChange, multiline, autoFocus, maxLength, className }: VisibleTextFieldProps) {
   const id = useId()
   const lengthHint = maxLength ? getLengthHint(value, maxLength) : null

@@ -6,7 +6,7 @@ import { TV_PICKER_TEXTS } from '@/features/display/config/tv'
 interface ClientComboboxOptionProps {
   id: string
   index: number
-  /** null = 'Sin cliente'. */
+  /** null = 'Sin usuario'. */
   option: ClientOption | null
   active: boolean
   selected: boolean
@@ -14,7 +14,7 @@ interface ClientComboboxOptionProps {
   onHover: () => void
 }
 
-/** One listbox row: colour dot + first name (+ 'Sin rutina' tag), or the 'Sin cliente' entry. */
+/** One listbox row: colour dot + first name (+ 'Sin rutina' tag), or the 'Sin usuario' entry. */
 export function ClientComboboxOption({ id, index, option, active, selected, onPick, onHover }: ClientComboboxOptionProps) {
   return (
     <li

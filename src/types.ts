@@ -36,6 +36,11 @@ export interface Profile extends TeamMember {
   email: string | null
   /** Still on a temporary password: the app shows nothing else until it is replaced. */
   mustChangePassword: boolean
+  /** False while the only password is a temporary one, also for someone who enters with Google and is not asked to change it. */
+  hasOwnPassword: boolean
+  /** Too old to create the final password from it: an administrator has to give a new one. */
+  temporaryPasswordExpired: boolean
+  googleConnected: boolean
 }
 
 export type OwnProfilePatch = Pick<TeamMember, 'name' | 'color'>
@@ -208,19 +213,23 @@ export interface ExerciseEntry {
 
 // ── Library ─────────────────────────────────────────────────────────────────
 
-export type ExerciseCategory =
-  | 'Piernas'
-  | 'Empuje'
-  | 'Tracción'
-  | 'Core'
-  | 'Halterofilia'
-  | 'Cardio'
-  | 'Gimnásticos'
-  | 'Movilidad'
-  | 'Pliometría'
-  | 'Brazos'
+export type MuscleGroup =
+  | 'Pecho'
+  | 'Espalda'
   | 'Hombro'
+  | 'Bíceps'
+  | 'Tríceps'
+  | 'Antebrazo'
+  | 'Cuádriceps'
+  | 'Femoral'
   | 'Glúteo'
+  | 'Gemelo'
+  | 'Aductores'
+  | 'Abductores'
+  | 'Core'
+  | 'Cuerpo entero'
+
+export type ExerciseType = 'Fuerza' | 'Halterofilia' | 'Gimnásticos' | 'Cardio' | 'Pliometría' | 'Movilidad' | 'Calentamiento'
 
 export type MeasureType = 'reps' | 'time' | 'distance' | 'calories'
 
@@ -228,7 +237,11 @@ export interface LibraryExercise {
   id: string
   name: string
   aliases?: string[]
-  category: ExerciseCategory
+  /** The main muscle. */
+  muscle: MuscleGroup
+  /** Others it also works; absent when none. */
+  secondaryMuscles?: MuscleGroup[]
+  type: ExerciseType
   equipment: string[]
   defaultMeasure: MeasureType
   perSide?: boolean
@@ -259,7 +272,7 @@ export interface Branding {
 
 // ── Root ────────────────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 export interface AppData {
   schemaVersion: number
@@ -282,8 +295,8 @@ export type DayPatch = Partial<Pick<Day, 'name' | 'label'>>
 export type BlockPatch = Partial<Pick<Block, 'title' | 'note' | 'text'>>
 export type ExercisePatch = Partial<Omit<ExerciseEntry, 'id'>>
 export type NotePatch = Partial<Pick<ClientNote, 'text' | 'pinned'>>
-export type LibraryExerciseInput = Pick<LibraryExercise, 'name' | 'category'> &
-  Partial<Pick<LibraryExercise, 'equipment' | 'defaultMeasure' | 'perSide' | 'aliases' | 'link'>>
+export type LibraryExerciseInput = Pick<LibraryExercise, 'name' | 'muscle' | 'type'> &
+  Partial<Pick<LibraryExercise, 'secondaryMuscles' | 'equipment' | 'defaultMeasure' | 'perSide' | 'aliases' | 'link'>>
 export type LibraryExercisePatch = Partial<Omit<LibraryExercise, 'id'>>
 
 export interface ProgramDatesPatch {

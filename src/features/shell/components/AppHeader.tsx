@@ -7,9 +7,8 @@ import { UndoRedoButtons } from './UndoRedoButtons'
 function MobileBrand() {
   const { iconUrl, gymName } = useBranding()
   return (
-    <a href={paths.clients()} className="flex min-w-0 items-center gap-2 md:hidden" aria-label="Ir a clientes">
-      {iconUrl && <img src={iconUrl} alt="" className="size-9 rounded-xl object-cover" />}
-      <span className="truncate text-base font-semibold">{gymName}</span>
+    <a href={paths.clients()} className="flex h-11 min-w-11 items-center md:hidden" aria-label="Ir a usuarios">
+      {iconUrl ? <img src={iconUrl} alt="" className="size-9 rounded-xl object-cover" /> : <span className="truncate text-base font-semibold">{gymName}</span>}
     </a>
   )
 }

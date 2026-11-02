@@ -10,20 +10,21 @@ export const AUTO_FIT = {
   maxUnitPerWidth: 0.04,
   /** Largest unit as a fraction of the container height (1080 px → ~28 px). */
   maxUnitPerHeight: 0.026,
-  /** Size a day should keep at 1080 px: 18,9 px → compact names 28 px. Secondary content hides before going below it. */
-  targetUnitPerHeight: 0.0175,
+  /**
+   * Size a day should keep at 1080 px, same exercise name in both: compact 18,9 px and comfortable 14,8 px → names 28 px.
+   * Secondary content hides before going below it; on a landscape screen, one column below it splits in two parts.
+   */
+  targetUnitPerHeight: { compact: 0.0175, comfortable: 0.0137 },
   /** Same target in narrow slots: 480 px column → 17,3 px → names 26 px. */
   targetUnitPerWidth: 0.036,
   /** Below this the text no longer reads well from 3-4 m: compact 16 px → names 24 px; comfortable 13,5 px → names 26 px. */
   readableUnitPerHeight: { compact: 0.0148, comfortable: 0.0125 },
-  /** Keeps a day at the limits fitting (4 columns) rather than cut off. Past it, two sub-columns or the '…' indicator. */
+  /** Keeps a day at the limits fitting (4 columns) rather than cut off. Past it, the '…' indicator. */
   lastResortUnitPerHeight: { compact: 0.0125, comfortable: 0.0115 },
   /** Slots narrower than this width/height ratio use the compact layout (640 × 1080 = 0,59; 960 × 1080 = 0,89). */
   compactMaxAspect: 1,
-  /** A sub-column must be at least this many units wide (one exercise line: name + prescription). */
+  /** Each part of a split screen must be at least this many units wide (one exercise line: name + prescription). */
   minColumnWidthUnits: 30,
-  /** In a landscape 'full' layout, 2 columns win only if they make text at least this much bigger. */
-  twoColumnGain: 1.15,
   /** Binary search iterations. */
   iterations: 9,
 } as const
@@ -43,6 +44,9 @@ export const FONT_SCALE = { min: 0.7, max: 1.6, step: 0.1, initial: 1 } as const
 export const CONTROLS_IDLE_MS = 3000
 /** 'Arrastra esta ventana a la tele' hint lifetime. */
 export const WINDOW_HINT_MS = 7000
+/** After A+, how long the columns get to report their new size, and how long the note stays. */
+export const TV_SIZE_LIMIT_CHECK_MS = 400
+export const TV_SIZE_LIMIT_NOTE_MS = 4000
 /** 'Actualizado' highlight duration on a changed block. */
 export const FLASH_MS = 1800
 
@@ -51,6 +55,9 @@ export const PREVIEW_ASPECT_CLASS = 'aspect-[16/27]'
 
 /** Per-viewer conveniences (localStorage, may be unavailable). */
 export const DISPLAY_STORAGE_KEYS = {
+  /** List of named screens on this device. */
+  tvScreens: 'p33:tv:screens',
+  /** Columns of Pantalla 1 (the key older versions used); other screens add ':N'. */
   tvSlots: 'p33:tv:slots',
   fontScale: 'p33:display:fontScale',
 } as const

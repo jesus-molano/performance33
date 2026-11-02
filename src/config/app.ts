@@ -18,6 +18,7 @@ export const LEGACY_STORAGE_KEYS = ['p33:data:v1', 'p33:currentCoach', 'p33:loca
 export const SYNC_CHANNELS = {
   data: 'p33-data',
   display: 'p33-display',
+  tvScreens: 'p33-tv-screens',
 } as const
 
 /** Debounce before writing to the repository after a change. */
@@ -40,6 +41,15 @@ export const ACCESS_RECHECK_MIN_GAP_MS = 60_000
 export const CLOUD_PAGE_SIZE = 1000
 /** Rows per request when writing or deleting (a whole library, a restored backup). */
 export const CLOUD_WRITE_BATCH_SIZE = 200
+/** After an edit arrives from a dashboard of this browser, a TV ignores the server's copy for this long. Longer than a save. */
+export const DISPLAY_LOCAL_PRIORITY_MS = 5000
+/** Years a typed date may have. */
+export const DATE_INPUT_YEARS = { min: 1900, max: 2100 } as const
+/** Digits of dd, mm and aaaa. */
+export const DATE_PART_LENGTHS = [2, 2, 4] as const
+export const DAYS_PER_WEEK = 7
+/** Saved data from before this version also gets the exercises added to the initial library with it. */
+export const LIBRARY_ADDITIONS_VERSION = 2
 /** Consecutive edits of the same field within this window form ONE undo step. */
 export const UNDO_GROUP_MS = 1000
 export const UNDO_LIMIT = 100
@@ -55,6 +65,9 @@ export const MAX_PROGRAM_WEEKS = 52
 /** Media query used for the mobile layout (bottom sheets, one column). */
 export const MOBILE_MEDIA_QUERY = '(max-width: 767px)'
 
+/** Phones, also held sideways: the screen routes become normal scrolling pages. A TV popup is never one (see isScreenPopup). */
+export const PHONE_SCREEN_QUERY = '(max-width: 767px), (max-height: 500px)'
+
 /** Maximum popup sizes: a third of a 16:9 1080p TV, and the full multi-column TV (shrunk to fit the screen). */
 export const DISPLAY_WINDOW_SIZE = { width: 640, height: 1080 } as const
 export const TV_WINDOW_SIZE = { width: 1600, height: 900 } as const
@@ -64,6 +77,13 @@ export const POPUP_SCREEN_MARGIN = 40
 export const TV_DEFAULT_SLOTS = 3
 export const TV_MIN_SLOTS = 1
 export const TV_MAX_SLOTS = 4
+/** Named TV windows (Pantalla 1, Pantalla 2…), one per TV. Old URLs without a number are Pantalla 1. */
+export const TV_DEFAULT_SCREEN = 1
+export const TV_MAX_SCREENS = 8
+/** Each screen opens this far from the previous one, so a new window does not hide the one before it. */
+export const TV_WINDOW_CASCADE_PX = 40
+/** window.name of the popups: it also tells a TV window from a phone, whatever its width (see isScreenPopup). */
+export const SCREEN_WINDOW_NAMES = { display: 'p33-pantalla-', tv: 'p33-tv-' } as const
 /** URL token for an empty TV column ('-' keeps a single empty column distinct from a missing list). */
 export const TV_EMPTY_SLOT_TOKEN = '-'
 /** Pixels the pointer must move on a column grip before a drag starts (a click stays a click). */

@@ -20,7 +20,7 @@ export function ClientCard({ client, importantCount, onEdit }: ClientCardProps) 
 
   return (
     <Card padding="none" className="relative flex w-full flex-col transition-shadow hover:shadow-pop">
-      <a href={paths.client(client.id)} className="flex flex-1 flex-col gap-4 rounded-2xl p-4 pr-14 sm:p-5 sm:pr-14">
+      <a href={paths.client(client.id)} className="flex min-w-0 flex-1 flex-col gap-4 rounded-2xl p-4 pr-14 sm:p-5 sm:pr-14">
         <div className="flex items-center gap-3">
           <Avatar firstName={client.firstName} lastName={client.lastName} color={client.color} size="lg" />
           <div className="min-w-0">

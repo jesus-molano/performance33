@@ -2,7 +2,7 @@ import { closestCenter, DndContext, type Announcements, type DragEndEvent } from
 import { horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { ReactNode } from 'react'
 import { DND_TEXTS } from '@/features/editor/config'
-import { useSortableSensors } from '@/features/editor/hooks/useSortableSensors'
+import { useSortableSensors, type TouchActivation } from '@/features/editor/hooks/useSortableSensors'
 
 const ANNOUNCEMENTS: Announcements = {
   onDragStart: () => DND_TEXTS.start,
@@ -16,12 +16,14 @@ export interface SortableListProps {
   /** Called once on drop with the dragged id and its new index. */
   onMove: (id: string, toIndex: number) => void
   orientation?: 'vertical' | 'horizontal'
+  /** How long a press picks an item up on touch screens; items a tap must select wait longer. */
+  touchActivation?: TouchActivation
   children: ReactNode
 }
 
 /** Drag-and-drop context for one reorderable list (days, blocks of a day, rows of a block). */
-export function SortableList({ ids, onMove, orientation = 'vertical', children }: SortableListProps) {
-  const sensors = useSortableSensors()
+export function SortableList({ ids, onMove, orientation = 'vertical', touchActivation, children }: SortableListProps) {
+  const sensors = useSortableSensors(touchActivation)
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return
     const toIndex = ids.indexOf(String(over.id))

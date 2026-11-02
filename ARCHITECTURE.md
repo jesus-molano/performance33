@@ -32,18 +32,18 @@ src/
   app/ScreenRoutes.tsx         display/tv routes → pages, behind the session (sanitised data only)
   index.css                    Tailwind v4 @theme tokens
   types.ts                     domain types
-  config/  app.ts backend.ts (cloud | local | invalid, from env vars) blockTypes.ts capacity.ts branding.ts colors.ts exerciseFields.ts plans.ts synonyms.ts
-  data/    exercises.ts (EXERCISE_LIBRARY, 294 exercises: only the initial seed)  seed/ (createSeedData, SEED_TEAM, LOCAL_TEST_PASSWORDS)
-  lib/     accountRules (re-exports functions/_shared/accounts) accountMessages arrays blocks branding capacity cloudClient cn color dataRows dates debounce deepEqual displayWindow exerciseLibrary factories files ids numbers ownership pagination
+  config/  app.ts backend.ts (cloud | local | invalid, from env vars) blockTypes.ts capacity.ts branding.ts colors.ts exerciseFields.ts exerciseTags.ts plans.ts synonyms.ts
+  data/    exercises.ts (EXERCISE_LIBRARY, 322 exercises: only the initial seed)  seed/ (createSeedData, SEED_TEAM, LOCAL_TEST_PASSWORDS)
+  lib/     accountRules (re-exports functions/_shared/accounts) accountMessages arrays blocks branding calendar capacity cloudClient cn color dataRows dates dateText debounce deepEqual displayWindow exerciseLibrary factories files ids numbers ownership pagination
            plans program programDates progression routes search  format/  display/
   auth/    types instance session messages signInMethods edgeFunctions supabaseAuth supabaseTeam localBackend localAccounts localTeam
   store/   appStore history rebase hooks selectors locate types undoGroup uiStore sessionStore toastStore confirmStore slices/*
   persistence/ repository repositoryInstance localStorageRepository supabaseRepository rowGateway supabaseGateway dbRows
-           cloudDisplayFeed displayCache migrate backup channels sync dashboardSync tabId
+           cloudDisplayFeed displayCache migrate libraryTags backup channels sync dashboardSync tabId
   hooks/   usePagination useExerciseBrowser useHashRoute useDisclosure useMediaQuery(useIsMobile) useDebouncedValue useClickOutside useToast
            useConfirm useUndoRedo useUndoShortcuts useDisplayWindow useDisplayData useBrandingStyles
            useDashboardBootstrap useSessionBootstrap useModalBehavior
-  components/ui/  Button IconButton Input Textarea Select Field SegmentedControl Chip Badge Avatar Card
+  components/ui/  Button IconButton Input DateField CalendarDialog Textarea Select Field SegmentedControl Chip Badge Avatar Card
                   EmptyState Switch HelpTip Privacy(PrivacyLabel, PrivateSurface) Modal ConfirmDialog(ConfirmHost)
                   Toaster DropdownMenu Pagination PaginatedList styles
   components/  exercises/ (ExerciseLink, ExerciseFilterFields), GoogleIcon, ColorSwatchPicker (profile + client forms), SplashScreen, ConfigErrorScreen, AppErrorBoundary
@@ -61,8 +61,8 @@ supabase/  schema.sql (tables, RLS, triggers, realtime; run once)  schema.test.t
 | `#/clientes/:clientId` | `client` | `ClientDetailPage { clientId }` |
 | `#/clientes/:clientId/programa/:programId` | `program` | `ProgramEditorPage { clientId, programId }` |
 | `#/ajustes?tab=marca\|biblioteca\|equipo\|datos` | `settings` | `SettingsPage { tab: SettingsTab }` (default `marca`; monitors only get `biblioteca`, see `useSettingsTabs`) |
-| `#/pantalla/:clientId?dia=N&programa=pid` | `display` | `DisplayPage { clientId, day: number\|null, programId: string\|null }` |
-| `#/tv?slots=cid:1,-,cid:2` | `tv` | `TvPage { slots: TvSlot[] }` (`TV_MIN_SLOTS`–`TV_MAX_SLOTS` = 1–4 columns, `-` = empty column; missing list → `TV_DEFAULT_SLOTS` = 3; old `cid:1,cid:2,` URLs still give 3) |
+| `#/pantalla/:clientId?dia=N&programa=pid` | `display` | `DisplayPage { clientId, day: number\|null, programId: string\|null }` (phone: normal page with scroll) |
+| `#/tv?slots=cid:1,-,cid:2&pantalla=2` | `tv` | `TvPage { screen: number, slots: TvSlot[] }` (phone: list of people; no or invalid `pantalla` = Pantalla 1; `TV_MIN_SLOTS`–`TV_MAX_SLOTS` = 1–4 columns, `-` = empty column; missing list → `TV_DEFAULT_SLOTS` = 3; old `cid:1,cid:2,` URLs still give 3) |
 
 Helpers: `paths.*` builders, `navigate(path)`, `replaceRoute(path)` (no history entry), `parseRoute`,
 `isScreenRoute`, `absoluteHashUrl`, `parseTvSlots`/`serializeTvSlots`, `SETTINGS_TABS`.
@@ -127,29 +127,38 @@ Pure selectors: `findClient`, `findProgram`, `sortClients`, `selectClientNotes`,
 | `features/settings` | `SettingsPage` | `{ tab: SettingsTab }` |
 | `features/editor` | `ProgramEditorPage` | `{ clientId: string; programId: string }` |
 | `features/display` | `DisplayPage` | `{ clientId: string; day: number \| null; programId: string \| null }` |
-| `features/display` | `TvPage` | `{ slots: TvSlot[] }` |
-| `features/display` | `RoutineDisplay` | `{ routine: DisplayRoutine; dayNumber: number; layout?: 'column'\|'full'\|'preview'; fontScale?: number; flashBlockIds?: ReadonlySet<string> }` (pure) |
+| `features/display` | `TvPage` | `{ screen: number; slots: TvSlot[] }` |
+| `features/display` | `RoutineDisplay` | `{ routine: DisplayRoutine; dayNumber: number; layout?: 'column'\|'full'\|'preview'; fontScale?: number; flashBlockIds?: ReadonlySet<string> }` (pure; only `full` may split) |
 | `features/display` | `RoutinePreview` | `{ programId: string; dayId: string | null; className?: string }` (editor embeds it; owns its 640×1080 frame; reads store, sanitises with `toPublicClient` / `toPublicProgram`) |
 
 Opening displays from anywhere (shell client page, editor header): `useDisplayWindow()` →
-`openDisplay(clientId, day?, programId?)`, `openTv(slots?)`. Call directly in the click handler; a blocked popup
-shows a toast with an "Abrir pantalla" retry. Display windows read ONLY `useDisplayData()` →
+`openDisplay(clientId, day?, programId?)`, `openTv(screen, slots?)`. Call directly in the click handler; a blocked popup
+shows a toast with an "Abrir pantalla" retry. On a phone (`isPhoneScreen`) there are no popups: once `flushDashboardSaves` succeeds, the same tab goes to the route. Display windows read ONLY `useDisplayData()` →
 `{ data: DisplayData | null, version }` and format with `buildDisplayRoutine(data, clientId, {programId?})`,
 `getDisplayableClients(data)`, `clampDayNumber(routine, day)` from `lib/display`. They must apply branding with
-`useBrandingStyles(data.branding)` when data exists. Persist TV slot changes with `replaceRoute(paths.tv(slots))`.
+`useBrandingStyles(data.branding)` when data exists. Persist TV slot changes with `replaceRoute(paths.tv(slots, screen))`.
 
-Modo TV (`features/display`): `useTvSlots(slots, candidateClientIds)` owns every slot change (pure helpers in
+Named screens: Pantalla 1, 2… (up to `TV_MAX_SCREENS`), one window per TV, each with its own window name (`tvWindowName`), URL, columns (`tvSlotsKey`) and A-/A+ (Pantalla 1 keeps the older keys). Rules in `utils/tvScreens.ts`, list in `utils/tvScreenStore.ts` (`p33:tv:screens`), `useTvScreenList`. The 'Pantallas' sidebar menu (`TvScreensMenu`, `useTvLauncher`) opens or focuses each one, adds the lowest free number and removes one (not the last). A new screen starts with the people the others are not showing. Over BroadcastChannel `p33-tv-screens` each window says it is open (`useTvScreenPresence` / `useOpenTvScreens`) and closes itself when removed. The title shows in the toolbar and in the tab.
+
+Phones (`usePhoneScreen`: `PHONE_SCREEN_QUERY` and not a popup, recognised by its `window.name`, because a Pantalla popup is also narrow): `DisplayPage` renders `MobileDisplayPage` (normal scroll, sticky equal numbered day buttons with the name below, nothing hidden, no auto-fit, 'Volver' returns to the page it came from through `goBackInApp`; the dashboard reloads on return, so its undo does not survive and `useDisplayWindow` says so when there was something to undo) and `TvPage` renders `MobileTvPage` (list of people plus a note). Same `useScreenData`, so the same sanitised data.
+
+Modo TV (`features/display`): `useTvSlots(screen, slots, candidateClientIds)` owns every slot change (pure helpers in
 `utils/tvSlots.ts`: `assignSlotClient` keeps the day when the same client is picked, `addSlot`/`removeLastSlot`/`moveSlot`)
 and gives each column a stable `slotIds[i]` (React key + dnd-kit sortable id; never the index, client ids can repeat).
 Columns are reordered by their grip (`TvColumns` + `useTvColumnSort`, pointer after `TV_DRAG_ACTIVATION_DISTANCE` px or
 keyboard). The client picker is a searchable combobox (`useComboboxSearch`, pure logic in `utils/combobox.ts`) showing
 full names, searchable by first name and surname (`label` from `utils/clientOptions.ts`); an open
-list keeps its column's controls visible. A single column renders `RoutineDisplay layout="full"`. TV copy lives in
+list keeps its column's controls visible. A single column renders `RoutineDisplay layout="full"`, like the Pantalla window. TV copy lives in
 `features/display/config/tv.ts`.
 
-Routine density: `useAutoFit({ preferColumns, fontScale, fitKey })` picks `compact` (width < `AUTO_FIT.compactMaxAspect` × height: 2–4 TV
-columns, editor preview) or `comfortable` (full screen) from the slot's shape. `planFit` keeps the target size (`AUTO_FIT.target*`, names 28 px at
-3 columns on 1080p) by hiding secondary content in the order of `DETAIL_LEVELS`: cues, then tempo/rest lines, then block notes. Only with all of that
+Block order: with 2 or more TV columns (`layout="column"`) a client is always one column, top to bottom. With one client on a landscape screen (`canSplit`), `getFitStages` tries one comfortable column, then one compact column (limited to `max-w-[62em]` so the prescription stays near its name), and only if neither holds the whole day at the target size, two parts: blocks flow down the left then down the right (CSS columns, `break-inside-avoid`), with a `column-rule` divider and big block numbers (`--display-order`).
+
+Text size across columns: `useSharedTextSize` (`TvWindow`) collects what each column could show by itself and passes the smallest back as `unitCap`; the fit keeps finding and reporting its own unit, so a day getting shorter lifts the others again. When A+ cannot grow the text the toolbar says so (`sizeAtLimit`).
+
+The stage walk needs a commit per density. `awaitingDensity` says one is pending: `continueFit` does not measure meanwhile, and a layout effect with no dependencies carries on after every commit. It must not depend on the density: two requests in one batch (a resize observer firing while the walk runs) can leave it where it was, and the screen would stay on the last size measured. No name, cue or day title is clamped on the TV: the fit measures their real lines.
+
+Routine density: `useAutoFit({ canSplit, fontScale, fitKey, unitCap })` picks `compact` (width < `AUTO_FIT.compactMaxAspect` × height: 2–4 TV
+columns, editor preview) or `comfortable` (full screen) from the slot's shape. `planFit` keeps the target size (`AUTO_FIT.target*`, names 28 px on 1080p in both densities) by hiding secondary content in the order of `DETAIL_LEVELS`: cues, then tempo/rest lines, then block notes. Only with all of that
 hidden does the text go below the target, down to `lastResortUnitPerHeight`; below `readableUnitPerHeight` it reports `tooSmall`. The block's rest stays
 in its header. The level is applied with CSS variables (`fitVars`), so measuring needs no re-render. `FitStatus.detailHidden` tells the editor preview to say so.
 Per-density classes live in `components/routine/densityStyles.ts`. Name and prescription share one size, the prescription right-aligned; the current week's
@@ -157,18 +166,17 @@ progression value is shown without any week mark (the header already says 'Seman
 
 ### Capacity
 
-Limits in `config/capacity.ts`, rules in `lib/capacity.ts` (`getDayChangeRefusal` is the only rule: a number over its limit may stay or shrink, never grow).
+Limits in `config/capacity.ts`, rules in `lib/capacity.ts` (`getDayChangeRefusal` is the only rule for what a day holds: a number over its limit may stay or shrink, never grow; `getAddDayRefusal` is the same for `MAX_DAYS_PER_PROGRAM` = 6 days per routine).
 Store actions apply it and return unchanged (`''` or nothing) on every path: add, duplicate, copy, move; `copyBlockToAllDays` skips the days that are full and
 returns how many it did copy. `updateExercise`/`addExercise` cut name and cue to their maximum (`clampExerciseTexts`). Over-limit data (imports) still renders,
 with a warning in `DayCapacityIndicator`. Editor: `getDayCapacity`, `AddExerciseButton`, `AddBlockButton`, `useCapacityToast`.
 
-Measured at 1920 × 1080 with the limits at their maximum (5 blocks, 16 exercises), exercise name in px, nothing cut off:
+Measured at 1920 × 1080, exercise name in px, nothing cut off. All the columns of a screen show the same size:
 
 | Day | 1 col | 2 col | 3 col | 4 col |
 |---|---|---|---|---|
-| Library names, 5 of them on two lines | 36,3 | 34,1 | 28,1 | 24,8 |
-| All names of 30+ characters | not measured | not measured | 25,3 | 21,7 |
-| All names of 44 characters | 30,0 | 30,4 | 21,7 | 21,7 |
+| Densest demo day (Laura, Día 1: 5 blocks, 15 exercises) in the first column, everything visible | 28,9 | 28,9 | 28,9 | 25,9 |
+| At the limits (5 blocks, 16 exercises, long names, cues and notes), reached by a live edit from a 53 px day | 28,3, two parts | not measured | not measured | not measured |
 
 A two-line name costs a full row: only about 20 lines fit at 28 px, which is why long names lower the size. Change a limit or a size only after measuring again.
 
@@ -176,6 +184,7 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
 
 `Button {variant: primary|secondary|ghost|danger|dark, size: sm|md|lg, leftIcon?, rightIcon?, fullWidth?}` ·
 `IconButton {icon, label (required), variant?, size: sm|md}` · `Input {label?, hint?, error?, leftIcon?, suffix?, nativeUndo?}` ·
+`DateField {value (ISO or ''), onChange, min?, max?, label?, hint?, error?}` (always dd/mm/aaaa: text with a mask + `CalendarDialog`, Monday first; `onChange('')` while the text is not a valid date) ·
 `Textarea {label?, hint?, error?, nativeUndo?}` · `Select<T> {options, value, onChange(value), label?}` ·
 `SegmentedControl<T> {options:{value,label,icon?}[], value, onChange, ariaLabel, size?, fullWidth?}` ·
 `Chip {active?}` · `Badge {tone: neutral|brand|success|warning|danger|info|private, icon?, size?}` (tone = `getProgramStatus().tone`) ·
@@ -190,8 +199,8 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
 ## 7. Lib & config cheat-sheet
 
 - Dates (local, never `new Date('YYYY-MM-DD')`): `todayISO, addDays, addWeeks, diffDays, endDateFor, weeksBetween,
-  isValidISODate, parseISODate, toISODate, formatDateShort ('31 oct'), formatDateLong, formatDateWithWeekday,
-  formatDateRange, formatDateTime ('hoy, 10:42'), formatRelativeDays`.
+  isValidISODate, parseISODate, toISODate, formatDate ('31/10/2026', the only format for a date on screen), formatDateWithWeekday, formatMonthYear,
+  formatDateRange, formatDateTime ('hoy, 10:42')`. Typed dates (`lib/dateText`): `maskDateText, parseDateText, readDateText, isDateWithinLimits`. Never `type="date"` (it follows the browser's language) nor `toLocale*`.
 - Programs: `getProgramStatus(program|null) → {kind, label ('Semana 2 de 4' | 'Termina en 3 días' | 'Sin rutina' | 'Finalizada' | 'Empieza en N días'), detail, tone, info}`,
   `getProgramWeekInfo`, `formatWeekOf`, `getCurrentProgram`, `getClientPrograms`, `getProgramDisplayName`, `applyProgramDates`, `nextBlockStart`.
 - Formatting (`lib/format`): `formatEntrySummary(entry, {showSets?, week?})` → '4 × 8-10 · 60 kg · desc. 90s',
@@ -228,6 +237,7 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
   with backoff and shows 'Sin conexión, reintentando…'; `beforeunload` warns); refusals (`PermanentWriteError`) put that row back to
   the server version and show a toast. A `save` queued before `release()` never runs, not even once the next session has loaded. It reads nothing from or to
   localStorage but the display copy, whose write never throws (full device: `toCompactDisplayData`, only current routines of active clients).
+- Live channels get a new name per subscription (`uniqueChannelTopic`): the client hands a channel still being removed to anyone asking for the same name, and it never delivers. Phones swap subscribers at every change between dashboard and screen pages.
 - Live: realtime row events → `base` and store updated together (batched `REMOTE_BATCH_MS`), own echoes dropped by `client_origin`
   (deletes by `deleteEchoes`, registered before asking). Catch-up by `refetch()`: on reconnect, on tab focus, on `online`, and every `CLOUD_REFETCH_INTERVAL_MS`.
   A reload overlapped by a save or a live event is dropped and retried after `CLOUD_REFETCH_RETRY_MS`.
@@ -236,8 +246,9 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
   and `rebaseSnapshots` puts the same rows in every past/future undo snapshot and drops steps left empty. Undo never overwrites another coach.
 - `LocalStorageRepository` (local test mode, key `p33:data:v2`): whole dataset, shared across tabs by BroadcastChannel `p33-data` + storage
   event; `dashboardSync` turns those snapshots into row changes with `diffData`, so both modes apply remote changes the same way.
-- Library: `AppData.library` holds every exercise, one normal row each in `library_exercises`. `dashboardSync` calls `seedLibrary(EXERCISE_LIBRARY)` for an admin: while `settings.library_seeded_at` is empty (`library_seed_pending`) it uploads in batches with `insertMissing` (never overwrites an edit, so a retry after a cut is safe), then `finish_library_seed`. It never runs again, even if the library is emptied. Local mode has the library in its first-run seed. Data without a `library` key (older browsers and backups) gets the initial library plus its `customExercises`.
-- TV windows: `useDisplayData()` = sanitised cache at start + `subscribeDisplay`: BroadcastChannel `p33-display` and the storage event in both modes (instant edits from a dashboard of the same browser) and, in the cloud, `startCloudDisplayFeed`: the window itself reads and follows `settings`, `clients` and `programs` (never `notes` or `library_exercises`), runs each row through `toPublicClient`/`toPublicProgram` as it arrives and keeps only that in memory, with the same catch-up as dashboards (reconnect, focus, `online`, interval). It writes the sanitised cache, so a reopened window has something to show without connection. Duplicates of one change are dropped by `deepEqual`. So a TV stays live with no dashboard open, and an edit from a phone appears on it. The rows come over the network with their private fields, as for any coach of that session; they are never kept or persisted.
+- Exercise tags (no SQL change: they live in the `data` jsonb of `library_exercises`): `muscle` (one main), `secondaryMuscles?`, `type`, plus `equipment`; lists and search words in `config/exerciseTags.ts`. Rows saved with the old `category` are translated on every read by `resolveExerciseTags` (`persistence/libraryTags`): valid tags are kept, an initial exercise takes its tags by id, any other maps its category; the next edit saves the new shape. `SCHEMA_VERSION` 2: saved data and backups from version 1 also get `EXERCISES_ADDED_IN_V2` once. A cloud library that was already seeded does not (the seed never runs twice). Search: `searchExercises` also matches muscle and type words ('pecho', 'cardio', 'piernas'), main muscle above names that only mention it; `findSimilarExercises` looks at names only. Filter: a muscle finds main and secondary, main ones first.
+- Library: `AppData.library` holds every exercise, one normal row each in `library_exercises`. `dashboardSync` calls `seedLibrary(EXERCISE_LIBRARY)` for an admin: while `settings.library_seeded_at` is empty (`library_seed_pending`) it sends all the rows to the `seed_library` RPC, one transaction under a lock that inserts without overwriting and sets the flag: whole or nothing, so a retry or a second admin cannot bring back something deleted. A failure shows a toast and the next admin session tries again. It never runs again, even if the library is emptied. Local mode has the library in its first-run seed. Data without a `library` key (older browsers and backups) gets the initial library plus its `customExercises`.
+- TV windows: `useDisplayData()` = sanitised cache at start + `subscribeDisplay`: BroadcastChannel `p33-display` and the storage event in both modes (instant edits from a dashboard of the same browser) and, in the cloud, `startCloudDisplayFeed`: the window itself reads and follows `settings`, `clients` and `programs` (never `notes` or `library_exercises`), runs each row through `toPublicClient`/`toPublicProgram` as it arrives and keeps only that in memory, with the same catch-up as dashboards (reconnect, focus, `online`, interval). It writes the sanitised cache, so a reopened window has something to show without connection. Nothing is published before the first good read (live events alone would look like a gym with one person). Duplicates of one change are dropped by `deepEqual`, and for `DISPLAY_LOCAL_PRIORITY_MS` after a message from a dashboard of this browser the feed is ignored: the echo of an earlier save would flip the TV back to older text. So a TV stays live with no dashboard open, and an edit from a phone appears on it. The rows come over the network with their private fields, as for any coach of that session; they are never kept or persisted.
 
 Session (`auth/session`, same flow in dashboards and TV windows, results in `useSessionStore`): `loading → signed-out | no-access |
 must-change-password | offline | ready`. `getUser` rejects when it could not check (expired token, no connection), which never counts as a sign-out: `ready` stays, a cold start
@@ -248,19 +259,20 @@ mass delete). API: `startSession`, `signOut`, `retrySession`, `finishPasswordCha
 
 ### Accounts
 
-No sign-up (`enable_signup = false`): an admin creates every account. `profiles` has `user_id` (set at creation), `username`, `email` (null = none: the login uses `<username>@accounts.invalid`, only in `auth.users`), `role` (text + check + `PROFILE_ROLES`/`ROLE_LABELS`; a new role gets no staff access until `is_active_staff` lists it), `active`, `must_change_password`. `TeamMember` = what everyone can read (column grants: id, name, color, role, active); `Profile` = the full account, only through `my_profile` and `team_accounts` (admin).
+No sign-up (`enable_signup = false`): an admin creates every account. `profiles` has `user_id` (set at creation), `username`, `email` (null = none: the login uses a random `<hex>@accounts.invalid`, only in `auth.users`, so nobody can guess it and try passwords at the auth server), `role` (text + check + `PROFILE_ROLES`/`ROLE_LABELS`; a new role gets no staff access until `is_active_staff` lists it), `active`, `must_change_password`, `temp_password_expires_at` (72 h, set by the same trigger as the hash). `name`: at most 30 characters, none invisible (Cyrillic look-alikes are not caught). `TeamMember` = what everyone can read (column grants: id, name, color, role, active); `Profile` = the full account, only through `my_profile` and `team_accounts` (admin).
 
-- `TeamService` (cloud: `supabaseTeam`, local: `localTeam`, same interface): `getOwnProfile`, `list`, `updateOwnProfile`, `finishPasswordChange`, `subscribe`; admin: `listAccounts`, `createAccount → temporary password`, `resetPassword → temporary password`, `setRole`, `setActive`, `deleteAccount`. `AuthService`: `signIn(identifier, password)` ('@' = email directly, else the `login-username` function then `setSession`), `signInWithGoogle`, `changePassword`, `getSignInMethods`, `connectGoogle`, `disconnectGoogle`.
-- `admin-users` (POST `{action: create|reset-password|set-role|set-active|delete, ...}`): checks the token with `auth.getUser` and the caller with `current_profile_id` under their own JWT, then re-checks the rules in `accessChangeRefusal`. Errors are codes only (`AccountErrorCode`), worded by `lib/accountMessages`. `set-active` also bans or unbans, and revokes sessions; `reset-password` writes the password, THEN the flag, then revokes.
-- `login-username` (anon): returns `{session: {access_token, refresh_token}}` only. Unknown user, wrong password and banned account give the same `invalid_credentials`, in at least `MIN_RESPONSE_MS`. `login_attempts` locks a username after 5 failures in 15 minutes, counting unknown names too. Service role only.
+- `TeamService` (cloud: `supabaseTeam`, local: `localTeam`, same interface): `getOwnProfile`, `list`, `updateOwnProfile`, `finishPasswordChange`, `subscribe`; admin: `listAccounts`, `createAccount → temporary password`, `resetPassword → temporary password`, `setRole`, `setActive`, `deleteAccount`. `AuthService`: `signIn(identifier, password)` ('@' = email directly, else the `login-username` function then `setSession`), `signInWithGoogle`, `changePassword`, `verifyPassword` (a throwaway client, so the session in use is untouched; Mi perfil asks for the current password with it, `secure_password_change` stays off because reauthenticating needs a mail), `getSignInMethods(hasOwnPassword)`, `connectGoogle`, `disconnectGoogle`.
+- `admin-users` (POST `{action: create|reset-password|set-role|set-active|delete, ...}`): checks the token with `auth.getUser` and the caller with `current_profile_id` under their own JWT, then re-checks the rules in `accessChangeRefusal`. Errors are codes only (`AccountErrorCode`), worded by `lib/accountMessages`. `set-active` also bans or unbans, and revokes sessions; `reset-password` first removes Google identities that are not the profile's email (`remove_other_google_identities`), then writes the password, THEN the flag, then revokes and unlocks; `set-active true` also unlocks.
+- `login-username` (anon): returns `{session: {access_token, refresh_token}}` only. Unknown user, wrong password and banned account give the same `invalid_credentials`, in at least `MIN_RESPONSE_MS`. Each attempt is reserved atomically BEFORE the password is tried (`login_reserve_attempt`), so parallel requests cannot slip through: in 15 minutes, 5 per username and connection (salted hash of the address), 20 per username, 50 per connection, counting unknown names too. A server failure gives the attempt back. So a stranger only spends their own allowance; shutting a coach out takes more than 4 connections. Email logins go straight to the auth server, limited by `sign_in_sign_ups` per IP only. Service role only.
 - Both: `ALLOWED_ORIGINS` (comma list, default localhost), `verify_jwt = false` in `config.toml` (they check by themselves).
-- First login: while `must_change_password`, `current_profile_id`/`is_active_staff`/`is_admin` are false, so nothing is readable; the session stops at `must-change-password` (`CreatePasswordPage`). `finish_password_change` only clears it if `auth.users.encrypted_password` differs from `temp_password_hash`, which a trigger copies whenever the flag is written: calling the RPC cannot skip the step. A Google session (`amr` claim, signed) is not asked.
+- First login: while `must_change_password`, `current_profile_id`/`is_active_staff`/`is_admin` are false, so nothing is readable; the session stops at `must-change-password` (`CreatePasswordPage`). `finish_password_change` only clears it if `auth.users.encrypted_password` differs from `temp_password_hash`, which a trigger copies whenever the flag is written: calling the RPC cannot skip the step, and it refuses after `temp_password_expires_at` (`temporaryPasswordExpired`: `CreatePasswordPage` says to ask for another). A Google session is not asked only if the `amr` claim says oauth AND `auth.identities` has a google row with the profile's email (`signed_in_with_google`): the admin wrote that email, while anyone at a session could link their own Google by hand. `hasOwnPassword` (the raw flag) decides whether Mi perfil asks for the current password and whether Google can be disconnected; setting a password there also ends the flag.
+- Equipo shows `googleConnected`; creating an account with an email asks to confirm it, because `email_confirm: true` makes it count as verified for auto-link.
 - Google: an account with that verified email auto-links; anyone else is refused by the server (`signup_disabled`), which `readRedirectError` words as 'Tu cuenta no tiene acceso'; a session without a profile gets `NoAccessPage`.
 - Local mode: `localTeam` + `localAccounts` (plain test passwords, key `p33:local:accounts`), same rules through `lib/accountRules`.
 
 Permissions: `supabase/schema.sql` and the functions enforce them (RLS, column grants, triggers; tested in `schema.test.ts` and `functions/_shared/*.test.ts`); `lib/ownership` (`canEditNote`, `accessChangeError`,
 `isActiveAdmin`, `canDeleteClient`) mirrors them for the UI and for local mode. To change a rule, change both and their tests. Only admins delete clients (the cascade
-takes every coach's notes); monitors can still delete routines, since their undo works for them and they could overwrite those rows anyway.
+takes every coach's notes); monitors can still delete routines, since their undo works for them and they could overwrite those rows anyway. `row_history` (trigger on clients, programs and library, no client access, 30 days) keeps what each update or delete replaced, so damage can be undone from the SQL Editor; notes stay out on purpose. Rows must keep their key field (`data ? 'firstName'` and so on). `schema.sql` refuses to run over the previous version (`staff` table).
 
 Local mode: `cloud` wins; a production build without env vars is `invalid` unless `VITE_ALLOW_LOCAL_DEMO=true`, because it means an admin account with its password on the login page. `vercel.json` sets the CSP and other headers.
 
@@ -272,7 +284,7 @@ Andrés 1 day; Sergio archived). Every routine day has 4–5 realistic blocks (L
 an existing browser keeps its old demo until "Restablecer datos de demostración" (admins only, typing `BORRAR`: `requireText` in `useConfirm`).
 
 Not checkable without a real project, so check it there: both functions running under Deno (they have never been deployed; `_shared` is tested, `index.ts` and `_runtime` are not), Google OAuth and its account chooser, auto-link and `signup_disabled` with sign-ups off and the exact error in the redirect, `linkIdentity`/`unlinkIdentity`, the `amr` claim of a Google session and after a token refresh, `.invalid` addresses accepted by `auth.admin.createUser`, `ban_duration` and whether a banned login gets `user_banned`, `revoke_user_sessions` and `encrypted_password` reads as table owner on the `auth` schema, realtime payloads and reconnect (also with column grants on `profiles`), a TV window surviving token refresh for days, `schema.sql` under Supabase's own roles and default grants
-(`information_schema.role_table_grants`), the last-admin lock under concurrency, and whether a stranger's realtime subscription sees the table and id of deleted rows (documented behaviour for DELETE events).
+(`information_schema.role_table_grants`), reading and deleting `auth.identities` as table owner (`signed_in_with_google`, `remove_other_google_identities`), `cf-connecting-ip` or the last `x-forwarded-for` being the caller's real address (`clientKey`), `password_requirements` and `.invalid` under the admin API, `enable_confirmations` not disturbing admin-created accounts or Google, the `seed_library` request size for 322 rows, the last-admin lock under concurrency, and whether a stranger's realtime subscription sees the table and id of deleted rows (documented behaviour for DELETE events).
 
 ## 9. Design tokens & UI conventions
 
@@ -285,17 +297,21 @@ Font Jost (400–800). Brand colours follow Ajustes at runtime via CSS variables
 - Light, calm dashboard (Linear/Notion-like): canvas background, white cards, hairline borders, rounded-2xl cards,
   rounded-xl controls, generous spacing; black sidebar with `branding.logoUrl` and pink active item.
 - Touch targets ≥ 44 px (`Button`/`IconButton` md). No hover-only controls: secondary actions go in `DropdownMenu` ('⋯').
+- Words: gym clients are "usuarios" on screen (code, routes and tables keep `Client`/`clientes`), coaches are "monitores", accounts live in "Equipo". The login name is always "nombre de usuario", never "usuario" alone.
 - PRIVATE = amber + lock + "Solo monitores" (`PrivateSurface`, `PrivacyLabel kind="private"`, `Badge tone="private"`).
-  CLIENT-VISIBLE text fields (block note, cue) = `PrivacyLabel kind="visible"` ("Lo verá el cliente", eye, pink).
+  CLIENT-VISIBLE text fields (block note, cue) = `PrivacyLabel kind="visible"` ("Lo verá el usuario", eye, pink).
   Private data (notes, internalNote, goal) NEVER reaches display components: only `toDisplayData` output does.
   It carries `lastName` only for the coach-facing TV client picker; routine views show the first name alone.
 - Autosave everywhere, no Save buttons. Row/block/day deletes: no confirm, show `toastUndo('Ejercicio eliminado')`.
   Confirm (`useConfirm`, `danger: true`) only for deleting a program/client, importing or resetting data; offer archive for clients.
 - Pinned private notes are called "notificaciones importantes" in the UI (`ImportantBadge`, `ImportantNotes`, `CompactImportantNotes`); a routine past its end date is "Finalizada", one about to end "Termina en N días".
-- Browsing exercises: `useExerciseBrowser` (filters + `usePagination`, pure logic in `lib/pagination`), `PaginatedList`, `ExerciseFilterFields`. `ExerciseLink` (the exercise's `link`, else a Google search, always a new tab; `EntryExerciseLink` resolves it for a routine row by `libraryId`) is dashboard only, never on the TV, and hidden on collapsed rows on phones (the row's sheet has it).
+- Browsing exercises: `useExerciseBrowser` (filters + `usePagination`, pure logic in `lib/pagination`), `PaginatedList`, `ExerciseFilterFields`. `ExerciseLink` (`ExternalLink` icon for the exercise's `link`, else `Search` for a Google search, never a Google logo, always a new tab; `EntryExerciseLink` resolves it for a routine row by `libraryId`) is dashboard only, never on the TV, and hidden on collapsed rows on phones (the row's sheet has it).
 - Limited texts: `maxLength` on the field plus `getLengthHint` near the limit; the store clamp is only a safety net. At the limit, phone add buttons stay enabled and explain with a toast (`useDayAddActions`).
 - Spanish labels first, acronym as a badge and `HelpTip` for jargon (EMOM, AMRAP, RPE, RIR, tempo).
 - Free-text friendly inputs (reps '8-10', 'máx'; load 'KB 16'); `inputMode="numeric"` for pure numbers.
-- Mobile: single column, Modal becomes a bottom sheet, sticky day tabs in the editor, bottom nav in the shell.
+- Mobile: single column, Modal becomes a bottom sheet, bottom nav in the shell. Nothing scrolls sideways: chips wrap, plans become a `Select`, settings tabs and days share the row.
+- Sticky day switcher in the editor (`DayTabs`): phones get `DayNumberTabs` (equal numbered buttons, 6 fit at 320 px with 44 px targets, long press and drag; the name and '⋯' go right below in `DayHeader`), wider screens `DayNamedTabs` (tabs share the row and shorten names). '⋯' also moves a day ('Mover antes', 'Mover después').
+- The sidebar is an icon rail from 768 px and gets its labels at `lg`, so a portrait tablet keeps its width.
+- Form text is 16 px below `md` (`text-base md:text-md`): iOS zooms into a focused field under that.
 - Store-bound inputs use store undo (global Ctrl+Z); local-state inputs (search boxes, modal forms) pass `nativeUndo`
   (Modal content already keeps native undo).

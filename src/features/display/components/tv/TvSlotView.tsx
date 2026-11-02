@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { cn } from '@/lib/cn'
 import type { TvSlot } from '@/lib/routes'
 import type { Branding, DisplayData } from '@/types'
@@ -19,11 +19,14 @@ interface TvSlotViewProps {
   hasClients: boolean
   /** More than one column: reordering makes sense. */
   sortable: boolean
-  /** 'full' when it is the only column (may split into two sub-columns), else 'column'. */
+  /** 'full' when it is the only column (may split in two numbered parts), else 'column' (never splits). */
   layout: RoutineDisplayLayout
   branding: Branding
   theme: DisplayThemeClasses
   fontScale: number
+  /** Text size shared by the columns of this screen. */
+  unitCap: number | undefined
+  onUnitChange: (columnId: string, unit: number | null) => void
   controlsVisible: boolean
   onClientChange: (index: number, clientId: string | null) => void
   onDayChange: (index: number, day: number) => void
@@ -41,6 +44,8 @@ export function TvSlotView({
   branding,
   theme,
   fontScale,
+  unitCap,
+  onUnitChange,
   controlsVisible,
   onClientChange,
   onDayChange,
@@ -50,11 +55,12 @@ export function TvSlotView({
   // An open client list keeps the picker on screen even when the idle timer hides the controls.
   const [pickerOpen, setPickerOpen] = useState(false)
   const active = controlsVisible || isDragging || pickerOpen
+  const reportUnit = useCallback((unit: number | null) => onUnitChange(id, unit), [id, onUnitChange])
 
   return (
     <section ref={setNodeRef} style={style} className={cn('relative h-full min-h-0 min-w-0 overflow-hidden', theme.root)}>
       {routine ? (
-        <RoutineDisplay routine={routine} dayNumber={dayNumber} layout={layout} fontScale={fontScale} flashBlockIds={flashBlockIds} />
+        <RoutineDisplay routine={routine} dayNumber={dayNumber} layout={layout} fontScale={fontScale} flashBlockIds={flashBlockIds} unitCap={unitCap} onUnitChange={reportUnit} />
       ) : (
         <TvSlotEmpty data={data} clientId={slot.clientId} hasClients={hasClients} branding={branding} theme={theme} />
       )}

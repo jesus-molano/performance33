@@ -7,13 +7,16 @@ export type ProfileRole = (typeof PROFILE_ROLES)[number]
 export const USERNAME_MIN_LENGTH = 3
 export const USERNAME_MAX_LENGTH = 30
 export const ACCOUNT_NAME_MAX_LENGTH = 30
-export const PASSWORD_MIN_LENGTH = 8
+export const PASSWORD_MIN_LENGTH = 10
 /** `.invalid` is reserved (RFC 2606): nothing can ever be delivered to it. */
 export const INTERNAL_EMAIL_DOMAIN = 'accounts.invalid'
+const INTERNAL_EMAIL_BYTES = 16
 
 const USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{2,29}$/
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
+// eslint-disable-next-line no-control-regex
+const HIDDEN_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u00A0\u00AD\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]/
 
 export type AccountErrorCode =
   | 'invalid_input'
@@ -33,7 +36,16 @@ export const normalizeUsername = (username: string): string => username.trim().t
 export const isValidUsername = (username: string): boolean => USERNAME_PATTERN.test(username)
 export const normalizeEmail = (email: string): string => email.trim().toLowerCase()
 export const isValidEmail = (email: string): boolean => EMAIL_PATTERN.test(email.trim())
-export const internalEmail = (username: string): string => `${username}@${INTERNAL_EMAIL_DOMAIN}`
+/** Random, never built from the username: a guessable sign-in address would let anyone try passwords straight at the auth server. */
+export function internalEmail(randomBytes: RandomBytes): string {
+  const id = Array.from(randomBytes(INTERNAL_EMAIL_BYTES), (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `${id}@${INTERNAL_EMAIL_DOMAIN}`
+}
+/** Mirrors minimum_password_length and password_requirements in config.toml. */
+export const isAcceptablePassword = (password: string): boolean =>
+  password.length >= PASSWORD_MIN_LENGTH && /[a-zA-Z]/.test(password) && /\d/.test(password)
+/** Spaces and marks nobody can see: a signature with them looks exactly like someone else's name. */
+export const hasHiddenCharacters = (name: string): boolean => HIDDEN_CHARACTERS.test(name)
 /** Usernames cannot contain '@', so the login field can tell them apart from an email. */
 export const isEmailIdentifier = (identifier: string): boolean => identifier.includes('@')
 
@@ -66,7 +78,7 @@ export function parseNewAccount(raw: unknown): NewAccount | null {
   if (!isRecord(raw) || typeof raw.name !== 'string' || typeof raw.username !== 'string' || !isProfileRole(raw.role)) return null
   const name = raw.name.trim()
   const username = normalizeUsername(raw.username)
-  if (!name || name.length > ACCOUNT_NAME_MAX_LENGTH || !isValidUsername(username)) return null
+  if (!name || name.length > ACCOUNT_NAME_MAX_LENGTH || hasHiddenCharacters(name) || !isValidUsername(username)) return null
   const email = typeof raw.email === 'string' && raw.email.trim() ? normalizeEmail(raw.email) : null
   if (email && (!isValidEmail(email) || email.endsWith(`@${INTERNAL_EMAIL_DOMAIN}`))) return null
   if (raw.color != null && (typeof raw.color !== 'string' || !COLOR_PATTERN.test(raw.color))) return null
@@ -110,6 +122,7 @@ export function accessChangeRefusal(team: readonly AccessSummary[], actorId: str
 
 /** Without the characters people mistake for each other (0/O, 1/l/I). */
 const TEMP_PASSWORD_ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
+const TEMP_PASSWORD_DIGITS = '23456789'
 const TEMP_PASSWORD_GROUPS = 3
 const TEMP_PASSWORD_GROUP_LENGTH = 4
 /** Bytes above this would make the first letters of the alphabet more likely than the rest. */
@@ -125,6 +138,12 @@ export function generateTemporaryPassword(randomBytes: RandomBytes): string {
     for (const byte of randomBytes(needed)) {
       if (byte < UNBIASED_BYTE_LIMIT && characters.length < needed) characters += TEMP_PASSWORD_ALPHABET[byte % TEMP_PASSWORD_ALPHABET.length]
     }
+  }
+  // Without a digit the auth server would refuse it (password_requirements); no letter at all is too unlikely to matter.
+  if (!/\d/.test(characters)) {
+    const [position, digit] = randomBytes(2)
+    const at = position % needed
+    characters = characters.slice(0, at) + TEMP_PASSWORD_DIGITS[digit % TEMP_PASSWORD_DIGITS.length] + characters.slice(at + 1)
   }
   const groups = characters.match(new RegExp(`.{${TEMP_PASSWORD_GROUP_LENGTH}}`, 'g')) ?? []
   return groups.join('-')

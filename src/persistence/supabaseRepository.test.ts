@@ -19,17 +19,15 @@ class FakeServer {
 
   gateway(): RowGateway {
     return {
-      insertMissing: async (table, rows) => {
+      seedLibrary: async (rows) => {
         this.failIfOffline()
-        this.writes.push({ table, ids: rows.map((r) => r.id) })
-        for (const row of rows) if (!this.tables[table].has(row.id)) this.tables[table].set(row.id, row)
+        this.writes.push({ table: 'library_exercises', ids: rows.map((r) => r.id) })
+        for (const row of rows) if (!this.tables.library_exercises.has(row.id)) this.tables.library_exercises.set(row.id, row)
+        this.seedPending = false
       },
       librarySeedPending: async () => {
         this.failIfOffline()
         return this.seedPending
-      },
-      finishLibrarySeed: async () => {
-        this.seedPending = false
       },
       fetchAll: async (table) => {
         this.failIfOffline()
@@ -432,14 +430,12 @@ describe('SupabaseRepository initial library', () => {
     stubBrowser()
   })
 
-  it('uploads it once in batches and comes back with the whole dataset', async () => {
+  it('uploads it once, in a single request, and comes back with the whole dataset', async () => {
     const server = new FakeServer()
     const { repo } = await connect(server, 'a')
     const data = await repo.seedLibrary(library)
     expect(data?.library).toHaveLength(library.length)
-    const batches = server.writes.filter((write) => write.table === 'library_exercises')
-    expect(batches.length).toBeGreaterThan(1)
-    expect(Math.max(...batches.map((batch) => batch.ids.length))).toBeLessThanOrEqual(CLOUD_WRITE_BATCH_SIZE)
+    expect(server.writes.filter((write) => write.table === 'library_exercises')).toHaveLength(1)
     expect(server.seedPending).toBe(false)
     expect(await repo.seedLibrary(library)).toBeNull()
   })

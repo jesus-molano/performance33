@@ -45,7 +45,7 @@ export function useDataTransfer(): DataTransferApi {
       const backup = await readBackupFile(file)
       const ok = await confirm({
         title: '¿Restaurar esta copia?',
-        description: `Se sustituirán los datos de todo el equipo por los de la copia (${plural(backup.clients.length, 'cliente', 'clientes')}). Esto no se puede deshacer.`,
+        description: `Se sustituirán los datos de todo el equipo por los de la copia (${plural(backup.clients.length, 'usuario', 'usuarios')}). Esto no se puede deshacer.`,
         confirmLabel: 'Restaurar copia',
         danger: true,
         requireText: DANGER_CONFIRM_WORD,
@@ -61,7 +61,7 @@ export function useDataTransfer(): DataTransferApi {
   const resetDemo = async () => {
     const ok = await confirm({
       title: '¿Volver a los datos de demostración?',
-      description: 'Se borrarán todos los clientes, rutinas y notas de todo el equipo. Esto no se puede deshacer.',
+      description: 'Se borrarán todos los usuarios, rutinas y notas de todo el equipo. Esto no se puede deshacer.',
       confirmLabel: 'Restablecer',
       danger: true,
       requireText: DANGER_CONFIRM_WORD,

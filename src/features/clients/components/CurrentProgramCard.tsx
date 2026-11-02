@@ -44,14 +44,14 @@ export function CurrentProgramCard({ program, status, actions, onNewProgram }: C
       </div>
       <ExpiryCallout status={status} onDuplicate={() => actions.duplicateAsNext(program)} />
       <ProgramDayList program={program} onShowDay={(day) => actions.showOnScreen(program, day)} />
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button size="lg" leftIcon={Pencil} onClick={() => actions.open(program)} className="sm:flex-1">
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+        <Button size="lg" leftIcon={Pencil} onClick={() => actions.open(program)} className="w-full sm:w-auto sm:flex-1">
           Editar rutina
         </Button>
-        <Button size="lg" variant="dark" leftIcon={MonitorPlay} onClick={() => actions.showOnScreen(program)} className="sm:flex-1">
+        <Button size="lg" variant="dark" leftIcon={MonitorPlay} onClick={() => actions.showOnScreen(program)} className="flex-1">
           Abrir en pantalla
         </Button>
-        <DropdownMenu items={menu} label="Más acciones de la rutina" className="self-center" />
+        <DropdownMenu items={menu} label="Más acciones de la rutina" />
       </div>
     </Card>
   )

@@ -21,7 +21,6 @@ export const SEARCH_SYNONYM_GROUPS: readonly string[][] = [
   ['abdominales', 'abs', 'crunch'],
   ['gemelos', 'calf', 'pantorrilla'],
   ['jalon', 'pulldown', 'lat pulldown'],
-  ['curl', 'biceps'],
   ['triceps', 'extension triceps'],
   ['cargada', 'clean'],
   ['arrancada', 'snatch'],

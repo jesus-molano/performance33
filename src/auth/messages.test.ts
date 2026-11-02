@@ -5,7 +5,7 @@ import { authErrorMessage, GOOGLE_FAILED_MESSAGE, GOOGLE_IN_USE_MESSAGE, GOOGLE_
 describe('authErrorMessage', () => {
   it('uses one answer for a wrong password, a blocked account and an unconfirmed one', () => {
     const wrong = authErrorMessage({ code: 'invalid_credentials', message: 'Invalid login credentials' })
-    expect(wrong).toBe('Usuario o contraseña incorrectos.')
+    expect(wrong).toBe('Email, nombre de usuario o contraseña incorrectos.')
     expect(authErrorMessage({ code: 'user_banned' })).toBe(wrong)
     expect(authErrorMessage({ code: 'email_not_confirmed' })).toBe(wrong)
   })

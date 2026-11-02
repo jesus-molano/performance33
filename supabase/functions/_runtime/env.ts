@@ -13,8 +13,10 @@ const AUTH_OPTIONS = { auth: { persistSession: false, autoRefreshToken: false, d
 
 export const allowedOrigins = (): string[] => parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'))
 
+export const serviceKey = (): string => required('SUPABASE_SERVICE_ROLE_KEY')
+
 /** Bypasses the access rules: used only after checking who is calling. */
-export const serviceClient = (): SupabaseClient => createClient(required('SUPABASE_URL'), required('SUPABASE_SERVICE_ROLE_KEY'), AUTH_OPTIONS)
+export const serviceClient = (): SupabaseClient => createClient(required('SUPABASE_URL'), serviceKey(), AUTH_OPTIONS)
 
 /** Public key, optionally acting as the caller. */
 export const publicClient = (token?: string): SupabaseClient =>

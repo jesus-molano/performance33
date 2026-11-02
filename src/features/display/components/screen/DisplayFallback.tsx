@@ -21,7 +21,7 @@ export function DisplayFallback({ hasData, name, branding, theme }: DisplayFallb
         theme={theme}
         icon={MonitorOff}
         title="Sin datos todavía"
-        description="Se cargará en cuanto haya conexión. Si no aparece nada, comprueba que el gimnasio ya tiene clientes en el panel."
+        description="Se cargará en cuanto haya conexión. Si no aparece nada, comprueba que el gimnasio ya tiene usuarios en el panel."
       />
     )
   }
@@ -31,7 +31,7 @@ export function DisplayFallback({ hasData, name, branding, theme }: DisplayFallb
         branding={branding}
         theme={theme}
         icon={UserX}
-        title="Cliente no encontrado"
+        title="Usuario no encontrado"
         description="Puede que se haya borrado. Cierra esta ventana y ábrela de nuevo desde el panel."
       />
     )

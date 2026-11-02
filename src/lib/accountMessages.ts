@@ -13,11 +13,11 @@ const MESSAGES: Record<AccountErrorCode, string> = {
   not_found: 'Esa persona ya no está en el equipo.',
   own_access: 'No puedes cambiar tu propio acceso.',
   last_admin: 'Tiene que quedar al menos un administrador.',
-  username_taken: 'Ya hay alguien en el equipo con ese usuario.',
+  username_taken: 'Ya hay alguien en el equipo con ese nombre de usuario.',
   email_taken: 'Ya hay alguien en el equipo con ese email.',
   name_taken: 'Ya hay alguien en el equipo con ese nombre.',
-  invalid_credentials: 'Usuario o contraseña incorrectos.',
-  locked: 'Demasiados intentos con este usuario. Espera 15 minutos y vuelve a probar.',
+  invalid_credentials: 'Email, nombre de usuario o contraseña incorrectos.',
+  locked: 'Demasiados intentos con este nombre de usuario. Espera 15 minutos y vuelve a probar.',
   failed: CONNECTION_MESSAGE,
 }
 

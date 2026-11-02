@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react'
-import { EXERCISE_CATEGORIES } from '@/config/exerciseCategories'
+import { DEFAULT_EXERCISE_TYPE, DEFAULT_MUSCLE } from '@/config/exerciseTags'
 import { useToast } from '@/hooks'
-import { splitList } from '@/lib/exerciseLibrary'
+import { inferMuscleGroup, splitList } from '@/lib/exerciseLibrary'
 import { exercisePatchFromLibrary } from '@/lib/factories'
 import { findExerciseByName, findSimilarExercises } from '@/lib/search'
 import { useAppActions, useExerciseLibrary } from '@/store'
-import type { LibraryExercise, ExerciseCategory, ExerciseEntry } from '@/types'
+import type { ExerciseEntry, ExerciseType, LibraryExercise, MuscleGroup } from '@/types'
 import { canSaveToLibrary } from '@/features/editor/utils'
 
 export interface LibraryDraft {
   name: string
-  category: ExerciseCategory
+  muscle: MuscleGroup
+  type: ExerciseType
   /** Comma separated: 'Kettlebell, Banco'. */
   equipment: string
 }
@@ -30,7 +31,7 @@ export interface SaveToLibraryApi {
   pickExisting: (exercise: LibraryExercise) => void
 }
 
-const newDraft = (name: string): LibraryDraft => ({ name: name.trim(), category: EXERCISE_CATEGORIES[0], equipment: '' })
+const newDraft = (name: string): LibraryDraft => ({ name: name.trim(), muscle: inferMuscleGroup(name) ?? DEFAULT_MUSCLE, type: DEFAULT_EXERCISE_TYPE, equipment: '' })
 
 /** 'Guardar en biblioteca' for a custom (free-text) exercise row. */
 export function useSaveToLibrary(entry: ExerciseEntry): SaveToLibraryApi {
@@ -54,7 +55,8 @@ export function useSaveToLibrary(entry: ExerciseEntry): SaveToLibraryApi {
       const name = draft.name.trim()
       const id = actions.addLibraryExercise({
         name,
-        category: draft.category,
+        muscle: draft.muscle,
+        type: draft.type,
         equipment: splitList(draft.equipment),
         defaultMeasure: entry.measure,
         perSide: entry.perSide,

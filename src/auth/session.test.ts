@@ -9,7 +9,7 @@ vi.mock('./instance', () => ({
   teamService: { getOwnProfile: vi.fn() },
 }))
 
-const PROFILE: Profile = { id: 's1', username: 'ana', email: 'ana@p33.test', name: 'Ana', color: '#000000', role: 'monitor', active: true, mustChangePassword: false }
+const PROFILE: Profile = { id: 's1', username: 'ana', email: 'ana@p33.test', name: 'Ana', color: '#000000', role: 'monitor', active: true, mustChangePassword: false, hasOwnPassword: true, temporaryPasswordExpired: false, googleConnected: false }
 const USER = { id: 'u1', email: 'ana@p33.test' }
 
 describe('retrySession', () => {

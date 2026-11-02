@@ -10,7 +10,7 @@ export function NotFoundPage() {
         icon={Compass}
         title="No encontramos esta página"
         description="Puede que el enlace sea antiguo o que se haya borrado lo que buscabas."
-        action={<Button onClick={() => navigate(paths.clients())}>Volver a clientes</Button>}
+        action={<Button onClick={() => navigate(paths.clients())}>Volver a usuarios</Button>}
       />
     </PageContainer>
   )

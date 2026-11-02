@@ -2,15 +2,16 @@
 // Every entity is rebuilt over its defaults, so an old or hand-edited backup can never leave
 // a program without days, a block without exercises, etc. (which would crash the editor and TV).
 
-import { DEFAULT_PROGRAM_WEEKS } from '@/config/app'
+import { DEFAULT_PROGRAM_WEEKS, LIBRARY_ADDITIONS_VERSION } from '@/config/app'
 import { BLOCK_TYPE_META } from '@/config/blockTypes'
 import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR } from '@/config/branding'
 import { UNKNOWN_AUTHOR_COLOR } from '@/config/colors'
 import { MEASURE_META } from '@/config/exerciseFields'
 import { PLAN_BY_ID } from '@/config/plans'
-import { EXERCISE_LIBRARY } from '@/data/exercises'
+import { EXERCISE_LIBRARY, EXERCISES_ADDED_IN_V2 } from '@/data/exercises'
 import { endDateFor, isValidISODate, todayISO } from '@/lib/dates'
 import { createBlock, createExercise } from '@/lib/factories'
+import { resolveExerciseTags } from './libraryTags'
 import {
   SCHEMA_VERSION,
   type AppData,
@@ -83,7 +84,7 @@ export function normalizeClient(raw: UnknownRecord & { id: string }): Client {
   const plan = client.plan && client.plan in PLAN_BY_ID ? client.plan : 'custom'
   return {
     ...(raw as unknown as Client),
-    firstName: text(client.firstName, 'Cliente'),
+    firstName: text(client.firstName, 'Usuario'),
     lastName: text(client.lastName),
     goal: text(client.goal),
     plan,
@@ -100,13 +101,16 @@ export function normalizeNote(raw: UnknownRecord & { id: string }): ClientNote {
 
 const textList = (value: unknown): string[] => (Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [])
 
-/** Only known fields: older data marked some exercises as `custom`, and every row is the same now. */
+const INITIAL_LIBRARY_BY_ID = new Map(EXERCISE_LIBRARY.map((exercise) => [exercise.id, exercise]))
+
+/** Only known fields: older data marked some exercises as `custom` and had one `category`, and every row is the same now. */
 export function normalizeLibraryExercise(raw: UnknownRecord & { id: string }): LibraryExercise {
   const exercise = raw as unknown as LibraryExercise
+  const name = text(raw.name)
   return {
     id: raw.id,
-    name: text(raw.name),
-    category: exercise.category,
+    name,
+    ...resolveExerciseTags(raw, raw.id, name, INITIAL_LIBRARY_BY_ID),
     equipment: textList(raw.equipment),
     defaultMeasure: exercise.defaultMeasure in MEASURE_META ? exercise.defaultMeasure : 'reps',
     ...(Array.isArray(raw.aliases) ? { aliases: textList(raw.aliases) } : {}),
@@ -116,9 +120,16 @@ export function normalizeLibraryExercise(raw: UnknownRecord & { id: string }): L
   }
 }
 
+/** Exercises the initial library gained later reach existing data once. They cannot have been deleted: they did not exist. An emptied library stays empty. */
+function withAddedExercises(library: LibraryExercise[], savedVersion: unknown): LibraryExercise[] {
+  if (library.length === 0 || (typeof savedVersion === 'number' && savedVersion >= LIBRARY_ADDITIONS_VERSION)) return library
+  const known = new Set(library.map((exercise) => exercise.id))
+  return [...library, ...EXERCISE_LIBRARY.filter((e) => EXERCISES_ADDED_IN_V2.has(e.id) && !known.has(e.id)).map((e) => ({ ...e }))]
+}
+
 /** Data from before the library was editable has only the coach's own exercises: the initial ones join them. */
 function normalizeLibrary(raw: UnknownRecord): LibraryExercise[] {
-  if (Array.isArray(raw.library)) return normalizeList(raw.library, normalizeLibraryExercise)
+  if (Array.isArray(raw.library)) return withAddedExercises(normalizeList(raw.library, normalizeLibraryExercise), raw.schemaVersion)
   return [...normalizeList(raw.customExercises, normalizeLibraryExercise), ...EXERCISE_LIBRARY.map((exercise) => ({ ...exercise }))]
 }
 

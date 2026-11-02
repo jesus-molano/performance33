@@ -8,12 +8,13 @@ import { FlashTag } from './FlashTag'
 
 interface DisplayBlockHeaderProps {
   block: DisplayBlock
+  number: number
   theme: DisplayThemeClasses
   flashing: boolean
 }
 
-/** Big type header ('EMOM 12′', '3 rondas', 'Superserie × 4') with icon, badge, chip and 'Actualizado'. */
-export function DisplayBlockHeader({ block, theme, flashing }: DisplayBlockHeaderProps) {
+/** Big type header ('EMOM 12′', '3 rondas', 'Superserie × 4') with icon, badge, chip, 'Actualizado' and, on a split screen, the block's number. */
+export function DisplayBlockHeader({ block, number, theme, flashing }: DisplayBlockHeaderProps) {
   const Icon = BLOCK_TYPE_META[block.type].icon
   const overline = getBlockOverline(block)
   const badge = getVisibleBadge(block)
@@ -22,6 +23,9 @@ export function DisplayBlockHeader({ block, theme, flashing }: DisplayBlockHeade
   return (
     <header className="relative flex items-start gap-[0.6em]">
       {flashing && <FlashTag theme={theme} className={DENSITY_STYLES.comfortable.flashTag} />}
+      <span className={cn('tabular shrink-0 items-center justify-center rounded-[0.25em] px-[0.3em] text-[2.8em] leading-[1.15] font-extrabold [display:var(--display-order,none)]', theme.badge)}>
+        {number}
+      </span>
       <Icon size="1em" aria-hidden className={cn('mt-[0.15em] shrink-0 text-[1.75em]', headlineColor)} />
       <div className="min-w-0 flex-1">
         {overline && (

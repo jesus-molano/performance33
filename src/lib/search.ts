@@ -1,7 +1,8 @@
 // Accent-insensitive fuzzy search over the exercise library, with Spanish/English synonyms.
 
+import { BODY_REGION_TERMS, EXERCISE_TYPE_SEARCH_TERMS, MUSCLE_SEARCH_TERMS } from '@/config/exerciseTags'
 import { SEARCH_SYNONYM_GROUPS } from '@/config/synonyms'
-import type { LibraryExercise } from '@/types'
+import type { LibraryExercise, MuscleGroup } from '@/types'
 
 /** Lowercase, strip accents/diacritics, collapse whitespace and punctuation. */
 export function normalizeText(s: string): string {
@@ -62,6 +63,37 @@ function scoreText(q: string, text: string): number {
   return 0
 }
 
+const MIN_TAG_QUERY_LENGTH = 3
+/** Typing a muscle means that muscle: above a name or alias that only mentions it ('pecho': Press banca before Jalón al pecho and Chest to bar). */
+const TAG_SCORE = { mainMuscle: 780, secondaryMuscle: 350, bodyRegion: 340, wordsAcrossTags: 330, type: 300 }
+
+const hitsTerm = (q: string, terms: readonly string[]): boolean => q.length >= MIN_TAG_QUERY_LENGTH && terms.some((term) => term.startsWith(q))
+
+const hitsRegion = (q: string, muscle: MuscleGroup): boolean => BODY_REGION_TERMS.some((region) => region.muscles.includes(muscle) && hitsTerm(q, region.terms))
+
+function exerciseTerms(ex: LibraryExercise): readonly string[] {
+  return [...MUSCLE_SEARCH_TERMS[ex.muscle], ...(ex.secondaryMuscles ?? []).flatMap((m) => MUSCLE_SEARCH_TERMS[m]), ...EXERCISE_TYPE_SEARCH_TERMS[ex.type]]
+}
+
+/** 'press pecho', 'pecho mancuerna': each word in a tag, the name, an alias or the material, at least one in a tag. */
+function hitsWordsAcrossTags(q: string, ex: LibraryExercise): boolean {
+  const words = q.split(' ')
+  if (words.length < 2) return false
+  const terms = exerciseTerms(ex)
+  const inTag = (word: string) => hitsTerm(word, terms) || hitsRegion(word, ex.muscle)
+  if (!words.some(inTag)) return false
+  const textWords = normalizeText([ex.name, ...(ex.aliases ?? []), ...ex.equipment].join(' ')).split(' ')
+  return words.every((word) => inTag(word) || textWords.some((w) => w.startsWith(word)))
+}
+
+function scoreTags(q: string, ex: LibraryExercise): number {
+  if (hitsTerm(q, MUSCLE_SEARCH_TERMS[ex.muscle])) return TAG_SCORE.mainMuscle
+  if (ex.secondaryMuscles?.some((muscle) => hitsTerm(q, MUSCLE_SEARCH_TERMS[muscle]))) return TAG_SCORE.secondaryMuscle
+  if (hitsRegion(q, ex.muscle)) return TAG_SCORE.bodyRegion
+  if (hitsWordsAcrossTags(q, ex)) return TAG_SCORE.wordsAcrossTags
+  return hitsTerm(q, EXERCISE_TYPE_SEARCH_TERMS[ex.type]) ? TAG_SCORE.type : 0
+}
+
 export interface ExerciseSearchResult {
   exercise: LibraryExercise
   score: number
@@ -69,11 +101,7 @@ export interface ExerciseSearchResult {
   matchedAlias?: string
 }
 
-/**
- * Fuzzy, accent-insensitive search. Empty query returns [] (UI decides what to show).
- * Results sorted by score; ties broken by shorter name.
- */
-export function searchExercises(query: string, library: LibraryExercise[], limit = 8): ExerciseSearchResult[] {
+function rankExercises(query: string, library: LibraryExercise[], limit: number, withTags: boolean): ExerciseSearchResult[] {
   const q = normalizeText(query)
   if (!q) return []
   const variants = expandQuery(q)
@@ -97,6 +125,12 @@ export function searchExercises(query: string, library: LibraryExercise[], limit
           matchedAlias = alias
         }
       }
+      const rawTags = withTags ? scoreTags(v, ex) : 0
+      const st = rawTags ? rawTags - penalty : 0
+      if (st > best) {
+        best = st
+        matchedAlias = undefined
+      }
     }
     if (best > 0) results.push({ exercise: ex, score: best, matchedAlias })
   }
@@ -104,9 +138,17 @@ export function searchExercises(query: string, library: LibraryExercise[], limit
   return results.slice(0, limit)
 }
 
+/**
+ * Fuzzy, accent-insensitive search by name and aliases; also finds by muscle or type ('pecho', 'cardio').
+ * Empty query returns [] (UI decides what to show). Results sorted by score; ties broken by shorter name.
+ */
+export function searchExercises(query: string, library: LibraryExercise[], limit = 8): ExerciseSearchResult[] {
+  return rankExercises(query, library, limit, true)
+}
+
 /** Library entries whose normalized name/alias equals or closely matches `name` (for "¿ya existe?" before saving). */
 export function findSimilarExercises(name: string, library: LibraryExercise[], limit = 3): LibraryExercise[] {
-  return searchExercises(name, library, limit)
+  return rankExercises(name, library, limit, false)
     .filter((r) => r.score >= 450)
     .map((r) => r.exercise)
 }

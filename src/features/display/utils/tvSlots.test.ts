@@ -6,6 +6,7 @@ import {
   assignSlotClient,
   canAddSlot,
   canRemoveSlot,
+  describeScreenClients,
   moveSlot,
   pickDefaultTvSlots,
   reconcileSlotKeys,
@@ -65,6 +66,28 @@ describe('TV column helpers', () => {
       { id: 'd', archived: false, currentProgramId: 'p3' },
     ]
     expect(ids(pickDefaultTvSlots(clients))).toEqual(['a', 'd', null])
+  })
+
+  it('leaves out the clients another screen is showing', () => {
+    const clients = ['a', 'b', 'c', 'd'].map((id) => ({ id, archived: false, currentProgramId: 'p' }))
+    expect(ids(pickDefaultTvSlots(clients, ['a', 'b']))).toEqual(['c', 'd', null])
+    expect(ids(pickDefaultTvSlots(clients, ['a', 'b', 'c', 'd']))).toEqual([null, null, null])
+  })
+})
+
+describe('describeScreenClients', () => {
+  const clients = [
+    { id: 'a', firstName: 'Laura' },
+    { id: 'b', firstName: 'Javier' },
+  ]
+
+  it('names the people on a screen once, skipping empty columns and deleted clients', () => {
+    expect(describeScreenClients(slotsOf('a', null, 'b', 'a', 'gone'), clients)).toBe('Laura, Javier')
+  })
+
+  it('is empty for a screen with nobody or never opened', () => {
+    expect(describeScreenClients(slotsOf(null), clients)).toBe('')
+    expect(describeScreenClients(null, clients)).toBe('')
   })
 })
 

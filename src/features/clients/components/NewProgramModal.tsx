@@ -1,7 +1,7 @@
 import { useId } from 'react'
-import { Button, Input, Modal, Switch } from '@/components/ui'
+import { Button, DateField, Input, Modal, Switch } from '@/components/ui'
 import { TRAINING_DAY_OPTIONS } from '@/config/plans'
-import { formatDateShort } from '@/lib/dates'
+import { formatDate } from '@/lib/dates'
 import { plural } from '@/lib/format'
 import { getProgramDisplayName } from '@/lib/program'
 import type { Client, Program } from '@/types'
@@ -17,7 +17,7 @@ export interface NewProgramModalProps {
 
 /** 'Nueva rutina': blank or copied from the current one. Opens the editor when created. */
 export function NewProgramModal({ client, current, onClose }: NewProgramModalProps) {
-  const { values, setField, endDate, canCopy, submit } = useNewProgramForm(client, current)
+  const { values, setField, endDate, canCopy, startDateError, submit } = useNewProgramForm(client, current)
   const formId = useId()
   const copying = canCopy && values.fromCurrent
 
@@ -38,7 +38,7 @@ export function NewProgramModal({ client, current, onClose }: NewProgramModalPro
         </>
       }
     >
-      <form id={formId} onSubmit={submit} className="flex flex-col gap-5 pt-1">
+      <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-5 pt-1">
         {current && (
           <Switch
             checked={values.fromCurrent}
@@ -50,12 +50,12 @@ export function NewProgramModal({ client, current, onClose }: NewProgramModalPro
         {!copying && (
           <Input label="Nombre (opcional)" placeholder="Ej.: Fuerza otoño" value={values.name} onChange={(e) => setField('name', e.target.value)} />
         )}
-        <Input
-          type="date"
+        <DateField
           label="Empieza el"
           value={values.startDate}
-          onChange={(e) => setField('startDate', e.target.value)}
-          hint={endDate ? `Termina el ${formatDateShort(endDate)}` : undefined}
+          onChange={(date) => setField('startDate', date)}
+          hint={endDate ? `Termina el ${formatDate(endDate)}` : undefined}
+          error={startDateError}
           containerClassName="sm:max-w-60"
         />
         {!copying && (

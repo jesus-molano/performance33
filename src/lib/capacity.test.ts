@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   EXERCISE_CUE_MAX_LENGTH,
   EXERCISE_NAME_MAX_LENGTH,
+  MAX_DAYS_PER_PROGRAM,
   MAX_EXERCISES_PER_BLOCK,
 } from '@/config/capacity'
 import { EXERCISE_LIBRARY } from '@/data/exercises'
@@ -10,6 +11,7 @@ import {
   clampExerciseTexts,
   findAddExerciseRefusal,
   getAddBlockRefusal,
+  getAddDayRefusal,
   getLengthHint,
   getAddExerciseRefusal,
   getDayCapacity,
@@ -110,5 +112,13 @@ describe('limits against real content', () => {
     for (const program of createSeedData('2026-10-31').programs) {
       for (const day of program.days) expect(getDayCapacity(day).level).not.toBe('over')
     }
+  })
+})
+
+describe('getAddDayRefusal', () => {
+  it('refuses at the maximum and above, never below', () => {
+    expect(getAddDayRefusal(MAX_DAYS_PER_PROGRAM - 1)).toBeNull()
+    expect(getAddDayRefusal(MAX_DAYS_PER_PROGRAM)).toBe('days')
+    expect(getAddDayRefusal(MAX_DAYS_PER_PROGRAM + 1)).toBe('days')
   })
 })

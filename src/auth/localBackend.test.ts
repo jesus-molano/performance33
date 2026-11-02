@@ -82,7 +82,7 @@ describe('local test mode', () => {
     await enter(backend, 'admin')
     const password = await backend.team.createAccount(NEW_INPUT)
     expect(password).toMatch(/^.{4}-.{4}-.{4}$/)
-    await expect(backend.team.createAccount(NEW_INPUT)).rejects.toThrow(/ese usuario/)
+    await expect(backend.team.createAccount(NEW_INPUT)).rejects.toThrow(/ese nombre de usuario/)
     await expect(backend.team.createAccount({ ...NEW_INPUT, username: 'otra', email: 'DANI@demo.local' })).rejects.toThrow(/ese email/)
     const created = (await backend.team.listAccounts()).find((m) => m.username === 'persona')
     expect(created).toMatchObject({ mustChangePassword: true })

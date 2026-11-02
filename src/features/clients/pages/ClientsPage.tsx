@@ -19,15 +19,15 @@ export function ClientsPage() {
   const ClientsView = view === 'list' ? ClientList : ClientGrid
   const addButton = (
     <Button leftIcon={UserPlus} onClick={form.openCreate}>
-      Nuevo cliente
+      Nuevo usuario
     </Button>
   )
 
   return (
     <PageContainer>
       <PageHeader
-        title={list.filters.archived ? 'Clientes archivados' : 'Clientes'}
-        description={list.filters.archived ? 'Puedes restaurarlos desde su menú «⋯».' : `${plural(list.activeCount, 'cliente activo', 'clientes activos')}`}
+        title={list.filters.archived ? 'Usuarios archivados' : 'Usuarios'}
+        description={list.filters.archived ? 'Puedes restaurarlos desde su menú «⋯».' : `${plural(list.activeCount, 'usuario activo', 'usuarios activos')}`}
         actions={addButton}
       />
       <ClientToolbar
@@ -44,15 +44,15 @@ export function ClientsPage() {
       ) : list.isFiltering ? (
         <EmptyState
           icon={SearchX}
-          title="No hay clientes con esos filtros"
+          title="No hay usuarios con esos filtros"
           description="Prueba con otro nombre o quita el filtro de plan."
           action={<Button variant="secondary" onClick={list.clearFilters}>Quitar filtros</Button>}
         />
       ) : (
         <EmptyState
           icon={Users}
-          title="Aún no hay clientes"
-          description="Cuando alguien del equipo añada un cliente, aparecerá aquí."
+          title="Aún no hay usuarios"
+          description="Cuando alguien del equipo añada un usuario, aparecerá aquí."
           action={
             <div className="flex flex-wrap justify-center gap-2">
               {addButton}

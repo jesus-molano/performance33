@@ -1,8 +1,10 @@
 import { DEFAULT_PROGRAM_WEEKS } from '@/config/app'
+import { MAX_DAYS_PER_PROGRAM } from '@/config/capacity'
 import { removeById, updateById } from '@/lib/arrays'
 import { endDateFor, todayISO } from '@/lib/dates'
 import { cloneDay, createDay } from '@/lib/factories'
 import { newId } from '@/lib/ids'
+import { clamp } from '@/lib/numbers'
 import { getClientPrograms } from '@/lib/program'
 import { applyProgramDates, nextBlockStart } from '@/lib/programDates'
 import type { AppData, Program } from '@/types'
@@ -40,7 +42,7 @@ export function createProgramSlice({ commit, getData }: SliceContext): ProgramAc
       const client = getData().clients.find((c) => c.id === clientId)
       const startDate = opts.startDate ?? todayISO()
       const weeks = Math.max(1, opts.weeks ?? DEFAULT_PROGRAM_WEEKS)
-      const dayCount = Math.max(1, opts.dayCount ?? client?.trainingDays ?? 3)
+      const dayCount = clamp(opts.dayCount ?? client?.trainingDays ?? 3, 1, MAX_DAYS_PER_PROGRAM)
       const program: Program = {
         id: newId('prg'),
         clientId,

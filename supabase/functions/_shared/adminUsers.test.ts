@@ -25,6 +25,8 @@ function fakeBackend(profiles: ProfileRecord[]): AdminBackend {
     setAuthPassword: vi.fn(async () => true),
     setAuthBanned: vi.fn(async () => true),
     revokeSessions: vi.fn(async () => undefined),
+    removeOtherGoogleIdentities: vi.fn(async () => undefined),
+    clearLoginFailures: vi.fn(async () => undefined),
   }
 }
 
@@ -49,7 +51,7 @@ describe('handleAdminRequest', () => {
     const result = await asAdmin(NEW_ACCOUNT)
     expect(result.status).toBe(200)
     const { temporaryPassword } = result.body as { temporaryPassword: string }
-    expect(backend.createAuthUser).toHaveBeenCalledWith('nueva@accounts.invalid', temporaryPassword)
+    expect(backend.createAuthUser).toHaveBeenCalledWith('00000000000000000000000000000000@accounts.invalid', temporaryPassword)
     expect(backend.insertProfile).toHaveBeenCalledWith('new-user', expect.objectContaining({ username: 'nueva', email: null }))
   })
 

@@ -34,7 +34,8 @@ export function ExerciseEditor({ entry, blockId, index, showSets }: ExerciseEdit
         options={MEASURE_OPTIONS}
         value={entry.measure}
         onChange={fields.setMeasure}
-        className="self-start"
+        fullWidth
+        className="sm:inline-flex sm:w-auto sm:self-start"
       />
       <BasicFields entry={entry} fields={fields} showSets={showSets} onFieldKeyDown={keyboard.onFieldKeyDown} />
       <QuickChips entry={entry} fields={fields} />

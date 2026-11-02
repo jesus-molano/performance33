@@ -47,5 +47,8 @@ export function toProfile(account: LocalAccount): Profile {
     role: account.role,
     active: account.active,
     mustChangePassword: account.mustChangePassword,
+    hasOwnPassword: !account.mustChangePassword,
+    temporaryPasswordExpired: false,
+    googleConnected: false,
   }
 }

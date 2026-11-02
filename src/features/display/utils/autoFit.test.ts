@@ -3,8 +3,10 @@ import {
   findFittingUnit,
   getColumnBounds,
   getDisplayDensity,
+  getFitStages,
   getUnitBounds,
   planFit,
+  planStage,
   readableMinUnit,
   type FitResult,
 } from './autoFit'
@@ -49,6 +51,13 @@ describe('readable floor', () => {
   })
 })
 
+describe('target size', () => {
+  it('asks for 28 px exercise names at 1080 px in both densities', () => {
+    expect(getUnitBounds(640, TV_HEIGHT, 'compact').target * 1.5).toBeGreaterThanOrEqual(28)
+    expect(getUnitBounds(1920, TV_HEIGHT, 'comfortable').target * 1.9).toBeGreaterThanOrEqual(28)
+  })
+})
+
 describe('getColumnBounds', () => {
   const bounds = { min: 14, max: 24 }
 
@@ -86,13 +95,13 @@ describe('findFittingUnit', () => {
 })
 
 describe('planFit', () => {
-  const plan = (width: number, units: number, preferColumns = false, saved = 0) =>
+  const plan = (width: number, units: number, canSplit = false, saved = 0) =>
     planFit({
       width,
       height: TV_HEIGHT,
       density: getDisplayDensity(width, TV_HEIGHT),
       fontScale: 1,
-      preferColumns,
+      canSplit,
       measure: contentOf(units, saved),
     })
 
@@ -123,18 +132,75 @@ describe('planFit', () => {
     expect(plan(480, 120)).toEqual({ unit: getUnitBounds(480, TV_HEIGHT, 'compact').min, columns: 1, detail: 3 })
   })
 
-  it('splits a wide slot into two sub-columns when one column does not fit at the last-resort size', () => {
-    const fit = plan(1920, 160)
+  it('never splits a column of a TV with 2 or more, however long the day', () => {
+    expect(plan(960, 300, false).columns).toBe(1)
+    expect(plan(640, 300, false).columns).toBe(1)
+  })
+
+  it('never splits a portrait window, even one that may', () => {
+    expect(plan(640, 300, true).columns).toBe(1)
+    expect(plan(960, 300, true).columns).toBe(1)
+  })
+
+  const wideTarget = getUnitBounds(1920, TV_HEIGHT, 'comfortable').target
+
+  it('keeps one column on a landscape screen when it fits at the target size', () => {
+    const units = Math.floor(TV_HEIGHT / wideTarget)
+    expect(plan(1920, units, true)).toMatchObject({ columns: 1, detail: 0 })
+    expect(plan(1920, 40, true).columns).toBe(1)
+  })
+
+  it('does not split just to make text bigger', () => {
+    const fit = plan(1920, 50, true)
+    expect(fit.columns).toBe(1)
+    expect(fit.unit).toBeLessThan(getUnitBounds(1920, TV_HEIGHT, 'comfortable').max)
+  })
+
+  it('splits only when one column would go below the target size, hiding nothing', () => {
+    const fit = plan(1920, Math.floor(TV_HEIGHT / wideTarget) + 2, true, 3)
+    expect(fit).toMatchObject({ columns: 2, detail: 0 })
+    expect(fit.unit).toBeGreaterThanOrEqual(wideTarget)
+  })
+
+  it('prefers two parts when nothing fits, down to the last-resort size', () => {
+    const fit = plan(1920, 320, true)
     expect(fit.columns).toBe(2)
+    expect(fit.detail).toBe(3)
     expect(fit.unit).toBeGreaterThanOrEqual(getUnitBounds(1920, TV_HEIGHT, 'comfortable').min)
   })
+})
 
-  it('keeps one column in a wide slot when it fits', () => {
-    expect(plan(960, 45).columns).toBe(1)
+describe('layouts for one client on a landscape screen', () => {
+  const input = (units: number) => ({
+    width: 1920,
+    height: TV_HEIGHT,
+    density: 'comfortable' as const,
+    fontScale: 1,
+    canSplit: true,
+    measure: contentOf(units),
   })
 
-  it('prefers two columns on a landscape full screen only when text grows clearly', () => {
-    expect(plan(1920, 90, true).columns).toBe(2)
-    expect(plan(1920, 40, true).columns).toBe(1)
+  it('tries one roomy column, one tighter column and only then two parts', () => {
+    expect(getFitStages(1920, TV_HEIGHT, true)).toEqual([
+      { density: 'comfortable', strict: true },
+      { density: 'compact', strict: true },
+      { density: 'comfortable', strict: false },
+    ])
+  })
+
+  it('has a single stage in any other case', () => {
+    expect(getFitStages(640, TV_HEIGHT, true)).toEqual([{ density: 'compact', strict: false }])
+    expect(getFitStages(960, TV_HEIGHT, false)).toEqual([{ density: 'compact', strict: false }])
+    expect(getFitStages(1920, TV_HEIGHT, false)).toEqual([{ density: 'comfortable', strict: false }])
+  })
+
+  it('a strict stage holds one column at the target size or passes', () => {
+    const fits = planStage(input(40), { density: 'comfortable', strict: true })
+    expect(fits).toMatchObject({ columns: 1, detail: 0 })
+    expect(planStage(input(200), { density: 'comfortable', strict: true })).toBeNull()
+  })
+
+  it('the last stage always gives an answer', () => {
+    expect(planStage(input(200), { density: 'comfortable', strict: false })).toMatchObject({ columns: 2 })
   })
 })

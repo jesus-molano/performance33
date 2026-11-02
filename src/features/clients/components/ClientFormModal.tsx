@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { ColorSwatchPicker } from '@/components/ColorSwatchPicker'
-import { Button, Input, Modal, PrivacyLabel, Textarea } from '@/components/ui'
+import { Button, DateField, Input, Modal, PrivacyLabel, Textarea } from '@/components/ui'
 import { TRAINING_DAY_OPTIONS } from '@/config/plans'
 import { plural } from '@/lib/format'
 import type { Client } from '@/types'
@@ -25,14 +25,14 @@ export function ClientFormModal({ client, onClose }: ClientFormModalProps) {
       open
       onClose={onClose}
       size="lg"
-      title={isEdit ? 'Editar datos del cliente' : 'Nuevo cliente'}
+      title={isEdit ? 'Editar datos del usuario' : 'Nuevo usuario'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
           <Button type="submit" form={formId}>
-            {isEdit ? 'Guardar cambios' : 'Añadir cliente'}
+            {isEdit ? 'Guardar cambios' : 'Añadir usuario'}
           </Button>
         </>
       }
@@ -57,11 +57,10 @@ export function ClientFormModal({ client, onClose }: ClientFormModalProps) {
           onChange={(days) => setField('trainingDays', days)}
           optionLabel={(n) => plural(n, 'día', 'días')}
         />
-        <Input
-          type="date"
+        <DateField
           label="Fecha de alta"
           value={values.startDate}
-          onChange={(e) => setField('startDate', e.target.value)}
+          onChange={(date) => setField('startDate', date)}
           error={errors.startDate}
           containerClassName="sm:max-w-60"
         />

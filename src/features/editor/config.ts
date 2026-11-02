@@ -30,6 +30,13 @@ export const PROGRESSION_STEP_DEFAULTS: Record<ProgressionTarget, number> = {
 export const POINTER_ACTIVATION_DISTANCE = 6
 export const TOUCH_ACTIVATION = { delay: 180, tolerance: 8 } as const
 
+/** A long press, so a slow tap on a day still selects it instead of picking it up. */
+export const DAY_TOUCH_ACTIVATION = { delay: 300, tolerance: 8 } as const
+
+/** Label beside the control, one row each, on phones; from md they share a row with the label above. */
+export const DATE_ROW_CLASSES =
+  'max-md:grid max-md:grid-cols-[4.5rem_minmax(0,1fr)] max-md:items-center max-md:gap-x-2 max-md:[&>p]:col-start-2'
+
 /** Wide screens show the live TV preview next to the editor. */
 export const WIDE_MEDIA_QUERY = '(min-width: 1280px)'
 export const PREVIEW_STORAGE_KEY = 'p33:editor:preview'

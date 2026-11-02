@@ -14,7 +14,7 @@ export function PasswordLoginForm() {
     <>
       <form onSubmit={(event) => void form.submit(event)} className="flex flex-col gap-4" noValidate>
         <Input
-          label="Email o usuario"
+          label="Email o nombre de usuario"
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}

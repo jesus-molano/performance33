@@ -1,14 +1,17 @@
 // Pure helpers shared by the library manager (Ajustes) and the routine editor.
 
 import { EXERCISE_SEARCH_SUFFIX, GOOGLE_SEARCH_URL } from '@/config/app'
-import type { LibraryExercise, ExerciseCategory } from '@/types'
-import { searchExercises } from './search'
+import { MUSCLE_GROUPS, MUSCLE_SEARCH_TERMS } from '@/config/exerciseTags'
+import type { ExerciseType, LibraryExercise, MuscleGroup } from '@/types'
+import { normalizeText, searchExercises } from './search'
 
-export type ExerciseCategoryFilter = ExerciseCategory | 'all'
+export type MuscleFilter = MuscleGroup | 'all'
+export type ExerciseTypeFilter = ExerciseType | 'all'
 
 export interface ExerciseFilters {
   query: string
-  category: ExerciseCategoryFilter
+  muscle: MuscleFilter
+  type: ExerciseTypeFilter
   /** A material name, or ALL_EQUIPMENT. */
   equipment: string
 }
@@ -17,19 +20,36 @@ const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i
 const ALLOWED_LINK_PROTOCOLS = new Set(['http:', 'https:'])
 
 export const ALL_EQUIPMENT = 'all'
-export const EMPTY_EXERCISE_FILTERS: ExerciseFilters = { query: '', category: 'all', equipment: ALL_EQUIPMENT }
+export const EMPTY_EXERCISE_FILTERS: ExerciseFilters = { query: '', muscle: 'all', type: 'all', equipment: ALL_EQUIPMENT }
 
 const compareNames = (a: string, b: string): number => a.localeCompare(b, 'es', { sensitivity: 'base' })
 
-/** Category and material first; then the editor's fuzzy search, or A–Z when just browsing. */
+const worksMuscle = (exercise: LibraryExercise, muscle: MuscleFilter): boolean =>
+  muscle === 'all' || exercise.muscle === muscle || (exercise.secondaryMuscles?.includes(muscle) ?? false)
+
+/**
+ * Muscle, type and material first; then the editor's fuzzy search, or A–Z when just browsing.
+ * A muscle finds every exercise that works it: those where it is the main one come first.
+ */
 export function filterExercises(library: readonly LibraryExercise[], filters: ExerciseFilters): LibraryExercise[] {
   const pool = library.filter(
     (e) =>
-      (filters.category === 'all' || e.category === filters.category) &&
+      worksMuscle(e, filters.muscle) &&
+      (filters.type === 'all' || e.type === filters.type) &&
       (filters.equipment === ALL_EQUIPMENT || e.equipment.includes(filters.equipment)),
   )
-  if (!filters.query.trim()) return pool.sort((a, b) => compareNames(a.name, b.name))
-  return searchExercises(filters.query, pool, pool.length).map((r) => r.exercise)
+  if (filters.query.trim()) return searchExercises(filters.query, pool, pool.length).map((r) => r.exercise)
+  const secondaryLast = (e: LibraryExercise) => (filters.muscle !== 'all' && e.muscle !== filters.muscle ? 1 : 0)
+  return pool.sort((a, b) => secondaryLast(a) - secondaryLast(b) || compareNames(a.name, b.name))
+}
+
+export const hasActiveFilters = (filters: ExerciseFilters): boolean =>
+  (Object.keys(EMPTY_EXERCISE_FILTERS) as Array<keyof ExerciseFilters>).some((key) => filters[key] !== EMPTY_EXERCISE_FILTERS[key])
+
+/** The muscle a name mentions ('Curl de bíceps' → Bíceps), if any: a first guess the coach can change. */
+export function inferMuscleGroup(name: string, among: readonly MuscleGroup[] = MUSCLE_GROUPS): MuscleGroup | undefined {
+  const text = ` ${normalizeText(name)} `
+  return among.find((muscle) => MUSCLE_SEARCH_TERMS[muscle].some((term) => text.includes(` ${term} `)))
 }
 
 /** Every material used in the library, once, A–Z. */
@@ -45,9 +65,9 @@ export function splitList(text: string): string[] {
     .filter(Boolean)
 }
 
-/** 'Piernas · Kettlebell, Banco'. */
-export function formatExerciseMeta(exercise: Pick<LibraryExercise, 'category' | 'equipment'>): string {
-  return [exercise.category, exercise.equipment.join(', ')].filter(Boolean).join(' · ')
+/** 'Cuádriceps · Fuerza · Kettlebell, Banco'. */
+export function formatExerciseMeta(exercise: Pick<LibraryExercise, 'muscle' | 'type' | 'equipment'>): string {
+  return [exercise.muscle, exercise.type, exercise.equipment.join(', ')].filter(Boolean).join(' · ')
 }
 
 /** What a coach typed as a link: a clean http/https address (the https:// may be left out), or null when it is not valid. */

@@ -6,10 +6,10 @@ export type PrivacyKind = 'private' | 'visible'
 
 const LABELS: Record<PrivacyKind, string> = {
   private: 'Solo monitores',
-  visible: 'Lo verá el cliente',
+  visible: 'Lo verá el usuario',
 }
 
-/** 'Solo monitores' (amber + lock) or 'Lo verá el cliente' (pink + eye). Put it next to every note field. */
+/** 'Solo monitores' (amber + lock) or 'Lo verá el usuario' (pink + eye). Put it next to every note field. */
 export function PrivacyLabel({ kind, className }: { kind: PrivacyKind; className?: string }) {
   const Icon = kind === 'private' ? Lock : Eye
   return (

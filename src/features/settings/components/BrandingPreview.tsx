@@ -18,7 +18,7 @@ export function BrandingPreview({ branding }: { branding: Branding }) {
           {branding.logoUrl && <img src={branding.logoUrl} alt="" className="mb-4 h-8 w-auto max-w-full object-contain" />}
           <div className="flex h-10 items-center gap-2 rounded-lg bg-white/10 px-3 text-sm font-medium text-white">
             <Users size={16} aria-hidden style={{ color: branding.primaryColor }} />
-            Clientes
+            Usuarios
           </div>
         </div>
       </div>

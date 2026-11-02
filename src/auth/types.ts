@@ -11,7 +11,7 @@ export type AuthEvent = { type: 'signed-in'; user: AuthUser } | { type: 'signed-
 
 export interface SignInMethods {
   google: boolean
-  /** Never true when Google is the only way in. */
+  /** Never true when Google is the only way in that this person knows. */
   canDisconnectGoogle: boolean
 }
 
@@ -26,7 +26,9 @@ export interface AuthService {
   signInWithGoogle(): Promise<void>
   /** Rejects with SamePasswordError when it is the password already in place. */
   changePassword(password: string): Promise<void>
-  getSignInMethods(): Promise<SignInMethods>
+  /** Whether this is the signed-in person's password. It touches nothing of the session in use. */
+  verifyPassword(password: string): Promise<boolean>
+  getSignInMethods(hasOwnPassword: boolean): Promise<SignInMethods>
   /** Leaves for Google and comes back to this site. */
   connectGoogle(): Promise<void>
   disconnectGoogle(): Promise<void>

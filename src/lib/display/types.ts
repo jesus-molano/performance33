@@ -60,7 +60,7 @@ export interface DisplayRoutine {
   /** Week whose progression values apply (1..totalWeeks), null outside the program's dates. */
   week: number | null
   totalWeeks: number
-  /** 'Semana 2 de 4', 'Empieza el 3 nov' or 'Rutina finalizada'. */
+  /** 'Semana 2 de 4', 'Empieza el 03/11/2026' or 'Rutina finalizada'. */
   weekLabel: string
   days: DisplayDay[]
 }

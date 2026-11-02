@@ -2,7 +2,7 @@
 // clients never overwrite each other (same row: last write wins). `base` is the last version known
 // to be on the server; every save and every live update is measured against it.
 
-import { CLOUD_REFETCH_INTERVAL_MS, CLOUD_REFETCH_MIN_GAP_MS, CLOUD_REFETCH_RETRY_MS, CLOUD_WRITE_BATCH_SIZE, REMOTE_BATCH_MS } from '@/config/app'
+import { CLOUD_REFETCH_INTERVAL_MS, CLOUD_REFETCH_MIN_GAP_MS, CLOUD_REFETCH_RETRY_MS, CLOUD_WRITE_BATCH_SIZE, DISPLAY_LOCAL_PRIORITY_MS, REMOTE_BATCH_MS } from '@/config/app'
 import { chunk } from '@/lib/arrays'
 import { toDisplayData } from '@/lib/display'
 import { deepEqual } from '@/lib/deepEqual'
@@ -64,9 +64,7 @@ export class SupabaseRepository implements Repository {
 
   async seedLibrary(seed: readonly LibraryExercise[]): Promise<AppData | null> {
     if (!this.base || !(await this.gateway.librarySeedPending())) return null
-    const rows = seed.map((row) => rowToDb({ table: 'library_exercises', id: row.id, row }, this.origin))
-    for (const batch of chunk(rows, CLOUD_WRITE_BATCH_SIZE)) await this.gateway.insertMissing('library_exercises', batch)
-    await this.gateway.finishLibrarySeed()
+    await this.gateway.seedLibrary(seed.map((row) => rowToDb({ table: 'library_exercises', id: row.id, row }, this.origin)))
     return this.load()
   }
 
@@ -91,8 +89,14 @@ export class SupabaseRepository implements Repository {
   }
 
   subscribeDisplay(listener: (change: DisplayChange) => void): () => void {
-    const stopCache = listenDisplayCache(listener)
+    let lastLocalChangeAt = 0
+    const stopCache = listenDisplayCache((change) => {
+      lastLocalChangeAt = Date.now()
+      listener(change)
+    })
     const stopFeed = startCloudDisplayFeed(this.gateway, (data) => {
+      // A dashboard in this browser is ahead of its own saves: their echo would flip the TV back to older text.
+      if (Date.now() - lastLocalChangeAt < DISPLAY_LOCAL_PRIORITY_MS) return
       // Per window: each one counts its own revisions, and receivers compare them by source.
       const change = { source: `cloud-display:${this.origin}`, revision: ++this.revision, data }
       writeDisplayCache(data, change)

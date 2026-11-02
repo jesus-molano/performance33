@@ -1,6 +1,6 @@
 import { Archive, ArchiveRestore, CalendarDays, Lock, Pencil, Trash2 } from 'lucide-react'
 import { Avatar, Badge, Button, DropdownMenu, type MenuItem } from '@/components/ui'
-import { formatDateShort } from '@/lib/dates'
+import { formatDate } from '@/lib/dates'
 import { formatFullName } from '@/lib/format'
 import { planLabel } from '@/lib/plans'
 import type { Client } from '@/types'
@@ -16,19 +16,19 @@ export function ClientProfileHeader({ client, onEdit }: ClientProfileHeaderProps
   const { archive, restore, canRemove, remove } = useClientActions()
   const menu: MenuItem[] = [
     client.archived
-      ? { label: 'Restaurar cliente', icon: ArchiveRestore, onSelect: () => restore(client) }
-      : { label: 'Archivar cliente', icon: Archive, onSelect: () => archive(client) },
-    ...(canRemove ? (['separator', { label: 'Eliminar cliente…', icon: Trash2, danger: true, onSelect: () => remove(client) }] satisfies MenuItem[]) : []),
+      ? { label: 'Restaurar usuario', icon: ArchiveRestore, onSelect: () => restore(client) }
+      : { label: 'Archivar usuario', icon: Archive, onSelect: () => archive(client) },
+    ...(canRemove ? (['separator', { label: 'Eliminar usuario…', icon: Trash2, danger: true, onSelect: () => remove(client) }] satisfies MenuItem[]) : []),
   ]
 
   return (
-    <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-center">
-      <Avatar firstName={client.firstName} lastName={client.lastName} color={client.color} size="xl" className="size-20 text-2xl sm:size-24 sm:text-3xl" />
+    <div className="mb-6 flex flex-wrap items-start gap-x-4 gap-y-3 sm:flex-nowrap sm:items-center sm:gap-x-5">
+      <Avatar firstName={client.firstName} lastName={client.lastName} color={client.color} size="lg" className="sm:size-24 sm:text-3xl" />
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-2xl font-semibold tracking-tight text-fg md:text-3xl">{formatFullName(client.firstName, client.lastName)}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Badge tone="brand">{planLabel(client.plan, client.trainingDays)}</Badge>
-          <Badge icon={CalendarDays}>Cliente desde el {formatDateShort(client.startDate)}</Badge>
+          <Badge icon={CalendarDays}>Usuario desde el {formatDate(client.startDate)}</Badge>
           {client.archived && <Badge tone="warning">Archivado</Badge>}
         </div>
         {client.goal && (
@@ -40,11 +40,11 @@ export function ClientProfileHeader({ client, onEdit }: ClientProfileHeaderProps
           </p>
         )}
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="secondary" leftIcon={Pencil} onClick={onEdit}>
+      <div className="flex w-full items-center gap-2 sm:w-auto">
+        <Button variant="secondary" leftIcon={Pencil} onClick={onEdit} className="flex-1 sm:flex-none">
           Editar datos
         </Button>
-        <DropdownMenu items={menu} label="Más acciones del cliente" />
+        <DropdownMenu items={menu} label="Más acciones del usuario" />
       </div>
     </div>
   )

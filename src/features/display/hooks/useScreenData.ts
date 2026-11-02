@@ -10,10 +10,10 @@ export interface ScreenData {
   theme: DisplayThemeClasses
 }
 
-/** Data source for TV windows: live sanitised data + branding applied to the document. */
-export function useScreenData(): ScreenData {
+/** Data source for TV windows: live sanitised data + branding applied to the document. `title` names the browser tab. */
+export function useScreenData(title?: string): ScreenData {
   const { data } = useDisplayData()
   const branding = data?.branding ?? DEFAULT_BRANDING
-  useBrandingStyles(branding)
+  useBrandingStyles(branding, title)
   return { data, branding, theme: getDisplayTheme(branding.displayTheme) }
 }

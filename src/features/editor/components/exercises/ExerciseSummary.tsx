@@ -43,7 +43,7 @@ export function ExerciseSummary({ entry, label, showSets, week, expanded, handle
         {summary && <span className="truncate text-sm text-fg-muted tabular">{summary}</span>}
       </button>
       <span className="flex shrink-0 items-center gap-1.5 px-1">
-        {entry.cue.trim() && <Eye size={15} role="img" aria-label="Tiene indicación para el cliente" className="text-brand-strong" />}
+        {entry.cue.trim() && <Eye size={15} role="img" aria-label="Tiene indicación para el usuario" className="text-brand-strong" />}
         {entry.progression && <TrendingUp size={15} role="img" aria-label="Tiene progresión semanal" className="text-emerald-600" />}
         {entry.internalNote.trim() && <Lock size={15} role="img" aria-label="Tiene nota interna" className="text-private-icon" />}
       </span>

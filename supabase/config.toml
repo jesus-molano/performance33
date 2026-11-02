@@ -162,8 +162,8 @@ site_url = "https://performance33.vercel.app"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-# CAMBIAR: la primera debe coincidir con site_url; la segunda es para probar en local.
-additional_redirect_urls = ["https://performance33.vercel.app", "http://localhost:5173"]
+# CAMBIAR: debe coincidir con site_url. Para probar en local, usa un proyecto de desarrollo aparte.
+additional_redirect_urls = ["https://performance33.vercel.app"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -182,10 +182,10 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = true
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 8
+minimum_password_length = 10
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
-password_requirements = ""
+password_requirements = "letters_digits"
 
 # Configure passkey sign-ins.
 # [auth.passkey]
@@ -226,8 +226,10 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# Las cuentas se crean ya confirmadas; esto impide cambiar la dirección de acceso sin confirmarla.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
+# Se queda apagado: reautenticar envía un correo, y las cuentas sin email no pueden recibirlo. Mi perfil pide la contraseña actual.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
@@ -323,6 +325,12 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# Client ID y secret de Google Cloud Console: en el entorno al ejecutar `supabase config push`, nunca en este archivo.
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_OAUTH_CLIENT_ID)"
+secret = "env(GOOGLE_OAUTH_SECRET)"
+
 [auth.external.apple]
 enabled = false
 client_id = ""

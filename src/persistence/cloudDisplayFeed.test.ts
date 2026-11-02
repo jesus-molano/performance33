@@ -45,6 +45,18 @@ describe('startCloudDisplayFeed', () => {
   const last = () => received.at(-1)
   const settle = () => vi.advanceTimersByTimeAsync(REMOTE_BATCH_MS)
 
+  it('publishes nothing until the first read works, whatever arrives live', async () => {
+    const server = fakeServer()
+    server.offline = true
+    received = []
+    const stop = startCloudDisplayFeed(server.gateway, (data) => received.push(data))
+    await settle()
+    server.publish({ table: 'clients', id: 'solo', row: { id: 'solo', data: { ...secretClient, id: 'solo', firstName: 'Solo' } } })
+    await settle()
+    expect(received).toEqual([])
+    stop()
+  })
+
   beforeEach(() => {
     vi.useFakeTimers()
     vi.stubGlobal('window', { addEventListener: () => undefined, removeEventListener: () => undefined })
@@ -131,7 +143,7 @@ describe('startCloudDisplayFeed', () => {
     server.publish({ table: 'clients', id: 'nuevo', row: { id: 'nuevo', data: { ...secretClient, id: 'nuevo' } } })
     release([])
     await settle()
-    expect(last()?.clients.map((client) => client.id)).toEqual(['nuevo'])
+    expect(received).toEqual([])
     server.tables.clients = [{ id: 'nuevo', data: { ...secretClient, id: 'nuevo' } }]
     await vi.advanceTimersByTimeAsync(CLOUD_REFETCH_RETRY_MS)
     expect(last()?.clients.map((client) => client.id)).toEqual(['nuevo'])

@@ -59,7 +59,8 @@ export function createLocalBackend(): { auth: AuthService; team: TeamService } {
       if (account.password === password) throw new SamePasswordError()
       writeAccounts(readAccounts().map((other) => (other.id === account.id ? { ...other, password } : other)))
     },
-    getSignInMethods: async () => signInMethodsFrom(['email']),
+    verifyPassword: async (password) => findSessionAccount()?.password === password,
+    getSignInMethods: async (hasOwnPassword) => signInMethodsFrom(['email'], hasOwnPassword),
     connectGoogle: () => Promise.reject(new Error(NOT_IN_LOCAL_MODE)),
     disconnectGoogle: () => Promise.reject(new Error(NOT_IN_LOCAL_MODE)),
     signOut: async () => {

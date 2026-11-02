@@ -21,7 +21,7 @@ describe('validateNewAccount', () => {
   })
 
   it('refuses what someone else already has', () => {
-    expect(validateNewAccount({ ...VALID, username: SEED_MONITOR.username.toUpperCase() }, SEED_TEAM).username).toMatch(/ese usuario/)
+    expect(validateNewAccount({ ...VALID, username: SEED_MONITOR.username.toUpperCase() }, SEED_TEAM).username).toMatch(/ese nombre de usuario/)
     expect(validateNewAccount({ ...VALID, email: ' DANI@demo.local ' }, SEED_TEAM).email).toMatch(/ese email/)
     expect(validateNewAccount({ ...VALID, name: 'dani' }, SEED_TEAM).name).toMatch(/ese nombre/)
   })

@@ -28,7 +28,7 @@ export function NotesPanel({ clientId }: { clientId: string }) {
             ))}
           </ol>
         ) : (
-          <p className="text-center text-sm text-fg-muted">Todavía no hay notas sobre este cliente.</p>
+          <p className="text-center text-sm text-fg-muted">Todavía no hay notas sobre este usuario.</p>
         )}
       </div>
     </Card>

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useScrollReset } from '@/hooks/useScrollReset'
 import type { Route } from '@/lib/routes'
 import { AppHeader } from './AppHeader'
 import { BottomNav } from './BottomNav'
@@ -12,6 +13,7 @@ export interface AppLayoutProps {
 
 /** Dashboard chrome: black sidebar with logo + nav (bottom nav on mobile) and header. */
 export function AppLayout({ route, children }: AppLayoutProps) {
+  useScrollReset(route)
   return (
     <div className="flex min-h-dvh">
       <Sidebar route={route} />

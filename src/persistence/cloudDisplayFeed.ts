@@ -40,10 +40,14 @@ const toDisplayData = (state: FeedState): DisplayData => ({
   programs: [...state.programs.values()],
 })
 
-/** Loads, follows and passes on only what changed. Failed reads keep the last data: the TV goes on showing it. */
+/**
+ * Loads, follows and passes on only what changed. Failed reads keep the last data: the TV goes on showing it.
+ * Live events before the first good read wait: on their own they would look like a gym with only that one person.
+ */
 export function startCloudDisplayFeed(gateway: RowGateway, emit: (data: DisplayData) => void): () => void {
   const state: FeedState = { branding: { ...DEFAULT_BRANDING }, clients: new Map(), programs: new Map() }
   let stopped = false
+  let loaded = false
   let lastEmitted: DisplayData | null = null
   let lastFetchAt = 0
   let eventsSeen = 0
@@ -79,6 +83,7 @@ export function startCloudDisplayFeed(gateway: RowGateway, emit: (data: DisplayD
     state.clients.clear()
     state.programs.clear()
     for (const table of DISPLAY_TABLES) for (const raw of rows[table]) applyRow(state, table, raw.id, raw)
+    loaded = true
     publish()
   }
 
@@ -92,6 +97,7 @@ export function startCloudDisplayFeed(gateway: RowGateway, emit: (data: DisplayD
       if (!isDisplayTable(table)) return
       eventsSeen++
       applyRow(state, table, id, row)
+      if (!loaded) return
       batchTimer ??= setTimeout(() => {
         batchTimer = null
         publish()

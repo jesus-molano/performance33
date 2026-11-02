@@ -12,13 +12,25 @@ export interface NavLinkItem {
 }
 
 export const NAV_LINKS: readonly NavLinkItem[] = [
-  { id: 'clients', label: 'Clientes', icon: Users, href: paths.clients(), activeOn: ['clients', 'client', 'program'] },
+  { id: 'clients', label: 'Usuarios', icon: Users, href: paths.clients(), activeOn: ['clients', 'client', 'program'] },
   { id: 'settings', label: 'Ajustes', icon: Settings, href: paths.settings(), activeOn: ['settings'] },
 ]
 
 export const TV_LAUNCHER = {
   label: 'Pantallas',
-  hint: 'Modo TV · hasta 4 clientes a la vez',
+  hint: 'Una ventana por tele · hasta 4 personas en cada una',
+  add: 'Añadir pantalla',
+  isOpen: 'Abierta',
+  open: 'Abrir',
+  nobody: 'Sin personas todavía',
+  focusLabel: (title: string) => `Ir a ${title}`,
+  openLabel: (title: string) => `Abrir ${title}`,
+  removeLabel: (title: string) => `Quitar ${title}`,
+  removeConfirm: {
+    title: (title: string) => `¿Quitar ${title}?`,
+    description: 'Se cerrará su ventana y se olvidarán sus columnas. Podrás añadirla de nuevo cuando quieras.',
+    confirmLabel: 'Quitar',
+  },
 } as const
 
 export interface SaveStatusMeta {

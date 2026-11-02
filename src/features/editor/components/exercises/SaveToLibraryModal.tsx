@@ -1,9 +1,8 @@
 import { Button, Callout, Input, Modal, Select } from '@/components/ui'
 import { EXERCISE_NAME_MAX_LENGTH } from '@/config/capacity'
-import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
+import { EXERCISE_TYPE_OPTIONS, MUSCLE_OPTIONS } from '@/config/exerciseTags'
 import { getLengthHint } from '@/lib/capacity'
 import { formatExerciseMeta } from '@/lib/exerciseLibrary'
-import type { ExerciseCategory } from '@/types'
 import type { SaveToLibraryApi } from '@/features/editor/hooks/useSaveToLibrary'
 
 export interface SaveToLibraryModalProps {
@@ -11,7 +10,7 @@ export interface SaveToLibraryModalProps {
   onClose: () => void
 }
 
-/** Name + category + material. Similar library names are offered first to avoid duplicates. */
+/** Name + muscle + type + material. Similar library names are offered first to avoid duplicates. */
 export function SaveToLibraryModal({ api, onClose }: SaveToLibraryModalProps) {
   const submit = () => {
     if (api.submit()) onClose()
@@ -72,12 +71,10 @@ export function SaveToLibraryModal({ api, onClose }: SaveToLibraryModalProps) {
           onChange={(e) => api.setField('name', e.target.value)}
           autoFocus
         />
-        <Select<ExerciseCategory>
-          label="Categoría"
-          options={EXERCISE_CATEGORY_OPTIONS}
-          value={api.draft.category}
-          onChange={(category) => api.setField('category', category)}
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Select label="Músculo principal" options={MUSCLE_OPTIONS} value={api.draft.muscle} onChange={(muscle) => api.setField('muscle', muscle)} />
+          <Select label="Tipo" options={EXERCISE_TYPE_OPTIONS} value={api.draft.type} onChange={(type) => api.setField('type', type)} />
+        </div>
         <Input
           label="Material (opcional)"
           hint="Separado por comas: Kettlebell, Banco"

@@ -7,12 +7,13 @@ import {
   EXERCISE_NAME_MAX_LENGTH,
   LENGTH_HINT_MARGIN,
   MAX_BLOCKS_PER_DAY,
+  MAX_DAYS_PER_PROGRAM,
   MAX_EXERCISES_PER_BLOCK,
   MAX_EXERCISES_PER_DAY,
   NEAR_LIMIT_EXERCISES,
 } from '@/config/capacity'
 
-export type CapacityRefusal = 'blocks' | 'blockExercises' | 'dayExercises'
+export type CapacityRefusal = 'days' | 'blocks' | 'blockExercises' | 'dayExercises'
 export type CapacityLevel = 'ok' | 'near' | 'over'
 
 interface CapacityBlock {
@@ -49,6 +50,11 @@ export function getDayChangeRefusal(previous: CapacityDay, next: CapacityDay): C
   if (blockGrewTooMuch) return 'blockExercises'
   const exercises = countDayExercises(next)
   return exercises > Math.max(MAX_EXERCISES_PER_DAY, countDayExercises(previous)) ? 'dayExercises' : null
+}
+
+/** Why a routine with this many days takes no more, or null. An imported routine over the limit may stay, not grow. */
+export function getAddDayRefusal(dayCount: number): CapacityRefusal | null {
+  return dayCount >= MAX_DAYS_PER_PROGRAM ? 'days' : null
 }
 
 /** Why a new block with this many exercises does not fit, or null. */

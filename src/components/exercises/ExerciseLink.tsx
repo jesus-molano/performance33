@@ -1,5 +1,4 @@
-import { Link2 } from 'lucide-react'
-import { GoogleIcon } from '@/components/GoogleIcon'
+import { ExternalLink, Search } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { exerciseLinkUrl, normalizeExerciseLink } from '@/lib/exerciseLibrary'
 
@@ -26,15 +25,11 @@ export function ExerciseLink({ name, link, className }: ExerciseLinkProps) {
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       className={cn(
-        'group inline-flex size-11 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-fg/5 md:size-9',
+        'inline-flex size-11 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-fg/5 md:size-9',
         className,
       )}
     >
-      {ownLink ? (
-        <Link2 size={18} aria-hidden className="text-brand-strong" />
-      ) : (
-        <GoogleIcon className="size-4 opacity-70 grayscale transition group-hover:opacity-100 group-hover:grayscale-0" />
-      )}
+      {ownLink ? <ExternalLink size={18} aria-hidden className="text-brand-strong" /> : <Search size={18} aria-hidden className="text-fg-subtle" />}
     </a>
   )
 }

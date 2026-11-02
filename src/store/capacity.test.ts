@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { EXERCISE_NAME_MAX_LENGTH, MAX_BLOCKS_PER_DAY, MAX_EXERCISES_PER_BLOCK } from '@/config/capacity'
+import { EXERCISE_NAME_MAX_LENGTH, MAX_BLOCKS_PER_DAY, MAX_DAYS_PER_PROGRAM, MAX_EXERCISES_PER_BLOCK } from '@/config/capacity'
 import { createSeedData } from '@/data/seed'
 import { createBlock, createDay, createExercise } from '@/lib/factories'
 import type { AppData, Block, Day, Program } from '@/types'
@@ -95,5 +95,37 @@ describe('capacity limits in store actions', () => {
     const id = empty.blocks[0].exercises[0].id
     actions().updateExercise(id, { name: 'x'.repeat(100) })
     expect(storedDays()[1].blocks[0].exercises[0].name).toHaveLength(EXERCISE_NAME_MAX_LENGTH)
+  })
+})
+
+describe('days per routine', () => {
+  const programDays = () => actions().data.programs[0].days
+
+  it('refuses a day over the maximum, by adding or duplicating', () => {
+    load(...Array.from({ length: MAX_DAYS_PER_PROGRAM }, () => dayWith(1)))
+    const before = actions().data
+    expect(actions().addDay(before.programs[0].id)).toBe('')
+    expect(actions().duplicateDay(programDays()[0].id)).toBe('')
+    expect(actions().data).toBe(before)
+  })
+
+  it('accepts the last day that fits', () => {
+    load(...Array.from({ length: MAX_DAYS_PER_PROGRAM - 1 }, () => dayWith(1)))
+    expect(actions().addDay(actions().data.programs[0].id)).not.toBe('')
+    expect(programDays()).toHaveLength(MAX_DAYS_PER_PROGRAM)
+  })
+
+  it('keeps an imported routine over the maximum, and lets it shrink but not grow', () => {
+    load(...Array.from({ length: MAX_DAYS_PER_PROGRAM + 2 }, () => dayWith(1)))
+    expect(actions().addDay(actions().data.programs[0].id)).toBe('')
+    actions().deleteDay(programDays()[0].id)
+    expect(programDays()).toHaveLength(MAX_DAYS_PER_PROGRAM + 1)
+  })
+
+  it('creates new routines within the maximum, whatever is asked for', () => {
+    load(dayWith(1))
+    const client = actions().data.clients[0].id
+    const id = actions().createProgram(client, { dayCount: MAX_DAYS_PER_PROGRAM + 3 })
+    expect(actions().data.programs.find((p) => p.id === id)?.days).toHaveLength(MAX_DAYS_PER_PROGRAM)
   })
 })

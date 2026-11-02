@@ -3,7 +3,9 @@ import { useId } from 'react'
 import { IconButton } from '@/components/ui'
 import { MAX_PROGRAM_WEEKS } from '@/config/app'
 import { useValueDraft } from '@/hooks'
+import { cn } from '@/lib/cn'
 import { parseOptionalInt } from '@/lib/numbers'
+import { DATE_ROW_CLASSES } from '@/features/editor/config'
 
 export interface WeeksStepperProps {
   value: number
@@ -16,12 +18,12 @@ const parseWeeks = (text: string): number | undefined => {
   return weeks ? Math.min(weeks, MAX_PROGRAM_WEEKS) : undefined
 }
 
-/** − [4] + semanas. Big buttons so it works with a thumb; the number can be retyped freely. */
+/** − 4 +. Big buttons so it works with a thumb; the number can be retyped freely. */
 export function WeeksStepper({ value, onChange }: WeeksStepperProps) {
   const id = useId()
   const draft = useValueDraft({ value, format: String, parse: parseWeeks, onCommit: onChange })
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={cn('flex flex-col gap-1.5', DATE_ROW_CLASSES)}>
       <label htmlFor={id} className="text-sm font-medium text-fg">
         Semanas
       </label>
@@ -33,7 +35,7 @@ export function WeeksStepper({ value, onChange }: WeeksStepperProps) {
           value={draft.text}
           onChange={(e) => draft.onChange(e.target.value)}
           onBlur={draft.onBlur}
-          className="h-full w-10 min-w-0 bg-transparent text-center text-md font-semibold tabular focus:outline-none"
+          className="h-full w-10 min-w-0 flex-1 bg-transparent text-center text-base font-semibold tabular focus:outline-none"
         />
         <IconButton
           icon={Plus}

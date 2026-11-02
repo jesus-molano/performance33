@@ -13,14 +13,14 @@ export interface GoogleConnectionApi {
 }
 
 /** 'Mi perfil' → Google. Connecting leaves for Google and comes back to the app. */
-export function useGoogleConnection(): GoogleConnectionApi {
+export function useGoogleConnection(hasOwnPassword: boolean): GoogleConnectionApi {
   const { toast } = useToast()
   const [methods, setMethods] = useState<SignInMethods | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     let live = true
-    auth.getSignInMethods().then(
+    auth.getSignInMethods(hasOwnPassword).then(
       (loaded) => {
         if (live) setMethods(loaded)
       },
@@ -29,7 +29,7 @@ export function useGoogleConnection(): GoogleConnectionApi {
     return () => {
       live = false
     }
-  }, [])
+  }, [hasOwnPassword])
 
   const run = useCallback(
     async (action: () => Promise<void>) => {
@@ -52,7 +52,7 @@ export function useGoogleConnection(): GoogleConnectionApi {
     disconnect: () =>
       run(async () => {
         await auth.disconnectGoogle()
-        setMethods(await auth.getSignInMethods())
+        setMethods(await auth.getSignInMethods(hasOwnPassword))
         toast({ message: TEAM_COPY.googleDisconnected, tone: 'success' })
       }),
   }

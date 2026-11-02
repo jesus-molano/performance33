@@ -12,7 +12,7 @@ export function PreviewAside(props: Omit<PreviewContentProps, 'frameClassName'>)
       <div className="sticky top-[calc(var(--spacing-header)+1rem)] flex flex-col gap-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-fg-muted uppercase">
           <Eye size={16} aria-hidden className="text-brand-strong" />
-          Lo que verá el cliente
+          Lo que verá el usuario
         </h2>
         <PreviewContent {...props} frameClassName={ASIDE_FRAME_WIDTH} />
       </div>
@@ -28,7 +28,7 @@ export interface PreviewSheetProps extends Omit<PreviewContentProps, 'frameClass
 /** Same preview in a bottom sheet on tablets and phones. */
 export function PreviewSheet({ open, onClose, ...props }: PreviewSheetProps) {
   return (
-    <Modal open={open} onClose={onClose} size="sm" title="Vista previa" description="Así lo verá el cliente en la tele.">
+    <Modal open={open} onClose={onClose} size="sm" title="Vista previa" description="Así lo verá el usuario en la tele.">
       <div className="mx-auto max-w-xs pb-2">
         <PreviewContent {...props} />
       </div>

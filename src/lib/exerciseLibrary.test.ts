@@ -1,23 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import type { LibraryExercise, ExerciseCategory } from '@/types'
-import { collectEquipment, EMPTY_EXERCISE_FILTERS, exerciseLinkUrl, exerciseSearchUrl, filterExercises, normalizeExerciseLink } from './exerciseLibrary'
+import type { ExerciseType, LibraryExercise, MuscleGroup } from '@/types'
+import {
+  collectEquipment,
+  EMPTY_EXERCISE_FILTERS,
+  exerciseLinkUrl,
+  exerciseSearchUrl,
+  filterExercises,
+  formatExerciseMeta,
+  hasActiveFilters,
+  inferMuscleGroup,
+  normalizeExerciseLink,
+} from './exerciseLibrary'
 
-function exercise(name: string, category: ExerciseCategory, equipment: string[]): LibraryExercise {
-  return { id: name, name, category, equipment, defaultMeasure: 'reps' }
+function exercise(name: string, muscle: MuscleGroup, equipment: string[], type: ExerciseType = 'Fuerza', secondaryMuscles?: MuscleGroup[]): LibraryExercise {
+  return { id: name, name, muscle, type, equipment, defaultMeasure: 'reps', ...(secondaryMuscles ? { secondaryMuscles } : {}) }
 }
 
 const LIBRARY = [
-  exercise('Remo con barra', 'Tracción', ['Barra']),
+  exercise('Remo con barra', 'Espalda', ['Barra']),
   exercise('Ábdominal rueda', 'Core', ['Rueda']),
-  exercise('Sentadilla goblet', 'Piernas', ['Kettlebell', 'Mancuernas']),
-  exercise('Zancada', 'Piernas', ['Mancuernas']),
+  exercise('Sentadilla goblet', 'Cuádriceps', ['Kettlebell', 'Mancuernas'], 'Fuerza', ['Glúteo']),
+  exercise('Zancada', 'Cuádriceps', ['Mancuernas']),
+  exercise('Salto al cajón', 'Cuádriceps', [], 'Pliometría'),
+  exercise('Abducción', 'Glúteo', []),
 ]
 
 const names = (list: LibraryExercise[]) => list.map((e) => e.name)
 
 describe('filterExercises', () => {
   it('lists everything A–Z when just browsing, ignoring accents', () => {
-    expect(names(filterExercises(LIBRARY, EMPTY_EXERCISE_FILTERS))).toEqual(['Ábdominal rueda', 'Remo con barra', 'Sentadilla goblet', 'Zancada'])
+    expect(names(filterExercises(LIBRARY, EMPTY_EXERCISE_FILTERS))).toEqual(['Ábdominal rueda', 'Abducción', 'Remo con barra', 'Salto al cajón', 'Sentadilla goblet', 'Zancada'])
   })
 
   it('does not reorder the library it receives', () => {
@@ -25,15 +37,50 @@ describe('filterExercises', () => {
     expect(LIBRARY[0].name).toBe('Remo con barra')
   })
 
-  it('combines category and material', () => {
-    expect(names(filterExercises(LIBRARY, { ...EMPTY_EXERCISE_FILTERS, category: 'Piernas' }))).toEqual(['Sentadilla goblet', 'Zancada'])
+  it('combines muscle, type and material', () => {
+    expect(names(filterExercises(LIBRARY, { ...EMPTY_EXERCISE_FILTERS, muscle: 'Cuádriceps' }))).toEqual(['Salto al cajón', 'Sentadilla goblet', 'Zancada'])
+    expect(names(filterExercises(LIBRARY, { ...EMPTY_EXERCISE_FILTERS, muscle: 'Cuádriceps', type: 'Fuerza' }))).toEqual(['Sentadilla goblet', 'Zancada'])
+    expect(names(filterExercises(LIBRARY, { ...EMPTY_EXERCISE_FILTERS, type: 'Pliometría' }))).toEqual(['Salto al cajón'])
     expect(names(filterExercises(LIBRARY, { ...EMPTY_EXERCISE_FILTERS, equipment: 'Kettlebell' }))).toEqual(['Sentadilla goblet'])
+  })
+
+  it('a muscle also finds exercises that work it second, after the main ones', () => {
+    expect(names(filterExercises(LIBRARY, { ...EMPTY_EXERCISE_FILTERS, muscle: 'Glúteo' }))).toEqual(['Abducción', 'Sentadilla goblet'])
   })
 
   it('searches only inside the filtered exercises', () => {
     const filters = { ...EMPTY_EXERCISE_FILTERS, query: 'sentadilla' }
     expect(names(filterExercises(LIBRARY, filters))).toEqual(['Sentadilla goblet'])
     expect(filterExercises(LIBRARY, { ...filters, equipment: 'Barra' })).toEqual([])
+  })
+})
+
+describe('hasActiveFilters', () => {
+  it('is false only with nothing chosen', () => {
+    expect(hasActiveFilters(EMPTY_EXERCISE_FILTERS)).toBe(false)
+    expect(hasActiveFilters({ ...EMPTY_EXERCISE_FILTERS, type: 'Cardio' })).toBe(true)
+    expect(hasActiveFilters({ ...EMPTY_EXERCISE_FILTERS, query: 'remo' })).toBe(true)
+  })
+})
+
+describe('inferMuscleGroup', () => {
+  it('finds a muscle the name mentions, as a whole word', () => {
+    expect(inferMuscleGroup('Curl de Bíceps en cable')).toBe('Bíceps')
+    expect(inferMuscleGroup('Elevación de gemelos')).toBe('Gemelo')
+    expect(inferMuscleGroup('Remo sentado')).toBeUndefined()
+    expect(inferMuscleGroup('Corea')).toBeUndefined()
+  })
+
+  it('can look only among some muscles', () => {
+    expect(inferMuscleGroup('Press de pecho con tríceps', ['Tríceps'])).toBe('Tríceps')
+    expect(inferMuscleGroup('Press de pecho', ['Tríceps'])).toBeUndefined()
+  })
+})
+
+describe('formatExerciseMeta', () => {
+  it('shows muscle, type and material, without empty parts', () => {
+    expect(formatExerciseMeta(LIBRARY[2])).toBe('Cuádriceps · Fuerza · Kettlebell, Mancuernas')
+    expect(formatExerciseMeta(LIBRARY[4])).toBe('Cuádriceps · Pliometría')
   })
 })
 

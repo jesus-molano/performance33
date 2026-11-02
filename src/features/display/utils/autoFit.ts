@@ -37,6 +37,10 @@ export interface UnitSearch {
   fits: boolean
 }
 
+interface PlannedFit extends FitResult {
+  fits: boolean
+}
+
 /** Applies a fit to the content and returns its height. */
 export type MeasureFit = (fit: FitResult) => number
 
@@ -46,16 +50,23 @@ export interface FitPlanInput {
   density: DisplayDensity
   /** Manual A-/A+ multiplier of the largest allowed size. */
   fontScale: number
-  /** Landscape full screen: split into 2 columns when that makes text clearly bigger. */
-  preferColumns: boolean
+  /** May split in two parts when one column does not fit at a good size (only one client on a landscape screen). */
+  canSplit: boolean
   measure: MeasureFit
 }
 
-/** CSS variables read by the block list (column-count) and the rows (secondary content). */
+/** One way to lay out a day. A strict stage only counts if everything fits at the target size; else the next one is tried. */
+export interface FitStage {
+  density: DisplayDensity
+  strict: boolean
+}
+
+/** CSS variables read by the block list (column-count), the block numbers (only when split) and the rows (secondary content). */
 export const COLUMNS_VAR = '--display-columns'
 const CUE_VAR = '--display-cue'
 const DETAIL_VAR = '--display-detail'
 const NOTE_VAR = '--display-note'
+const ORDER_VAR = '--display-order'
 
 export function getDisplayDensity(width: number, height: number): DisplayDensity {
   return width < height * AUTO_FIT.compactMaxAspect ? 'compact' : 'comfortable'
@@ -73,7 +84,7 @@ export function readableMinUnit(height: number, density: DisplayDensity): number
  */
 export function getUnitBounds(width: number, height: number, density: DisplayDensity, fontScale = 1): UnitBounds {
   const max = Math.min(width * AUTO_FIT.maxUnitPerWidth, height * AUTO_FIT.maxUnitPerHeight) * fontScale
-  const target = Math.min(width * AUTO_FIT.targetUnitPerWidth, height * AUTO_FIT.targetUnitPerHeight, max)
+  const target = Math.min(width * AUTO_FIT.targetUnitPerWidth, height * AUTO_FIT.targetUnitPerHeight[density], max)
   return { min: Math.min(height * AUTO_FIT.lastResortUnitPerHeight[density], target), target, max }
 }
 
@@ -102,38 +113,57 @@ export function findFittingUnit(measure: (unit: number) => number, target: numbe
   return { unit: low, fits: true }
 }
 
-/** Two columns only pay off when they make the text clearly bigger than one column. */
-export function prefersTwoColumns(oneColumnUnit: number, twoColumnUnit: number): boolean {
-  return twoColumnUnit > oneColumnUnit * AUTO_FIT.twoColumnGain
+function planOneColumn({ height, measure }: FitPlanInput, bounds: FitBounds, detail: number): PlannedFit {
+  const { unit, fits } = findFittingUnit((candidate) => measure({ unit: candidate, columns: 1, detail }), height, bounds)
+  return { unit, columns: 1, detail, fits }
 }
 
-/** Unit and column count for one detail level: one column, or two when it does not fit or reads clearly bigger. */
-function planColumns(input: FitPlanInput, bounds: FitBounds, detail: number): FitResult & { fits: boolean } {
-  const { width, height, preferColumns, measure } = input
-  const single = findFittingUnit((unit) => measure({ unit, columns: 1, detail }), height, bounds)
-  const wantsSplit = !single.fits || (preferColumns && width > height)
-  const splitBounds = wantsSplit ? getColumnBounds(bounds, width, 2) : null
-  const oneColumn = { unit: single.unit, columns: 1, detail, fits: single.fits }
-  if (!splitBounds) return oneColumn
-  const double = findFittingUnit((unit) => measure({ unit, columns: 2, detail }), height, splitBounds)
-  const useSplit = single.fits ? double.fits && prefersTwoColumns(single.unit, double.unit) : true
-  return useSplit ? { unit: double.unit, columns: 2, detail, fits: double.fits } : oneColumn
+/** Two parts, or null when the slot is too narrow for them or may not split. */
+function planTwoParts({ width, height, canSplit, measure }: FitPlanInput, bounds: FitBounds, detail: number): PlannedFit | null {
+  const partBounds = canSplit && width > height ? getColumnBounds(bounds, width, 2) : null
+  if (!partBounds) return null
+  const { unit, fits } = findFittingUnit((candidate) => measure({ unit: candidate, columns: 2, detail }), height, partBounds)
+  return { unit, columns: 2, detail, fits }
 }
+
+const toFitResult = ({ unit, columns, detail }: PlannedFit): FitResult => ({ unit, columns, detail })
 
 /**
- * Secondary content drops before text shrinks: keeps the target size hiding cues, then tempo/rest, then
- * notes. Only with all of that gone does the text go below the target, down to the last-resort size.
+ * One column whenever it fits at the target size. If it does not and the screen may split, two parts with the same
+ * content win over hiding anything. Otherwise secondary content drops: cues, then tempo/rest, then notes. Only with
+ * all of that gone does the text go below the target, down to the last-resort size.
  */
 export function planFit(input: FitPlanInput): FitResult {
   const { width, height, density, fontScale } = input
   const { min, target, max } = getUnitBounds(width, height, density, fontScale)
+  const bounds = { min: target, max }
   for (let detail = 0; detail < DETAIL_LEVELS.length; detail++) {
-    const plan = planColumns(input, { min: target, max }, detail)
-    if (plan.fits) return { unit: plan.unit, columns: plan.columns, detail }
+    const oneColumn = planOneColumn(input, bounds, detail)
+    if (oneColumn.fits) return toFitResult(oneColumn)
+    const twoParts = planTwoParts(input, bounds, detail)
+    if (twoParts?.fits) return toFitResult(twoParts)
   }
-  const detail = DETAIL_LEVELS.length - 1
-  const { unit, columns } = planColumns(input, { min, max }, detail)
-  return { unit, columns, detail }
+  const lastDetail = DETAIL_LEVELS.length - 1
+  const lastResort = { min, max }
+  return toFitResult(planTwoParts(input, lastResort, lastDetail) ?? planOneColumn(input, lastResort, lastDetail))
+}
+
+/**
+ * Order of the layouts for one client on a landscape screen: one roomy column, one tighter column and only then two
+ * parts. Measuring each density needs its own render, so the hook walks these stages. Anything else has a single stage.
+ */
+export function getFitStages(width: number, height: number, canSplit: boolean): FitStage[] {
+  const final = { density: getDisplayDensity(width, height), strict: false }
+  if (!canSplit || width <= height) return [final]
+  return [{ density: 'comfortable', strict: true }, { density: 'compact', strict: true }, final]
+}
+
+/** The fit of a stage, or null when a strict stage does not hold the whole day at the target size. */
+export function planStage(input: FitPlanInput, stage: FitStage): FitResult | null {
+  if (!stage.strict) return planFit(input)
+  const { target, max } = getUnitBounds(input.width, input.height, input.density, input.fontScale)
+  const oneColumn = planOneColumn(input, { min: target, max }, 0)
+  return oneColumn.fits ? toFitResult(oneColumn) : null
 }
 
 function fitVars({ columns, detail }: FitResult): Record<string, string> {
@@ -143,6 +173,7 @@ function fitVars({ columns, detail }: FitResult): Record<string, string> {
     [CUE_VAR]: level.cues ? 'block' : 'none',
     [DETAIL_VAR]: level.details ? 'block' : 'none',
     [NOTE_VAR]: level.notes ? 'flex' : 'none',
+    [ORDER_VAR]: columns > 1 ? 'flex' : 'none',
   }
 }
 

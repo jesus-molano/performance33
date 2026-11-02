@@ -47,11 +47,11 @@ export function ProfileModal({ profile, onClose }: ProfileModalProps) {
             error={form.error}
             autoComplete="off"
           />
-          <Input label="Usuario" value={profile.username} readOnly hint="Con esto entras." className="text-fg-muted" />
+          <Input label="Nombre de usuario" value={profile.username} readOnly hint="Con esto entras." className="text-fg-muted" />
           <ColorSwatchPicker label="Color" value={form.color} onChange={form.setColor} />
         </form>
-        <ChangePasswordSection />
-        <GoogleConnectionSection />
+        <ChangePasswordSection hasOwnPassword={profile.hasOwnPassword} />
+        <GoogleConnectionSection hasOwnPassword={profile.hasOwnPassword} />
       </div>
     </Modal>
   )

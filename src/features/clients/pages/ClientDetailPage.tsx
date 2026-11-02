@@ -21,9 +21,9 @@ function MissingClient() {
     <PageContainer>
       <EmptyState
         icon={UserX}
-        title="Este cliente ya no existe"
+        title="Este usuario ya no existe"
         description="Puede que se haya eliminado desde otro dispositivo."
-        action={<Button onClick={() => navigate(paths.clients())}>Volver a clientes</Button>}
+        action={<Button onClick={() => navigate(paths.clients())}>Volver a usuarios</Button>}
       />
     </PageContainer>
   )
@@ -38,7 +38,7 @@ export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
   if (!client) return <MissingClient />
   return (
     <PageContainer>
-      <BackLink href={paths.clients()}>Clientes</BackLink>
+      <BackLink href={paths.clients()}>Usuarios</BackLink>
       <ClientProfileHeader client={client} onEdit={editClient.open} />
       <ImportantNotes clientId={client.id} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">

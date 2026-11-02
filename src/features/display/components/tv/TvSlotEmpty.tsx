@@ -22,8 +22,8 @@ export function TvSlotEmpty({ data, clientId, hasClients, branding, theme }: TvS
         theme={theme}
         icon={name ? CalendarX2 : UserX}
         name={name}
-        title={name ? 'Sin rutina asignada' : 'Cliente no disponible'}
-        description="Elige otro cliente arriba."
+        title={name ? 'Sin rutina asignada' : 'Usuario no disponible'}
+        description="Elige otro usuario arriba."
       />
     )
   }
@@ -32,7 +32,7 @@ export function TvSlotEmpty({ data, clientId, hasClients, branding, theme }: TvS
       branding={branding}
       theme={theme}
       icon={MousePointerClick}
-      title={hasClients ? 'Elige un cliente' : 'Aún no hay rutinas'}
+      title={hasClients ? 'Elige un usuario' : 'Aún no hay rutinas'}
       description={hasClients ? 'Usa el selector de arriba.' : 'Crea una rutina desde el panel y aparecerá aquí.'}
     />
   )

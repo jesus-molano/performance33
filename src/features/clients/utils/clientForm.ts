@@ -1,3 +1,4 @@
+import { DATE_TEXTS } from '@/config/copy'
 import { PLAN_BY_ID } from '@/config/plans'
 import { pickColor } from '@/lib/color'
 import { isValidISODate, todayISO } from '@/lib/dates'
@@ -36,7 +37,7 @@ export function toClientFormValues(client: Client | null): ClientFormValues {
 export function validateClientForm(values: ClientFormValues): ClientFormErrors {
   const errors: ClientFormErrors = {}
   if (!values.firstName.trim()) errors.firstName = 'Escribe al menos el nombre.'
-  if (!isValidISODate(values.startDate)) errors.startDate = 'Elige una fecha válida.'
+  if (!isValidISODate(values.startDate)) errors.startDate = DATE_TEXTS.required
   return errors
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TV_DEFAULT_SLOTS, TV_MAX_SLOTS } from '@/config/app'
-import { parseRoute, parseTvSlots, paths, serializeTvSlots } from './routes'
+import { parseRoute, parseTvScreen, parseTvSlots, paths, serializeTvSlots } from './routes'
 
 describe('TV slots in the URL', () => {
   it('keeps old 3-slot URLs working', () => {
@@ -42,6 +42,18 @@ describe('TV slots in the URL', () => {
   })
 
   it('parses the tv route', () => {
-    expect(parseRoute(paths.tv([{ clientId: 'a', day: 2 }]))).toEqual({ name: 'tv', slots: [{ clientId: 'a', day: 2 }] })
+    expect(parseRoute(paths.tv([{ clientId: 'a', day: 2 }]))).toEqual({ name: 'tv', screen: 1, slots: [{ clientId: 'a', day: 2 }] })
+  })
+
+  it('keeps each named screen in its URL', () => {
+    expect(paths.tv([{ clientId: 'a', day: 2 }], 3)).toBe('#/tv?slots=a:2&pantalla=3')
+    expect(parseRoute(paths.tv([{ clientId: 'a', day: 2 }], 3))).toMatchObject({ name: 'tv', screen: 3 })
+  })
+
+  it('maps old URLs and invalid numbers to Pantalla 1', () => {
+    expect(parseRoute('#/tv?slots=a:1,b:1')).toMatchObject({ name: 'tv', screen: 1 })
+    expect(parseRoute('#/tv')).toMatchObject({ name: 'tv', screen: 1 })
+    expect(paths.tv([], 1)).toBe('#/tv?slots=')
+    for (const raw of ['0', '-1', 'abc', '1.5', '999', null]) expect(parseTvScreen(raw)).toBe(1)
   })
 })

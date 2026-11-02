@@ -27,7 +27,7 @@ export function Switch({ checked, onChange, label, description, disabled, classN
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-45',
+          'relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors after:absolute after:-inset-2 disabled:opacity-45',
           checked ? 'bg-brand-strong' : 'bg-line-strong',
         )}
       >

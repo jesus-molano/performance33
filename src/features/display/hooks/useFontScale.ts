@@ -9,8 +9,8 @@ export interface FontScaleApi {
   decrease: () => void
 }
 
-/** A-/A+ text size on top of auto-fit, remembered on this device per screen kind. */
-export function useFontScale(screen: 'pantalla' | 'tv'): FontScaleApi {
+/** A-/A+ text size on top of auto-fit, remembered on this device per window kind or named screen. */
+export function useFontScale(screen: string): FontScaleApi {
   const key = `${DISPLAY_STORAGE_KEYS.fontScale}:${screen}`
   const [fontScale, setFontScale] = useState(() => parseFontScale(readStorage(key)))
 

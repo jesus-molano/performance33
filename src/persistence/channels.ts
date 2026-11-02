@@ -1,6 +1,7 @@
 // BroadcastChannel transport (same browser, instant). Two channels:
 //   data    → full AppData, for other DASHBOARD tabs (local test mode only; in the cloud each tab syncs with the server).
 //   display → sanitised DisplayData (no private fields), for Pantalla / TV windows.
+// And tvScreens: which named TV windows are open, and the order to close one. No client data.
 
 import { SYNC_CHANNELS } from '@/config/app'
 import { toDisplayData } from '@/lib/display'
@@ -23,7 +24,7 @@ function getChannel(name: string): BroadcastChannel | null {
   return channel
 }
 
-function post<T>(name: string, message: ChannelMessage<T>): void {
+function post(name: string, message: unknown): void {
   try {
     getChannel(name)?.postMessage(message)
   } catch {
@@ -31,28 +32,39 @@ function post<T>(name: string, message: ChannelMessage<T>): void {
   }
 }
 
-function listen<T>(name: string, listener: (message: ChannelMessage<T>) => void): () => void {
+function listen<M>(name: string, listener: (message: M) => void): () => void {
   const channel = getChannel(name)
   if (!channel) return () => undefined
-  const onMessage = (event: MessageEvent<ChannelMessage<T>>) => listener(event.data)
+  const onMessage = (event: MessageEvent<M>) => listener(event.data)
   channel.addEventListener('message', onMessage)
   return () => channel.removeEventListener('message', onMessage)
 }
 
 export function broadcastDisplay(data: DisplayData, meta: ChangeMeta): void {
-  post<DisplayData>(SYNC_CHANNELS.display, { ...meta, data })
+  post(SYNC_CHANNELS.display, { ...meta, data } satisfies ChannelMessage<DisplayData>)
 }
 
 /** Sends a local change to display windows and, when `shareFullData`, to other dashboards. */
 export function broadcastChange(data: AppData, meta: ChangeMeta, shareFullData: boolean): void {
-  if (shareFullData) post<AppData>(SYNC_CHANNELS.data, { ...meta, data })
+  if (shareFullData) post(SYNC_CHANNELS.data, { ...meta, data } satisfies ChannelMessage<AppData>)
   broadcastDisplay(toDisplayData(data), meta)
 }
 
 export function listenDataChannel(listener: (change: RemoteChange) => void): () => void {
-  return listen<AppData>(SYNC_CHANNELS.data, (message) => listener({ ...message, kind: 'snapshot' }))
+  return listen<ChannelMessage<AppData>>(SYNC_CHANNELS.data, (message) => listener({ ...message, kind: 'snapshot' }))
 }
 
 export function listenDisplayChannel(listener: (change: DisplayChange) => void): () => void {
-  return listen<DisplayData>(SYNC_CHANNELS.display, listener)
+  return listen<ChannelMessage<DisplayData>>(SYNC_CHANNELS.display, listener)
+}
+
+/** ask: who is open? · open/closed: a TV window reports itself · close: that window must close. */
+export type TvScreenMessage = { type: 'ask' } | { type: 'open' | 'closed' | 'close'; screen: number }
+
+export function broadcastTvScreen(message: TvScreenMessage): void {
+  post(SYNC_CHANNELS.tvScreens, message)
+}
+
+export function listenTvScreens(listener: (message: TvScreenMessage) => void): () => void {
+  return listen<TvScreenMessage>(SYNC_CHANNELS.tvScreens, listener)
 }

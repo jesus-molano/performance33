@@ -15,7 +15,7 @@ export function BlockNoteField({ note, onChange }: BlockNoteFieldProps) {
   if (!note && !isOpen) {
     return (
       <Button variant="ghost" size="sm" leftIcon={MessageSquarePlus} onClick={open} className="self-start">
-        Nota para el cliente
+        Nota para el usuario
       </Button>
     )
   }

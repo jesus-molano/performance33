@@ -6,9 +6,9 @@ import type { ExerciseFieldsApi } from '@/features/editor/hooks/useExerciseField
 
 function ChipRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-16 shrink-0 text-xs font-semibold tracking-wide text-fg-muted uppercase">{label}</span>
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-none">{children}</div>
+    <div className="flex items-start gap-2">
+      <span className="flex h-11 w-[4.5rem] shrink-0 items-center text-xs font-semibold tracking-wide text-fg-muted uppercase md:h-9">{label}</span>
+      <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">{children}</div>
     </div>
   )
 }

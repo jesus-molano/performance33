@@ -18,7 +18,7 @@ export interface BlockHeaderBarProps {
   menuItems: MenuItem[]
 }
 
-/** Grip · type icon · editable title (auto from type) · summary · collapse · '⋯'. */
+/** Grip · type icon (from sm, phones need the width for the title) · editable title (auto from type) · summary · collapse · '⋯'. */
 export function BlockHeaderBar({ block, collapsed, onToggle, onTitleChange, handle, menuItems }: BlockHeaderBarProps) {
   const meta = BLOCK_TYPE_META[block.type]
   const Icon = meta.icon
@@ -27,7 +27,7 @@ export function BlockHeaderBar({ block, collapsed, onToggle, onTitleChange, hand
       <DragHandle handle={handle} itemLabel="bloque" />
       <span
         className={cn(
-          'flex size-9 shrink-0 items-center justify-center rounded-lg',
+          'hidden size-9 shrink-0 items-center justify-center rounded-lg sm:flex',
           meta.muted ? 'bg-fg/5 text-fg-muted' : 'bg-ink text-brand',
         )}
         title={meta.label}

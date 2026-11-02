@@ -31,17 +31,17 @@ export interface TvSlotsApi {
 
 /**
  * The URL (#/tv?slots=) is the source of truth so a bookmarked TV setup survives reloads;
- * every change is mirrored to localStorage and restored when the URL arrives empty.
+ * every change is mirrored to this screen's localStorage key and restored when the URL arrives empty.
  * `candidateClientIds` (clients with a routine, in picker order) fill a newly added column.
  */
-export function useTvSlots(slots: TvSlot[], candidateClientIds: readonly string[]): TvSlotsApi {
+export function useTvSlots(screen: number, slots: TvSlot[], candidateClientIds: readonly string[]): TvSlotsApi {
   // Restore only on mount: emptying the setup later on is a deliberate choice.
   const initialSlots = useRef(slots)
   useEffect(() => {
     if (!isEmptySlotSet(initialSlots.current)) return
-    const stored = loadStoredSlots()
-    if (stored) replaceRoute(paths.tv(stored))
-  }, [])
+    const stored = loadStoredSlots(screen)
+    if (stored) replaceRoute(paths.tv(stored, screen))
+  }, [screen])
 
   // Our own changes set the keys together with the route (same batch); outside URL changes resize them.
   const [storedKeys, setStoredKeys] = useState<TvSlotKeys>(() => reconcileSlotKeys(null, slots))
@@ -54,10 +54,10 @@ export function useTvSlots(slots: TvSlot[], candidateClientIds: readonly string[
     (next: TvSlot[], nextKeys: number[] = resizeSlotKeys(keys, next.length)) => {
       if (next === slots) return
       setStoredKeys({ serialized: serializeTvSlots(next), keys: nextKeys })
-      storeSlots(next)
-      replaceRoute(paths.tv(next))
+      storeSlots(screen, next)
+      replaceRoute(paths.tv(next, screen))
     },
-    [slots, keys],
+    [screen, slots, keys],
   )
 
   const setSlotClient = useCallback(

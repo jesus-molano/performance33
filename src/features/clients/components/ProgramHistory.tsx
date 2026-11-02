@@ -22,9 +22,12 @@ export function ProgramHistory({ client, onNewProgram }: ProgramHistoryProps) {
       <div className="flex items-center gap-3 border-b border-line px-4 py-3 sm:px-5">
         <History size={19} aria-hidden className="text-fg-subtle" />
         <h2 className="flex-1 text-base font-semibold text-fg">Historial de rutinas</h2>
-        <Button variant="ghost" leftIcon={Plus} onClick={onNewProgram}>
-          Nueva rutina
-        </Button>
+        {programs.length > 0 && (
+          <Button variant="ghost" leftIcon={Plus} onClick={onNewProgram} aria-label="Nueva rutina">
+            <span className="sm:hidden">Nueva</span>
+            <span className="hidden sm:inline">Nueva rutina</span>
+          </Button>
+        )}
       </div>
       {others.length > 0 ? (
         <ul className="divide-y divide-line">

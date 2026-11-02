@@ -22,8 +22,8 @@ export function useClientEntry(client: Client, onEdit: (client: Client) => void)
     { label: 'Abrir en pantalla', icon: MonitorPlay, disabled: !program, onSelect: openOnScreen },
     'separator',
     client.archived
-      ? { label: 'Restaurar cliente', icon: ArchiveRestore, onSelect: () => restore(client) }
-      : { label: 'Archivar cliente', icon: Archive, onSelect: () => archive(client) },
+      ? { label: 'Restaurar usuario', icon: ArchiveRestore, onSelect: () => restore(client) }
+      : { label: 'Archivar usuario', icon: Archive, onSelect: () => archive(client) },
   ]
 
   return { program, status, menu, openOnScreen }

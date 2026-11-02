@@ -16,6 +16,7 @@ const SUPABASE_STUBS = `
   create table auth.users (id uuid primary key, email text, encrypted_password text);
   create table auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid references auth.users (id) on delete cascade);
   create table auth.refresh_tokens (id bigserial primary key, user_id varchar(255));
+  create table auth.identities (id uuid primary key default gen_random_uuid(), user_id uuid references auth.users (id) on delete cascade, provider text, identity_data jsonb);
   create function auth.jwt() returns jsonb language sql stable as
     $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
   create function auth.uid() returns uuid language sql stable as $$ select (auth.jwt() ->> 'sub')::uuid $$;
@@ -81,12 +82,16 @@ const profileId = async (username: string): Promise<string> => {
 
 const setPassword = (user: string, hash: string) => db.exec(`update auth.users set encrypted_password = '${hash}' where id = '${user}'`)
 
+const connectGoogle = (user: string, email: string) =>
+  db.query(`insert into auth.identities (user_id, provider, identity_data) values ($1, 'google', $2)`, [user, JSON.stringify({ email })])
+
 async function seedPeople(): Promise<void> {
   await asSuperuser()
   await db.exec(`
-    truncate public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings cascade;
+    truncate public.row_history, public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings cascade;
     delete from auth.users;
     delete from auth.refresh_tokens;
+    delete from auth.identities;
     insert into auth.users (id, email, encrypted_password) values
       ('${ID.admin}', 'admin@p33.test', 'hash-admin'),
       ('${ID.ana}', 'ana@p33.test', 'hash-ana'),
@@ -98,7 +103,7 @@ async function seedPeople(): Promise<void> {
       ('${ID.admin}', 'admin', 'admin@p33.test', 'Admin', 'admin', false),
       ('${ID.ana}', 'ana', 'ana@p33.test', 'Ana', 'monitor', false),
       ('${ID.ben}', 'ben', null, 'Ben', 'monitor', false),
-      ('${ID.newbie}', 'newbie', null, 'Novata', 'monitor', true),
+      ('${ID.newbie}', 'newbie', 'newbie@p33.test', 'Novata', 'monitor', true),
       ('${ID.former}', 'former', 'former@p33.test', 'Antigua', 'monitor', false);
     update public.profiles set active = false where username = 'former';
     insert into public.clients (id, data) values ('c1', '{"firstName":"Laura"}');
@@ -121,6 +126,14 @@ afterAll(async () => {
 beforeEach(seedPeople)
 
 describe('schema.sql', () => {
+  it('refuses to run over the previous version instead of leaving a mix', async () => {
+    const old = new PGlite()
+    await old.exec(SUPABASE_STUBS)
+    await old.exec('create table public.staff (id uuid primary key)')
+    await expect(old.exec(SCHEMA)).rejects.toThrow(/versión anterior/)
+    await old.close()
+  })
+
   it('can run twice without failing', async () => {
     await asSuperuser()
     await expect(db.exec(SCHEMA)).resolves.toBeDefined()
@@ -149,7 +162,11 @@ describe('schema.sql', () => {
   it('keeps names short, colours as plain hex, and no two people with one name', async () => {
     await asPerson(ANA)
     await expect(rows(`update public.profiles set color = 'url(https://evil.test/x)' where username is not null`)).rejects.toThrow()
-    await expect(rows(`update public.profiles set name = repeat('a', 61) where id = public.current_profile_id()`)).rejects.toThrow(/name/)
+    await expect(rows(`update public.profiles set name = repeat('a', 31) where id = public.current_profile_id()`)).rejects.toThrow(/name/)
+    await expect(rows(`update public.profiles set name = '   ' where id = public.current_profile_id()`)).rejects.toThrow(/name/)
+    for (const lookalike of ['Ad\u200Bmin', 'Admin\u00A0', 'Ad\u202Emin']) {
+      await expect(rows('update public.profiles set name = $1 where id = public.current_profile_id()', [lookalike])).rejects.toThrow(/name/)
+    }
     await expect(rows(`update public.profiles set name = ' admin ' where id = public.current_profile_id()`)).rejects.toThrow(/profiles_name_unique/)
   })
 
@@ -194,7 +211,9 @@ describe('my_profile', () => {
     expect(await rows('select must_change_password from public.my_profile()')).toEqual([{ must_change_password: true }])
   })
 
-  it('does not ask it of someone who entered with Google', async () => {
+  it('does not ask it of someone who entered with the Google account of their email', async () => {
+    await asSuperuser()
+    await connectGoogle(NEWBIE, 'Newbie@p33.test')
     await asPerson(NEWBIE, GOOGLE_AMR)
     expect(await rows('select must_change_password from public.my_profile()')).toEqual([{ must_change_password: false }])
     await asPerson(NEWBIE, ['oauth'])
@@ -213,9 +232,69 @@ describe('temporary passwords', () => {
     expect(await rows('select public.current_profile_id() as id')).toEqual([{ id: null }])
   })
 
-  it('the same account entering with Google can read everything', async () => {
+  it('the same account entering with the Google account of its email can read everything', async () => {
+    await asSuperuser()
+    await connectGoogle(NEWBIE, 'newbie@p33.test')
     await asPerson(NEWBIE, GOOGLE_AMR)
     expect(await count('clients')).toBe(1)
+  })
+
+  it('a Google account connected by hand does not skip the step', async () => {
+    await asSuperuser()
+    await connectGoogle(NEWBIE, 'intruso@gmail.test')
+    await asPerson(NEWBIE, GOOGLE_AMR)
+    expect(await count('clients')).toBe(0)
+    expect(await rows('select must_change_password, google_connected from public.my_profile()')).toEqual([{ must_change_password: true, google_connected: true }])
+  })
+
+  it('a password session on the same account gets nothing from Google', async () => {
+    await asSuperuser()
+    await connectGoogle(NEWBIE, 'newbie@p33.test')
+    await asPerson(NEWBIE)
+    expect(await count('clients')).toBe(0)
+  })
+
+  it('a new password removes the Google accounts connected by hand, not the one of the email', async () => {
+    await asSuperuser()
+    await connectGoogle(NEWBIE, 'intruso@gmail.test')
+    await connectGoogle(NEWBIE, 'newbie@p33.test')
+    await connectGoogle(BEN, 'ben@gmail.test')
+    await asPerson(ADMIN)
+    await expect(rows(`select public.remove_other_google_identities('${NEWBIE}')`)).rejects.toThrow(/permission denied/)
+    await asService()
+    await rows(`select public.remove_other_google_identities('${NEWBIE}')`)
+    await asSuperuser()
+    expect(await rows(`select identity_data ->> 'email' as email from auth.identities where user_id = '${NEWBIE}'`)).toEqual([{ email: 'newbie@p33.test' }])
+    expect(await rows(`select 1 from auth.identities where user_id = '${BEN}'`)).toHaveLength(1)
+  })
+
+  it('caduca a los 3 días: ya no sirve para crear la definitiva', async () => {
+    await asSuperuser()
+    await db.exec(`update public.profiles set temp_password_expires_at = now() - interval '1 minute' where username = 'newbie'`)
+    await setPassword(NEWBIE, 'hash-nueva')
+    await asPerson(NEWBIE)
+    expect(await rows('select temporary_password_expired from public.my_profile()')).toEqual([{ temporary_password_expired: true }])
+    await expect(rows('select public.finish_password_change()')).rejects.toThrow(/password_not_changed/)
+    expect(await count('clients')).toBe(0)
+  })
+
+  it('caducada, quien entra con la cuenta de Google de su email sí puede crear una contraseña', async () => {
+    await asSuperuser()
+    await db.exec(`update public.profiles set temp_password_expires_at = now() - interval '1 minute' where username = 'newbie'`)
+    await setPassword(NEWBIE, 'hash-nueva')
+    await connectGoogle(NEWBIE, 'newbie@p33.test')
+    await asPerson(NEWBIE, GOOGLE_AMR)
+    expect(await rows('select has_own_password, temporary_password_expired from public.my_profile()')).toEqual([{ has_own_password: false, temporary_password_expired: false }])
+    await rows('select public.finish_password_change()')
+    expect(await rows('select has_own_password from public.my_profile()')).toEqual([{ has_own_password: true }])
+  })
+
+  it('a new temporary password starts a new period, and the flag going away clears it', async () => {
+    await asSuperuser()
+    await db.exec(`update public.profiles set must_change_password = true where username = 'newbie'`)
+    expect(await rows(`select temp_password_expires_at > now() + interval '71 hours' as fresh from public.profiles where username = 'newbie'`)).toEqual([{ fresh: true }])
+    await db.exec(`update public.profiles set must_change_password = false where username = 'newbie'`)
+    expect(await rows(`select temp_password_expires_at from public.profiles where username = 'newbie'`)).toEqual([{ temp_password_expires_at: null }])
   })
 
   it('cannot be skipped by just calling the function', async () => {
@@ -285,7 +364,7 @@ describe('accounts', () => {
   it('the team only sees of each other what signs a note', async () => {
     await asPerson(ANA)
     expect(await rows(`select name, color, role, active from public.profiles where name = 'Ben'`)).toHaveLength(1)
-    for (const column of ['email', 'username', 'user_id', 'temp_password_hash', 'must_change_password']) {
+    for (const column of ['email', 'username', 'user_id', 'temp_password_hash', 'temp_password_expires_at', 'must_change_password']) {
       await expect(rows(`select ${column} from public.profiles`), column).rejects.toThrow(/permission denied/)
     }
     await expect(rows('select * from public.profiles')).rejects.toThrow(/permission denied/)
@@ -379,86 +458,180 @@ describe('accounts', () => {
   })
 })
 
-describe('login lockout', () => {
-  const locked = async (username: string) => (await rows<{ locked: boolean }>('select public.login_is_locked($1) as locked', [username]))[0].locked
-  const fail = (username: string) => rows('select public.login_record_failure($1)', [username])
+describe('login limits', () => {
+  const CLIENT = 'hash-ip'
+  const reserve = async (username: string, client = CLIENT) =>
+    (await rows<{ allowed: boolean }>('select public.login_reserve_attempt($1, $2) as allowed', [username, client]))[0].allowed
+  const reserveTimes = async (times: number, username: string, client = CLIENT) => {
+    let last = true
+    for (let i = 0; i < times; i++) last = await reserve(username, client)
+    return last
+  }
 
   beforeEach(asService)
 
-  it('locks a username after 5 failures, not before, and only that one', async () => {
-    for (let i = 0; i < 4; i++) await fail('ana')
-    expect(await locked('ana')).toBe(false)
-    await fail('ana')
-    expect(await locked('ana')).toBe(true)
-    expect(await locked('ben')).toBe(false)
+  it('the sixth attempt of a person from one connection is refused, and only that pair', async () => {
+    expect(await reserveTimes(5, 'ana')).toBe(true)
+    expect(await reserve('ana')).toBe(false)
+    expect(await reserve('ben')).toBe(true)
   })
 
-  it('a success clears the count', async () => {
-    for (let i = 0; i < 5; i++) await fail('ana')
-    await rows('select public.login_clear_failures($1)', ['ana'])
-    expect(await locked('ana')).toBe(false)
+  it('a stranger cannot lock someone out from their own connection', async () => {
+    await reserveTimes(10, 'ana', 'extrano')
+    expect(await reserve('ana', 'gimnasio')).toBe(true)
+  })
+
+  it('many connections against one person are stopped too', async () => {
+    for (let i = 0; i < 20; i++) expect(await reserve('ana', `ip-${i}`)).toBe(true)
+    expect(await reserve('ana', 'otra-ip')).toBe(false)
+  })
+
+  it('one connection cannot go through every name, and adds no more rows once refused', async () => {
+    for (let i = 0; i < 50; i++) expect(await reserve(`nombre${i}`)).toBe(true)
+    expect(await reserve('otro.nombre')).toBe(false)
+    await asSuperuser()
+    expect(await rows(`select key from public.login_attempts where key like '%otro.nombre'`)).toEqual([])
+  })
+
+  it('entering clears the count of that person and gives the attempt back', async () => {
+    await reserveTimes(5, 'ana')
+    await rows('select public.login_clear_failures($1, $2)', ['ana', CLIENT])
+    expect(await reserve('ana')).toBe(true)
+    await asSuperuser()
+    expect(await rows(`select failures from public.login_attempts where key = 'client:${CLIENT}'`)).toEqual([{ failures: 5 }])
+  })
+
+  it('a server failure gives the attempt back', async () => {
+    await reserveTimes(5, 'ana')
+    await rows('select public.login_release_attempt($1, $2)', ['ana', CLIENT])
+    expect(await reserve('ana')).toBe(true)
+  })
+
+  it('an admin unlocks a person from every connection, without touching anyone else', async () => {
+    await reserveTimes(6, 'ana')
+    await reserveTimes(6, 'ana.b')
+    await rows('select public.login_clear_username($1)', ['ana'])
+    expect(await reserve('ana')).toBe(true)
+    expect(await reserve('ana.b')).toBe(false)
   })
 
   it('expires after 15 minutes, and old rows are cleaned up', async () => {
-    for (let i = 0; i < 5; i++) await fail('ana')
+    await reserveTimes(6, 'ana')
     await asSuperuser()
     await db.exec(`update public.login_attempts set first_failed_at = now() - interval '16 minutes'`)
     await asService()
-    expect(await locked('ana')).toBe(false)
-    await fail('otra')
-    expect(await rows('select username, failures from public.login_attempts')).toEqual([{ username: 'otra', failures: 1 }])
+    expect(await reserve('otra')).toBe(true)
+    expect(await reserve('ana')).toBe(true)
+    await asSuperuser()
+    expect(await rows(`select failures from public.login_attempts where key = 'name:ana'`)).toEqual([{ failures: 1 }])
   })
 
   it('nobody but the function can see or use it', async () => {
     for (const enter of [() => asPerson(ADMIN), asAnon]) {
       await enter()
       await expect(count('login_attempts')).rejects.toThrow(/permission denied/)
-      await expect(locked('ana')).rejects.toThrow(/permission denied/)
-      await expect(fail('ana')).rejects.toThrow(/permission denied/)
+      await expect(reserve('ana')).rejects.toThrow(/permission denied/)
+      await expect(rows('select public.login_clear_username($1)', ['ana'])).rejects.toThrow(/permission denied/)
+      await expect(rows(`select public.login_count_attempt('x', 5)`)).rejects.toThrow(/permission denied/)
     }
   })
 })
 
 describe('initial library', () => {
   const pending = async () => (await rows<{ pending: boolean }>('select public.library_seed_pending() as pending'))[0].pending
+  const seed = async (exercises: Array<{ id: string; name: string }>) =>
+    (
+      await rows<{ seeded: boolean }>('select public.seed_library($1::jsonb) as seeded', [
+        JSON.stringify(exercises.map(({ id, name }) => ({ id, data: { name }, client_origin: 'tab' }))),
+      ])
+    )[0].seeded
 
   it('is pending once for an admin, never for a monitor', async () => {
     await asPerson(ANA)
     expect(await pending()).toBe(false)
-    await expect(rows('select public.finish_library_seed()')).rejects.toThrow(/not_admin/)
+    await expect(seed([])).rejects.toThrow(/not_admin/)
     await asPerson(ADMIN)
     expect(await pending()).toBe(true)
-    await rows('select public.finish_library_seed()')
+    expect(await seed([{ id: 'l2', name: 'Nuevo' }])).toBe(true)
     expect(await pending()).toBe(false)
+    expect(await count('library_exercises')).toBe(2)
   })
 
-  it('does not come back after emptying the library', async () => {
+  it('never overwrites an existing row', async () => {
     await asPerson(ADMIN)
-    await rows('select public.finish_library_seed()')
+    await seed([{ id: 'l1', name: 'Otro' }])
+    expect(await rows(`select data from public.library_exercises where id = 'l1'`)).toEqual([{ data: { name: 'Remo' } }])
+  })
+
+  it('goes in whole or not at all', async () => {
+    await asPerson(ADMIN)
+    await expect(rows('select public.seed_library($1::jsonb)', [JSON.stringify([{ id: 'l2', data: { name: 'Bien' } }, { id: 'l3', data: {} }])])).rejects.toThrow(/data/)
+    expect(await count('library_exercises')).toBe(1)
+    expect(await pending()).toBe(true)
+  })
+
+  it('a second upload, from another admin too, brings nothing back', async () => {
+    await asPerson(ADMIN)
+    await seed([{ id: 'l2', name: 'Nuevo' }])
     await rows('delete from public.library_exercises')
+    expect(await seed([{ id: 'l2', name: 'Nuevo' }])).toBe(false)
+    expect(await count('library_exercises')).toBe(0)
     expect(await pending()).toBe(false)
   })
 
-  it('finishing works on a database with no settings row, and keeps the default branding', async () => {
+  it('works on a database with no settings row, and keeps the default branding', async () => {
     await asSuperuser()
     await db.exec('delete from public.settings')
     await asPerson(ADMIN)
-    await rows('select public.finish_library_seed()')
+    await seed([])
     expect(await pending()).toBe(false)
     expect(await rows('select data from public.settings')).toEqual([{ data: {} }])
   })
 
   it('saving the branding later does not undo it', async () => {
     await asPerson(ADMIN)
-    await rows('select public.finish_library_seed()')
+    await seed([])
     await rows(`insert into public.settings (id, data) values ('main', '{"gymName":"Otro"}') on conflict (id) do update set data = excluded.data`)
     expect(await pending()).toBe(false)
   })
+})
 
-  it('only the first batch wins: a repeated upload does not overwrite edits', async () => {
-    await asPerson(ADMIN)
-    await rows(`insert into public.library_exercises (id, data) values ('l1', '{"name":"Otro"}') on conflict (id) do nothing`)
-    expect(await rows(`select data from public.library_exercises where id = 'l1'`)).toEqual([{ data: { name: 'Remo' } }])
+describe('history of changes', () => {
+  it('keeps what was there before a change or a delete', async () => {
+    await asPerson(ANA)
+    await rows(`update public.clients set data = '{"firstName":"Otra"}' where id = 'c1'`)
+    await rows(`delete from public.programs where id = 'p1'`)
+    await asSuperuser()
+    const ana = await profileId('ana')
+    expect(await rows('select table_name, row_id, operation, data, changed_by from public.row_history order by id')).toEqual([
+      { table_name: 'clients', row_id: 'c1', operation: 'UPDATE', data: { firstName: 'Laura' }, changed_by: ana },
+      { table_name: 'programs', row_id: 'p1', operation: 'DELETE', data: { clientId: 'c1' }, changed_by: ana },
+    ])
+  })
+
+  it('a save that changes nothing adds nothing, and old copies go away', async () => {
+    await asSuperuser()
+    await db.exec(`
+      insert into public.row_history (table_name, row_id, operation, data, changed_at) values ('clients', 'viejo', 'UPDATE', '{}', now() - interval '31 days');
+      update public.clients set data = data where id = 'c1';
+    `)
+    expect(await count('row_history')).toBe(1)
+    await db.exec(`update public.clients set data = '{"firstName":"Otra"}' where id = 'c1'`)
+    expect(await rows('select row_id from public.row_history')).toEqual([{ row_id: 'c1' }])
+  })
+
+  it('nobody reads it from the app', async () => {
+    for (const enter of [() => asPerson(ADMIN), () => asPerson(ANA), asAnon]) {
+      await enter()
+      await expect(count('row_history')).rejects.toThrow(/permission denied/)
+    }
+  })
+
+  it('a row cannot be emptied with one request', async () => {
+    await asPerson(ANA)
+    await expect(rows(`update public.clients set data = '{}' where true`)).rejects.toThrow(/data/)
+    await expect(rows(`update public.programs set data = '{}' where true`)).rejects.toThrow(/data/)
+    await expect(rows(`update public.library_exercises set data = '{}' where true`)).rejects.toThrow(/data/)
   })
 })
 
@@ -474,10 +647,10 @@ describe('active coaches and shared data', () => {
   it('can read and write clients, programs and the whole library', async () => {
     await asPerson(ANA)
     expect(await count('clients')).toBe(1)
-    await rows(`insert into public.clients (id, data) values ('c2', '{}')`)
-    await rows(`insert into public.programs (id, data) values ('p2', '{}')`)
-    await rows(`insert into public.library_exercises (id, data) values ('l2', '{}')`)
-    expect(await affected(`update public.clients set data = '{"a":1}' where id = 'c1'`)).toBe(1)
+    await rows(`insert into public.clients (id, data) values ('c2', '{"firstName":"Otra"}')`)
+    await rows(`insert into public.programs (id, data) values ('p2', '{"clientId":"c2"}')`)
+    await rows(`insert into public.library_exercises (id, data) values ('l2', '{"name":"Nuevo"}')`)
+    expect(await affected(`update public.clients set data = '{"firstName":"Laura","a":1}' where id = 'c1'`)).toBe(1)
     expect(await affected(`update public.library_exercises set data = '{"name":"Editado","link":"https://x.test"}' where id = 'l1'`)).toBe(1)
     expect(await affected(`delete from public.library_exercises where id = 'l1'`)).toBe(1)
   })
@@ -486,7 +659,7 @@ describe('active coaches and shared data', () => {
     const ana = await profileId('ana')
     const ben = await profileId('ben')
     await asPerson(ANA)
-    await rows(`insert into public.clients (id, data, updated_by, updated_at) values ('c2', '{}', '${ben}', '2000-01-01')`)
+    await rows(`insert into public.clients (id, data, updated_by, updated_at) values ('c2', '{"firstName":"Otra"}', '${ben}', '2000-01-01')`)
     const [row] = await rows<{ updated_by: string; updated_at: Date }>(`select updated_by, updated_at from public.clients where id = 'c2'`)
     expect(row.updated_by).toBe(ana)
     expect(new Date(row.updated_at).getFullYear()).toBeGreaterThan(2000)
@@ -585,7 +758,7 @@ describe('private notes', () => {
     await asPerson(ADMIN)
     expect(await affected(`delete from public.clients where id = 'c1'`)).toBe(1)
     expect(await count('notes')).toBe(0)
-    await rows(`insert into public.clients (id, data) values ('c1', '{}')`)
+    await rows(`insert into public.clients (id, data) values ('c1', '{"firstName":"Laura"}')`)
     await insertNote('n1', ana)
     expect(await count('notes')).toBe(1)
   })

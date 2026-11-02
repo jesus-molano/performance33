@@ -2,6 +2,7 @@
 
 export const TV_COLUMN_TEXTS = {
   fourColumnsNote: 'Con 4 columnas la letra es más pequeña',
+  sizeAtLimit: 'No cabe más grande: la rutina más larga ya llena la pantalla',
   remove: '− columna',
   add: '+ columna',
   removeLabel: 'Quitar la última columna',
@@ -22,11 +23,11 @@ export const TV_DND_TEXTS = {
 
 export const TV_PICKER_TEXTS = {
   moveColumn: (position: number) => `Mover columna ${position}`,
-  clientLabel: (position: number) => `Cliente de la columna ${position}`,
+  clientLabel: (position: number) => `Usuario de la columna ${position}`,
   dayLabel: (position: number) => `Día de la columna ${position}`,
-  placeholder: 'Elige cliente…',
+  placeholder: 'Elige usuario…',
   searchPlaceholder: 'Busca por nombre…',
-  noClient: 'Sin cliente',
+  noClient: 'Sin usuario',
   noRoutine: 'Sin rutina',
-  noResults: 'Ningún cliente coincide',
+  noResults: 'Ningún usuario coincide',
 } as const

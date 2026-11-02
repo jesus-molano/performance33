@@ -1,9 +1,9 @@
 // Local-date helpers. All calendar dates are 'YYYY-MM-DD' strings interpreted in
 // LOCAL time (never `new Date('2026-10-31')`, which is UTC and shifts a day).
 
+import { DAYS_PER_WEEK } from '@/config/app'
 import type { ISODate } from '@/types'
 
-const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const MONTHS_LONG = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
@@ -43,7 +43,7 @@ export function addDays(iso: ISODate, n: number): ISODate {
 }
 
 export function addWeeks(iso: ISODate, n: number): ISODate {
-  return addDays(iso, n * 7)
+  return addDays(iso, n * DAYS_PER_WEEK)
 }
 
 /** Whole calendar days from a to b (b - a). Safe across DST. */
@@ -56,25 +56,18 @@ export function diffDays(a: ISODate, b: ISODate): number {
 
 /** Inclusive end date for a program of `weeks` weeks starting on `start`. */
 export function endDateFor(start: ISODate, weeks: number): ISODate {
-  return addDays(start, Math.max(1, weeks) * 7 - 1)
+  return addDays(start, Math.max(1, weeks) * DAYS_PER_WEEK - 1)
 }
 
 /** Weeks needed to cover start..end inclusive (≥1). */
 export function weeksBetween(start: ISODate, end: ISODate): number {
-  return Math.max(1, Math.ceil((diffDays(start, end) + 1) / 7))
+  return Math.max(1, Math.ceil((diffDays(start, end) + 1) / DAYS_PER_WEEK))
 }
 
-/** '31 oct' (adds year if different from current year: '31 oct 2025'). */
-export function formatDateShort(iso: ISODate): string {
+/** '31/10/2026': how every date reads in the app, whatever the browser's language. */
+export function formatDate(iso: ISODate): string {
   const d = parseISODate(iso)
-  const base = `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`
-  return d.getFullYear() === new Date().getFullYear() ? base : `${base} ${d.getFullYear()}`
-}
-
-/** '31 de octubre de 2026'. */
-export function formatDateLong(iso: ISODate): string {
-  const d = parseISODate(iso)
-  return `${d.getDate()} de ${MONTHS_LONG[d.getMonth()]} de ${d.getFullYear()}`
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 
 /** 'sábado, 31 de octubre'. */
@@ -83,12 +76,17 @@ export function formatDateWithWeekday(iso: ISODate): string {
   return `${WEEKDAYS[d.getDay()]}, ${d.getDate()} de ${MONTHS_LONG[d.getMonth()]}`
 }
 
-/** '27 oct – 23 nov'. */
-export function formatDateRange(start: ISODate, end: ISODate): string {
-  return `${formatDateShort(start)} – ${formatDateShort(end)}`
+/** 'octubre de 2026'. `month` is 0-based. */
+export function formatMonthYear(year: number, month: number): string {
+  return `${MONTHS_LONG[month]} de ${year}`
 }
 
-/** Timestamp → 'hoy, 10:42' / 'ayer, 18:05' / '12 oct, 09:30'. */
+/** '27/10/2026 – 23/11/2026'. */
+export function formatDateRange(start: ISODate, end: ISODate): string {
+  return `${formatDate(start)} – ${formatDate(end)}`
+}
+
+/** Timestamp → 'hoy, 10:42' / 'ayer, 18:05' / '12/10/2026, 09:30'. */
 export function formatDateTime(isoDateTime: string): string {
   const d = new Date(isoDateTime)
   if (Number.isNaN(d.getTime())) return ''
@@ -96,14 +94,6 @@ export function formatDateTime(isoDateTime: string): string {
   const delta = diffDays(toISODate(d), todayISO())
   if (delta === 0) return `hoy, ${time}`
   if (delta === 1) return `ayer, ${time}`
-  return `${formatDateShort(toISODate(d))}, ${time}`
+  return `${formatDate(toISODate(d))}, ${time}`
 }
 
-/** 'hace 3 días', 'en 2 días', 'hoy', 'mañana', 'ayer'. */
-export function formatRelativeDays(iso: ISODate, today: ISODate = todayISO()): string {
-  const n = diffDays(today, iso)
-  if (n === 0) return 'hoy'
-  if (n === 1) return 'mañana'
-  if (n === -1) return 'ayer'
-  return n > 0 ? `en ${n} días` : `hace ${-n} días`
-}

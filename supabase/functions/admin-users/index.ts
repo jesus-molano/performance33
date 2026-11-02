@@ -69,6 +69,14 @@ function createBackend(admin: SupabaseClient): AdminBackend {
       const { error } = await admin.rpc('revoke_user_sessions', { target: userId })
       if (error) throw error
     },
+    async removeOtherGoogleIdentities(userId) {
+      const { error } = await admin.rpc('remove_other_google_identities', { target: userId })
+      if (error) throw error
+    },
+    async clearLoginFailures(username) {
+      const { error } = await admin.rpc('login_clear_username', { p_username: username })
+      if (error) throw error
+    },
   }
 }
 

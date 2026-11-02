@@ -16,7 +16,7 @@ export const CLIENT_VIEW_OPTIONS: ReadonlyArray<{ value: ClientView; label: stri
 export const CLIENT_ROW_COLUMNS =
   'grid items-center gap-x-4 gap-y-2 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1.6fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)]'
 
-export const CLIENT_LIST_COLUMN_TITLES = ['Cliente', 'Plan', 'Rutina', 'Semana', 'Importante'] as const
+export const CLIENT_LIST_COLUMN_TITLES = ['Usuario', 'Plan', 'Rutina', 'Semana', 'Importante'] as const
 
 export type PlanFilter = PlanId | 'all'
 
@@ -25,11 +25,16 @@ export const PLAN_FILTER_OPTIONS: ReadonlyArray<{ value: PlanFilter; label: stri
   ...PLANS.map((plan) => ({ value: plan.id, label: plan.label })),
 ]
 
+/** The same choices in the phones' selector, where 'Todos' alone would not say of what. */
+export const PLAN_SELECT_OPTIONS: ReadonlyArray<{ value: PlanFilter; label: string }> = PLAN_FILTER_OPTIONS.map((option) =>
+  option.value === 'all' ? { ...option, label: 'Todos los planes' } : option,
+)
+
 /** Quick choices for a new routine's length. */
 export const PROGRAM_WEEK_CHOICES = [3, 4, 5, 6] as const
 
 export const CLIENT_TEXT = {
   notePlaceholder: 'Ej.: Molestia en el hombro derecho, evitar press por encima de la cabeza.',
   goalPlaceholder: 'Ej.: Perder grasa y ganar fuerza en el tren inferior.',
-  pinHelp: 'Se verá arriba en su ficha y en la lista de clientes.',
+  pinHelp: 'Se verá arriba en su ficha y en la lista de usuarios.',
 } as const

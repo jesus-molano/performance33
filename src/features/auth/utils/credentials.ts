@@ -1,12 +1,12 @@
 import { CONNECTION_MESSAGE } from '@/lib/accountMessages'
-import { PASSWORD_MIN_LENGTH } from '@/lib/accountRules'
+import { isAcceptablePassword, PASSWORD_MIN_LENGTH } from '@/lib/accountRules'
 
 export type PasswordStrength = 'empty' | 'short' | 'weak' | 'fair' | 'strong'
 
-const FAIR_LENGTH = 10
+const FAIR_LENGTH = 12
 const STRONG_LENGTH = 14
 
-/** A hint, not a rule: only the minimum length is ever refused. */
+/** A hint on top of the rule in newPasswordError. */
 export function passwordStrength(password: string): PasswordStrength {
   if (!password) return 'empty'
   if (password.length < PASSWORD_MIN_LENGTH) return 'short'
@@ -17,7 +17,7 @@ export function passwordStrength(password: string): PasswordStrength {
 
 /** Spanish message for the new-password form, or null when it is fine. */
 export function newPasswordError(password: string, repeated: string): string | null {
-  if (password.length < PASSWORD_MIN_LENGTH) return `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`
+  if (!isAcceptablePassword(password)) return `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres, con letras y números.`
   return password === repeated ? null : 'Las dos contraseñas no coinciden.'
 }
 

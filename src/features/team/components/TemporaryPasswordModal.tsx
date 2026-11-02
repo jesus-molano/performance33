@@ -19,7 +19,7 @@ export function TemporaryPasswordModal({ temporary, onClose }: TemporaryPassword
       onClose={onClose}
       size="sm"
       title={TEAM_COPY.temporaryTitle}
-      description={`Para ${temporary.name}. Entrará con el usuario «${temporary.username}».`}
+      description={`Para ${temporary.name}. Entrará con el nombre de usuario «${temporary.username}».`}
       footer={<Button onClick={onClose}>Ya la he apuntado</Button>}
     >
       <div className="flex flex-col gap-4 pt-1">

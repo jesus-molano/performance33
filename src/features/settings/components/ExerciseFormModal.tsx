@@ -1,11 +1,12 @@
 import { useId } from 'react'
 import { Button, Callout, Input, Modal, SegmentedControl, Select, Switch } from '@/components/ui'
 import { EXERCISE_NAME_MAX_LENGTH } from '@/config/capacity'
-import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
+import { EXERCISE_TYPE_OPTIONS, MUSCLE_OPTIONS } from '@/config/exerciseTags'
 import { getLengthHint } from '@/lib/capacity'
 import type { LibraryExercise } from '@/types'
 import { MEASURE_OPTIONS } from '@/features/settings/config'
 import { useExerciseForm } from '@/features/settings/hooks/useExerciseForm'
+import { SecondaryMusclesField } from './SecondaryMusclesField'
 
 export interface ExerciseFormModalProps {
   /** null = new exercise. */
@@ -14,7 +15,7 @@ export interface ExerciseFormModalProps {
 }
 
 export function ExerciseFormModal({ exercise, onClose }: ExerciseFormModalProps) {
-  const { isEdit, values, setField, nameError, linkError, similar, submit } = useExerciseForm(exercise, onClose)
+  const { isEdit, values, setField, setMainMuscle, toggleSecondaryMuscle, nameError, linkError, similar, submit } = useExerciseForm(exercise, onClose)
   const formId = useId()
 
   return (
@@ -54,9 +55,11 @@ export function ExerciseFormModal({ exercise, onClose }: ExerciseFormModalProps)
           )}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select label="Categoría" options={EXERCISE_CATEGORY_OPTIONS} value={values.category} onChange={(category) => setField('category', category)} />
-          <Input label="Material" placeholder="Ej.: TRX, Banco" hint="Separa con comas." value={values.equipment} onChange={(e) => setField('equipment', e.target.value)} />
+          <Select label="Músculo principal" options={MUSCLE_OPTIONS} value={values.muscle} onChange={setMainMuscle} />
+          <Select label="Tipo" options={EXERCISE_TYPE_OPTIONS} value={values.type} onChange={(type) => setField('type', type)} />
         </div>
+        <SecondaryMusclesField main={values.muscle} selected={values.secondaryMuscles} onToggle={toggleSecondaryMuscle} />
+        <Input label="Material" placeholder="Ej.: TRX, Banco" hint="Separa con comas." value={values.equipment} onChange={(e) => setField('equipment', e.target.value)} />
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-fg">Se mide por</span>
           <SegmentedControl ariaLabel="Se mide por" options={MEASURE_OPTIONS} value={values.defaultMeasure} onChange={(m) => setField('defaultMeasure', m)} fullWidth />

@@ -74,7 +74,7 @@ export function Modal({ open, onClose, title, description, footer, size = 'md', 
               data-modal-close
               onClick={onClose}
               aria-label="Cerrar"
-              className="-mr-2 inline-flex size-10 items-center justify-center rounded-xl text-fg-muted hover:bg-fg/5 hover:text-fg"
+              className="-mr-2 inline-flex size-11 items-center justify-center rounded-xl text-fg-muted hover:bg-fg/5 hover:text-fg"
             >
               <X size={20} aria-hidden />
             </button>
@@ -82,7 +82,7 @@ export function Modal({ open, onClose, title, description, footer, size = 'md', 
         </header>
         {children && <div className="flex-1 overflow-y-auto px-5 pb-4 md:px-6">{children}</div>}
         {footer && (
-          <footer className="flex flex-col-reverse gap-2 border-t border-line px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:justify-end md:px-6">
+          <footer className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-sm:[&>*]:flex-1 md:px-6">
             {footer}
           </footer>
         )}

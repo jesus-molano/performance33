@@ -23,14 +23,14 @@ export function ProgramHistoryRow({ program, actions }: ProgramHistoryRowProps) 
   ]
 
   return (
-    <li className="flex items-center gap-3 px-4 py-3 sm:px-5">
-      <div className="min-w-0 flex-1">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:px-5">
+      <div className="w-full min-w-0 sm:w-auto sm:flex-1">
         <p className="truncate text-md font-medium text-fg">{getProgramDisplayName(program)}</p>
-        <p className="truncate text-sm text-fg-muted">
+        <p className="text-sm text-fg-muted sm:truncate">
           {formatDateRange(program.startDate, program.endDate)} · {formatProgramShape(program)}
         </p>
       </div>
-      <Badge tone={status.kind === 'expired' ? 'neutral' : status.tone} size="sm" className="hidden sm:inline-flex">
+      <Badge tone={status.kind === 'expired' ? 'neutral' : status.tone} size="sm" className="mr-auto sm:mr-0">
         {status.label}
       </Badge>
       <Button variant="secondary" size="sm" onClick={() => actions.open(program)} className="h-11 px-4">

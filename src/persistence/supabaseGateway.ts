@@ -4,7 +4,7 @@ import type { RealtimePostgresChangesPayload, SupabaseClient } from '@supabase/s
 import { CLOUD_PAGE_SIZE } from '@/config/app'
 import { DOMAIN_TABLES, type DomainTable } from '@/lib/dataRows'
 import type { DbRow } from './dbRows'
-import { TAB_ID } from './tabId'
+import { uniqueChannelTopic } from './tabId'
 import { PermanentWriteError, type RowEvent, type RowGateway } from './rowGateway'
 
 const COLUMNS: Record<DomainTable, string> = {
@@ -55,19 +55,14 @@ export function createSupabaseGateway(client: SupabaseClient): RowGateway {
       if (error) throwWriteError(error)
     },
 
-    async insertMissing(table, rows) {
-      const { error } = await client.from(table).upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
-      if (error) throw new Error(error.message)
-    },
-
     async librarySeedPending() {
       const { data, error } = await client.rpc('library_seed_pending')
       if (error) throw new Error(error.message)
       return data === true
     },
 
-    async finishLibrarySeed() {
-      const { error } = await client.rpc('finish_library_seed')
+    async seedLibrary(rows) {
+      const { error } = await client.rpc('seed_library', { p_rows: rows })
       if (error) throw new Error(error.message)
     },
 
@@ -94,7 +89,7 @@ export function createSupabaseGateway(client: SupabaseClient): RowGateway {
             if (event) onEvent(event)
             else onMissed()
           }),
-        client.channel(`p33-rows-${TAB_ID}`),
+        client.channel(uniqueChannelTopic('p33-rows')),
       )
       // Also on the first connection: it closes the gap since the data was loaded.
       channel.subscribe((status) => {

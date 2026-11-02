@@ -14,6 +14,8 @@ export interface DisplayThemeClasses {
   noteSurface: string
   rowDivider: string
   columnDivider: string
+  /** Divider between the two parts of a split screen. */
+  splitDivider: string
   logoWrap: string
   overlay: string
 }
@@ -31,6 +33,7 @@ const DARK: DisplayThemeClasses = {
   noteSurface: 'bg-white/5',
   rowDivider: 'divide-white/15',
   columnDivider: 'divide-brand/40',
+  splitDivider: '[column-rule-color:var(--color-brand-on-dark)]',
   logoWrap: '',
   overlay: 'bg-black/80 text-white border border-white/15 backdrop-blur',
 }
@@ -48,6 +51,7 @@ const LIGHT: DisplayThemeClasses = {
   noteSurface: 'bg-brand-soft',
   rowDivider: 'divide-line',
   columnDivider: 'divide-brand-strong/30',
+  splitDivider: '[column-rule-color:var(--color-brand-strong)]',
   logoWrap: 'bg-ink rounded-[0.6em] px-[0.7em] py-[0.4em]',
   overlay: 'bg-white/90 text-fg border border-line shadow-pop backdrop-blur',
 }

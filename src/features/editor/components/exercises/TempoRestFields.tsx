@@ -8,7 +8,7 @@ import type { ExerciseFieldsApi } from '@/features/editor/hooks/useExerciseField
 /** Tempo (E-P-C-P) and exact rest between sets in seconds. */
 export function TempoRestFields({ entry, fields }: { entry: ExerciseEntry; fields: ExerciseFieldsApi }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 items-end gap-3">
       <Input
         label={
           <span className="inline-flex items-center gap-1.5">

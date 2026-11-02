@@ -18,7 +18,7 @@ export function LibraryPanel() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-fg">Biblioteca de ejercicios</h2>
-            <p className="text-sm text-fg-muted">{browser.totalCount} ejercicios. Todo el equipo puede editarlos. Busca sin preocuparte por tildes: «press», «prés» o «bench» encuentran lo mismo.</p>
+            <p className="text-sm text-fg-muted">{browser.totalCount} ejercicios. Todo el equipo puede editarlos. Busca sin preocuparte por tildes, por nombre o por músculo: «press», «bench» o «pecho».</p>
           </div>
           <Button leftIcon={Plus} onClick={form.openCreate}>
             Añadir ejercicio
@@ -38,7 +38,14 @@ export function LibraryPanel() {
         <EmptyState
           icon={Dumbbell}
           title={browser.totalCount === 0 ? 'Aún no hay ejercicios' : 'No hay ejercicios con esa búsqueda'}
-          description="Puedes añadirlos aquí o guardarlos desde el editor de rutinas."
+          description={browser.filtered ? 'Prueba con otra palabra o quita los filtros.' : 'Puedes añadirlos aquí o guardarlos desde el editor de rutinas.'}
+          action={
+            browser.filtered && (
+              <Button variant="secondary" onClick={browser.clearFilters}>
+                Quitar filtros
+              </Button>
+            )
+          }
         />
       )}
       {form.target && <ExerciseFormModal exercise={editedItem(form.target)} onClose={form.close} />}

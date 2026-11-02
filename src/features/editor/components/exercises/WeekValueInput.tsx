@@ -26,7 +26,7 @@ export function WeekValueInput({ week, isCurrent, value, placeholder, onChange }
         onChange={(e) => onChange(e.target.value)}
         onBlur={breakUndoGroup}
         className={cn(
-          'h-11 w-full min-w-0 rounded-xl border bg-surface px-2 text-center text-md font-semibold tabular',
+          'h-11 w-full min-w-0 rounded-xl border bg-surface px-2 text-center text-base font-semibold tabular md:text-md',
           'placeholder:font-normal placeholder:text-fg-subtle focus:border-brand-strong focus:ring-3 focus:ring-brand-strong/15 focus:outline-none',
           isCurrent ? 'border-emerald-400' : 'border-line-strong',
         )}

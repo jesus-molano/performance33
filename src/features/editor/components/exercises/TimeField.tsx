@@ -54,7 +54,7 @@ export function TimeField({ seconds, onChange, inputRef, onKeyDown }: TimeFieldP
           type="button"
           onClick={() => setUnit(otherUnit)}
           aria-label={`Unidad: ${UNIT_NAME[unit]}. Cambiar a ${UNIT_NAME[otherUnit]}`}
-          className="mr-1 h-9 min-w-11 shrink-0 rounded-lg bg-fg/5 px-2 text-sm font-semibold text-fg-muted hover:bg-fg/10 hover:text-fg"
+          className="h-full min-w-11 shrink-0 rounded-r-xl border-l border-line bg-fg/5 px-2 text-sm font-semibold text-fg-muted hover:bg-fg/10 hover:text-fg"
         >
           {UNIT_LABEL[unit]}
         </button>

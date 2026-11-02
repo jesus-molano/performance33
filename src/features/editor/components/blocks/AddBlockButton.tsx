@@ -1,4 +1,5 @@
 import { LayoutGrid, Plus } from 'lucide-react'
+import { cn } from '@/lib/cn'
 
 export interface AddBlockButtonProps {
   onClick: () => void
@@ -7,7 +8,7 @@ export interface AddBlockButtonProps {
   disabledReason: string | null
 }
 
-/** Large dashed '+ Añadir bloque' at the end of the day, replaced by the explanation when the day is full. */
+/** Large dashed '+ Añadir bloque' at the end of the day, replaced by the explanation when the day is full. On phones, once there are blocks, the sticky bar does this. */
 export function AddBlockButton({ onClick, isFirst, disabledReason }: AddBlockButtonProps) {
   if (disabledReason) {
     return <p className="flex min-h-14 items-center justify-center rounded-2xl bg-fg/5 px-4 text-center text-sm text-fg-muted">{disabledReason}</p>
@@ -16,7 +17,7 @@ export function AddBlockButton({ onClick, isFirst, disabledReason }: AddBlockBut
     <button
       type="button"
       onClick={onClick}
-      className="group flex min-h-20 w-full items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-line-strong bg-surface/50 px-4 text-left transition-colors hover:border-brand-strong hover:bg-brand-soft"
+      className={cn(!isFirst && 'hidden md:flex', isFirst && 'flex', 'group min-h-20 w-full items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-line-strong bg-surface/50 px-4 text-left transition-colors hover:border-brand-strong hover:bg-brand-soft')}
     >
       <span className="flex size-10 items-center justify-center rounded-xl bg-ink text-brand transition-transform group-hover:scale-105">
         <Plus size={20} aria-hidden />

@@ -12,6 +12,9 @@ export const SEED_ADMIN: Profile = {
   role: 'admin',
   active: true,
   mustChangePassword: false,
+  hasOwnPassword: true,
+  temporaryPasswordExpired: false,
+  googleConnected: false,
 }
 
 export const SEED_MONITOR: Profile = {
@@ -23,6 +26,9 @@ export const SEED_MONITOR: Profile = {
   role: 'monitor',
   active: true,
   mustChangePassword: false,
+  hasOwnPassword: true,
+  temporaryPasswordExpired: false,
+  googleConnected: false,
 }
 
 /** A new account that has not entered yet: it tries out the first-login step. */
@@ -35,6 +41,9 @@ export const SEED_NEW_MONITOR: Profile = {
   role: 'monitor',
   active: true,
   mustChangePassword: true,
+  hasOwnPassword: false,
+  temporaryPasswordExpired: false,
+  googleConnected: false,
 }
 
 export const SEED_TEAM: readonly Profile[] = [SEED_ADMIN, SEED_MONITOR, SEED_NEW_MONITOR]

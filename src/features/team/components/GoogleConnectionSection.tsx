@@ -3,9 +3,13 @@ import { Button } from '@/components/ui'
 import { TEAM_COPY } from '@/features/team/config'
 import { useGoogleConnection } from '@/features/team/hooks/useGoogleConnection'
 
+export interface GoogleConnectionSectionProps {
+  hasOwnPassword: boolean
+}
+
 /** 'Mi perfil': connect or disconnect Google, never taking away the last way in. */
-export function GoogleConnectionSection() {
-  const { methods, busy, connect, disconnect } = useGoogleConnection()
+export function GoogleConnectionSection({ hasOwnPassword }: GoogleConnectionSectionProps) {
+  const { methods, busy, connect, disconnect } = useGoogleConnection(hasOwnPassword)
   if (!methods) return null
   const description = !methods.google ? TEAM_COPY.googleNotConnected : methods.canDisconnectGoogle ? TEAM_COPY.googleConnected : TEAM_COPY.googleOnlyMethod
   return (

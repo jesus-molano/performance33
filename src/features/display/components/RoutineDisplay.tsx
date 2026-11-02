@@ -17,8 +17,9 @@ export interface RoutineDisplayProps {
   /** 1-based day number (clamp with clampDayNumber). */
   dayNumber: number
   /**
-   * column = one TV slot; full = whole screen (prefers 2 columns when text gets clearly bigger);
-   * preview = editor side panel. Narrow slots switch to the compact density automatically.
+   * column = one TV slot, always one column read top to bottom; full = only client on the screen, the same unless it is
+   * landscape and one column does not fit at a good size (then two numbered parts); preview = editor side panel.
+   * Narrow slots switch to the compact density automatically.
    */
   layout?: RoutineDisplayLayout
   /** Manual A-/A+ multiplier on top of auto-fit (default 1). */
@@ -27,6 +28,10 @@ export interface RoutineDisplayProps {
   flashBlockIds?: ReadonlySet<string>
   /** Reports when the day does not fit or gets too small to read (editor warning). */
   onFitChange?: (status: FitStatus) => void
+  /** Largest text unit, shared by the columns of a TV. */
+  unitCap?: number
+  /** The unit this day could show by itself; null when it leaves the screen. */
+  onUnitChange?: (unit: number | null) => void
 }
 
 const NO_FLASH: ReadonlySet<string> = new Set()
@@ -42,14 +47,21 @@ export function RoutineDisplay({
   fontScale = 1,
   flashBlockIds = NO_FLASH,
   onFitChange,
+  unitCap,
+  onUnitChange,
 }: RoutineDisplayProps) {
   const day = routine.days[dayNumber - 1] ?? null
   const theme = getDisplayTheme(routine.branding.displayTheme)
-  const { containerRef, contentRef, style, density, overflowing, tooSmall, detailHidden } = useAutoFit({
-    preferColumns: layout === 'full',
+  const { containerRef, contentRef, style, density, overflowing, tooSmall, detailHidden, fittedUnit } = useAutoFit({
+    canSplit: layout === 'full' && (day?.blocks.length ?? 0) > 1,
     fontScale,
     fitKey: day,
+    unitCap,
   })
+  useEffect(() => {
+    onUnitChange?.(fittedUnit)
+    return () => onUnitChange?.(null)
+  }, [onUnitChange, fittedUnit])
   useEffect(() => onFitChange?.({ overflowing, tooSmall, detailHidden }), [onFitChange, overflowing, tooSmall, detailHidden])
   const Header = density === 'compact' ? DisplayHeaderCompact : DisplayHeader
 

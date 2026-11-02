@@ -41,13 +41,13 @@ export function useClientActions(): ClientActionsApi {
       const ok = await confirm({
         title: `¿Eliminar a ${formatFullName(client.firstName, client.lastName)}?`,
         description: 'Se borrarán sus rutinas y notas internas. Si solo ha dejado de venir, mejor archívalo.',
-        confirmLabel: 'Eliminar cliente',
+        confirmLabel: 'Eliminar usuario',
         danger: true,
       })
       if (!ok) return
       navigate(paths.clients())
       deleteClient(client.id)
-      toastUndo('Cliente eliminado')
+      toastUndo('Usuario eliminado')
     },
     [confirm, deleteClient, toastUndo],
   )

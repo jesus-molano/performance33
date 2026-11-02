@@ -56,7 +56,10 @@ export function createLocalTeam(notify: () => void, subscribe: TeamService['subs
       const conflict = findAccountConflict(accounts, account)
       if (conflict) throw new Error(accountErrorMessage(conflict))
       const password = newTemporaryPassword()
-      save([...accounts, { ...account, color: input.color, id: newId('profile'), active: true, mustChangePassword: true, password, temporaryPassword: password }])
+      save([
+        ...accounts,
+        { ...account, color: input.color, id: newId('profile'), active: true, mustChangePassword: true, hasOwnPassword: false, temporaryPasswordExpired: false, googleConnected: false, password, temporaryPassword: password },
+      ])
       return password
     },
     resetPassword: async (id) => {

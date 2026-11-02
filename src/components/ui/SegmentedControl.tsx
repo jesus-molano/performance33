@@ -35,7 +35,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className={cn('inline-flex rounded-xl bg-fg/5 p-1', fullWidth && 'flex w-full', className)}
+      className={cn('inline-flex rounded-xl bg-fg/5 md:p-1', fullWidth && 'flex w-full', className)}
     >
       {options.map(({ value: optionValue, label, icon: Icon }) => {
         const selected = optionValue === value
@@ -47,8 +47,8 @@ export function SegmentedControl<T extends string>({
             aria-checked={selected}
             onClick={() => onChange(optionValue)}
             className={cn(
-              'inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg font-medium whitespace-nowrap transition-all',
-              size === 'sm' ? 'h-10 px-2.5 text-sm md:h-8' : 'h-10 px-3.5 text-md',
+              'inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl font-medium whitespace-nowrap transition-all md:rounded-lg',
+              size === 'sm' ? 'h-11 px-1.5 text-sm sm:px-2.5 md:h-8' : 'h-11 px-3.5 text-md md:h-10',
               selected ? 'bg-surface text-fg shadow-card' : 'text-fg-muted hover:text-fg',
             )}
           >

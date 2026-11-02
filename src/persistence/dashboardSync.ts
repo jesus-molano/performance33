@@ -3,6 +3,7 @@
 // change made elsewhere → applied without undo history and without re-saving (no echo loops), and passed on to TV windows.
 
 import { SAVE_DEBOUNCE_MS, SAVE_RETRY_DELAYS_MS } from '@/config/app'
+import { SYNC_MESSAGES } from '@/config/copy'
 import { EXERCISE_LIBRARY } from '@/data/exercises'
 import { createSeedData } from '@/data/seed'
 import { refreshTeam, watchTeam } from '@/auth'
@@ -19,7 +20,6 @@ import { repository } from './repositoryInstance'
 import { subscribeRemoteChanges } from './sync'
 import { TAB_ID } from './tabId'
 
-const REJECTED_MESSAGE = 'Ese cambio no se ha guardado porque no tienes permiso.'
 
 let revision = 0
 let applyingRemote = false
@@ -29,10 +29,13 @@ const nextMeta = (): ChangeMeta => ({ source: TAB_ID, revision: ++revision })
 const getData = (): AppData => useAppStore.getState().data
 const setSaveStatus = useUiStore.getState().setSaveStatus
 
-/** A failure is not fatal: the library is still pending, so the next session of an administrator tries again. */
+/** A failure is not fatal: nothing was saved and the library is still pending, so the next session of an administrator tries again. */
 async function seedLibraryIfAdmin(): Promise<AppData | null> {
   if (!isActiveAdmin(useSessionStore.getState().profile)) return null
-  return repository.seedLibrary(EXERCISE_LIBRARY).catch(() => null)
+  return repository.seedLibrary(EXERCISE_LIBRARY).catch(() => {
+    useToastStore.getState().show({ message: SYNC_MESSAGES.librarySeedFailed, tone: 'error' })
+    return null
+  })
 }
 
 /** Reads the dataset and the team. Rejects without connection (the dashboard offers to retry). */
@@ -60,7 +63,7 @@ function applyRemoteChange(change: RemoteChange): void {
   const meta = nextMeta()
   broadcastDisplay(display, meta)
   repository.saveDisplay(display, meta).catch(() => undefined)
-  if (change.kind === 'rows' && change.rejected) useToastStore.getState().show({ message: REJECTED_MESSAGE, tone: 'error' })
+  if (change.kind === 'rows' && change.rejected) useToastStore.getState().show({ message: SYNC_MESSAGES.writeRejected, tone: 'error' })
 }
 
 /** Starts autosave + live sync. The cleanup saves what is pending; a sign-out drops everything instead. */

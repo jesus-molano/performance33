@@ -13,7 +13,9 @@ function buildLibraryExercise(id: string, input: LibraryExerciseInput): LibraryE
   return {
     id,
     name: input.name.trim(),
-    category: input.category,
+    muscle: input.muscle,
+    ...(input.secondaryMuscles?.length ? { secondaryMuscles: input.secondaryMuscles } : {}),
+    type: input.type,
     equipment: input.equipment ?? [],
     defaultMeasure: input.defaultMeasure ?? 'reps',
     ...(input.perSide ? { perSide: true } : {}),
@@ -23,11 +25,12 @@ function buildLibraryExercise(id: string, input: LibraryExerciseInput): LibraryE
   }
 }
 
-/** A removed link leaves no empty key behind: the saved row must read back equal. */
-function withoutEmptyLink(exercise: LibraryExercise): LibraryExercise {
-  if (exercise.link) return exercise
+/** A removed link or muscle list, or an unticked 'per side', leaves no empty key behind: the saved row must read back equal, or the next read would look like someone else's change and drop this undo step. */
+function withoutEmptyOptionals(exercise: LibraryExercise): LibraryExercise {
   const clean = { ...exercise }
-  delete clean.link
+  if (!clean.link) delete clean.link
+  if (!clean.secondaryMuscles?.length) delete clean.secondaryMuscles
+  if (!clean.perSide) delete clean.perSide
   return clean
 }
 
@@ -46,7 +49,7 @@ export function createSettingsSlice({ commit, clearHistory }: SliceContext): Set
     },
     updateLibraryExercise: (id, patch) =>
       commit(
-        (d) => ({ ...d, library: updateById(d.library, id, (e) => withoutEmptyLink({ ...e, ...patch })) }),
+        (d) => ({ ...d, library: updateById(d.library, id, (e) => withoutEmptyOptionals({ ...e, ...patch })) }),
         groupKey('library', id, patch),
       ),
     // Rows that used it become free text (so 'Guardar en biblioteca' works again); one undo restores both.

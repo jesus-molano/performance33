@@ -40,6 +40,7 @@ describe('rows read back from the server equal what was saved', () => {
     store().updateLibraryExercise(withLink.id, { link: 'https://youtu.be/abc' })
     store().updateLibraryExercise(withoutLink.id, { link: 'https://youtu.be/def' })
     store().updateLibraryExercise(withoutLink.id, { link: '' })
+    store().updateLibraryExercise(withLink.id, { perSide: false, secondaryMuscles: [] })
     expectRoundTrip(store().data)
   })
 })

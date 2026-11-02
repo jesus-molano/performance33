@@ -27,7 +27,7 @@ export function CreateAccountForm({ accounts, onCreated }: CreateAccountFormProp
           nativeUndo
         />
         <Input
-          label="Usuario"
+          label="Nombre de usuario"
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}

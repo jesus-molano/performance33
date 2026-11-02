@@ -42,7 +42,7 @@ export function ExerciseNameField({ entry, onDone, onExit }: ExerciseNameFieldPr
           aria-activedescendant={ac.isOpen && ac.highlighted !== NO_HIGHLIGHT ? `${listId}-${ac.highlighted}` : undefined}
           autoComplete="off"
           spellCheck={false}
-          placeholder="Escribe para buscar: sentadilla, remo, plancha…"
+          placeholder="Busca: sentadilla, remo…"
           maxLength={EXERCISE_NAME_MAX_LENGTH}
           value={entry.name}
           onChange={(e) => ac.onChange(e.target.value)}

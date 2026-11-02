@@ -5,9 +5,9 @@
 //   #/clientes/:clientId/programa/:programId → program (editor)
 //   #/ajustes?tab=marca|biblioteca|equipo|datos → settings
 //   #/pantalla/:clientId?dia=2&programa=pid  → display (single client, no app chrome)
-//   #/tv?slots=cid:1,-,cid:2                 → tv (1-4 columns, '-' = empty, no app chrome)
+//   #/tv?slots=cid:1,-,cid:2&pantalla=2      → tv (Pantalla N, default 1; 1-4 columns, '-' = empty, no app chrome)
 
-import { TV_DEFAULT_SLOTS, TV_EMPTY_SLOT_TOKEN, TV_MAX_SLOTS, TV_MIN_SLOTS } from '@/config/app'
+import { TV_DEFAULT_SCREEN, TV_DEFAULT_SLOTS, TV_EMPTY_SLOT_TOKEN, TV_MAX_SCREENS, TV_MAX_SLOTS, TV_MIN_SLOTS } from '@/config/app'
 import { clamp } from '@/lib/numbers'
 
 export interface TvSlot {
@@ -25,7 +25,7 @@ export type Route =
   | { name: 'program'; clientId: string; programId: string }
   | { name: 'settings'; tab: SettingsTab }
   | { name: 'display'; clientId: string; day: number | null; programId: string | null }
-  | { name: 'tv'; slots: TvSlot[] }
+  | { name: 'tv'; screen: number; slots: TvSlot[] }
   | { name: 'not-found'; path: string }
 
 export type RouteName = Route['name']
@@ -38,6 +38,12 @@ export function isScreenRoute(route: Route): route is Extract<Route, { name: 'di
 const parseDay = (raw: string | null | undefined): number | null => {
   const n = Number(raw)
   return Number.isInteger(n) && n >= 1 ? n : null
+}
+
+/** Number of a named TV screen; a missing or invalid one (old URLs) is Pantalla 1. */
+export function parseTvScreen(raw: string | null): number {
+  const screen = parseDay(raw)
+  return screen && screen <= TV_MAX_SCREENS ? screen : TV_DEFAULT_SCREEN
 }
 
 function parseTvSlot(raw: string): TvSlot {
@@ -78,7 +84,8 @@ export const paths = {
     const qs = query.toString()
     return `#/pantalla/${enc(clientId)}${qs ? `?${qs}` : ''}`
   },
-  tv: (slots: TvSlot[] = []) => `#/tv?slots=${serializeTvSlots(slots)}`,
+  tv: (slots: TvSlot[] = [], screen: number = TV_DEFAULT_SCREEN) =>
+    `#/tv?slots=${serializeTvSlots(slots)}${screen === TV_DEFAULT_SCREEN ? '' : `&pantalla=${screen}`}`,
 }
 
 function parseSettingsTab(raw: string | null): SettingsTab {
@@ -101,7 +108,7 @@ export function parseRoute(hash: string): Route {
   if (seg[0] === 'pantalla' && seg.length === 2) {
     return { name: 'display', clientId: seg[1], day: parseDay(query.get('dia')), programId: query.get('programa') }
   }
-  if (seg[0] === 'tv' && seg.length === 1) return { name: 'tv', slots: parseTvSlots(query.get('slots')) }
+  if (seg[0] === 'tv' && seg.length === 1) return { name: 'tv', screen: parseTvScreen(query.get('pantalla')), slots: parseTvSlots(query.get('slots')) }
   return { name: 'not-found', path: pathPart }
 }
 
@@ -111,6 +118,16 @@ const toHash = (path: string) => (path.startsWith('#') ? path : `#${path}`)
 export function navigate(path: string): void {
   const target = toHash(path)
   if (window.location.hash !== target) window.location.hash = target
+}
+
+let pagesVisited = 0
+if (typeof window !== 'undefined') window.addEventListener('hashchange', () => pagesVisited++)
+
+/** Back to the previous page of the app. False when this is the first one (opened directly): there is nothing to go back to. */
+export function goBackInApp(): boolean {
+  if (pagesVisited === 0) return false
+  window.history.back()
+  return true
 }
 
 /** Replace the current hash without a history entry (TV slot changes, day switch). */

@@ -54,6 +54,7 @@ export function ProgramEditor({ client, program }: ProgramEditorProps) {
               selectedId={day?.id ?? null}
               onSelect={selectDay}
               onMove={dayActions.moveDay}
+              canAdd={dayActions.canAddDay}
               onAdd={dayActions.addDay}
             />
             {day ? (
@@ -62,7 +63,7 @@ export function ProgramEditor({ client, program }: ProgramEditorProps) {
               <EmptyState
                 icon={CalendarPlus}
                 title="Esta rutina no tiene días"
-                description="Añade un día por cada sesión semanal del cliente."
+                description="Añade un día por cada sesión semanal del usuario."
                 action={<Button onClick={dayActions.addDay}>Añadir día</Button>}
               />
             )}

@@ -1,4 +1,5 @@
 import { insertAt, moveItem, removeById } from '@/lib/arrays'
+import { getAddDayRefusal } from '@/lib/capacity'
 import { copiedDayName, renumberDays } from '@/lib/days'
 import { cloneDay, createDay } from '@/lib/factories'
 import type { AppData, Day } from '@/types'
@@ -15,7 +16,7 @@ export function createDaySlice({ commit, getData }: SliceContext): DayActions {
   return {
     addDay: (programId, init = {}) => {
       const pi = locateProgram(getData(), programId)
-      if (pi === -1) return ''
+      if (pi === -1 || getAddDayRefusal(getData().programs[pi].days.length)) return ''
       const day = createDay(getData().programs[pi].days.length, init)
       commit((d) => withDays(d, pi, (days) => [...days, day]))
       return day.id
@@ -34,7 +35,7 @@ export function createDaySlice({ commit, getData }: SliceContext): DayActions {
     },
     duplicateDay: (dayId) => {
       const loc = locateDay(getData(), dayId)
-      if (!loc) return ''
+      if (!loc || getAddDayRefusal(getData().programs[loc.pi].days.length)) return ''
       const source = dayAt(getData(), loc)
       const copy = { ...cloneDay(source), name: copiedDayName(source) }
       commit((d) => withDays(d, loc.pi, (days) => insertAt(days, loc.di + 1, copy)))

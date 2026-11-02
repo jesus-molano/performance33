@@ -15,14 +15,15 @@ interface DisplayExerciseRowProps {
 /**
  * 'A1  Press banca ........ 4 × 8-10  60 kg': name and prescription at the same size, the prescription
  * right-aligned on the same edge in every row. Cue and tempo/rest go underneath and hide when the day
- * needs the room (see DETAIL_LEVELS).
+ * needs the room (see DETAIL_LEVELS). Nothing is clamped here: a long name takes its lines and the fit, which
+ * measures them, makes the room.
  */
 export function DisplayExerciseRow({ line, density, muted, theme }: DisplayExerciseRowProps) {
   const styles = DENSITY_STYLES[density]
   return (
     <li className={cn('grid grid-cols-[auto_minmax(0,1fr)_fit-content(58%)] items-baseline', styles.row)}>
       <span className={cn(line.label && cn('tabular text-center font-bold whitespace-nowrap', styles.label, theme.badge))}>{line.label}</span>
-      <p className={cn('line-clamp-2 font-bold text-balance [overflow-wrap:anywhere]', styles.main, muted && theme.secondaryText)}>
+      <p className={cn('font-bold text-balance [overflow-wrap:anywhere]', styles.main, muted && theme.secondaryText)}>
         {line.name}
       </p>
       <p className={cn('tabular flex flex-wrap justify-end gap-x-[0.45em] text-right font-bold [overflow-wrap:anywhere]', styles.main)}>
@@ -36,7 +37,7 @@ export function DisplayExerciseRow({ line, density, muted, theme }: DisplayExerc
       )}
       {line.cue && (
         <div className="col-span-2 col-start-2 [display:var(--display-cue,block)]">
-          <p className={cn('line-clamp-2 font-medium [overflow-wrap:anywhere]', styles.secondary, theme.secondaryText)}>{line.cue}</p>
+          <p className={cn('font-medium [overflow-wrap:anywhere]', styles.secondary, theme.secondaryText)}>{line.cue}</p>
         </div>
       )}
     </li>

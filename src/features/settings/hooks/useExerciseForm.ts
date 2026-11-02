@@ -2,13 +2,15 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useToast } from '@/hooks'
 import { findSimilarExercises } from '@/lib/search'
 import { useAppActions, useExerciseLibrary } from '@/store'
-import type { LibraryExercise } from '@/types'
-import { isValidLinkText, toLibraryExerciseInput, toExerciseFormValues, type ExerciseFormValues } from '@/features/settings/utils/exerciseForm'
+import type { LibraryExercise, MuscleGroup } from '@/types'
+import { isValidLinkText, toggleMuscle, toLibraryExerciseInput, toExerciseFormValues, withMainMuscle, type ExerciseFormValues } from '@/features/settings/utils/exerciseForm'
 
 export interface ExerciseFormApi {
   isEdit: boolean
   values: ExerciseFormValues
   setField: <K extends keyof ExerciseFormValues>(key: K, value: ExerciseFormValues[K]) => void
+  setMainMuscle: (muscle: MuscleGroup) => void
+  toggleSecondaryMuscle: (muscle: MuscleGroup) => void
   nameError: string | undefined
   linkError: string | undefined
   /** Existing exercises with a very similar name (to avoid duplicates). */
@@ -48,6 +50,8 @@ export function useExerciseForm(exercise: LibraryExercise | null, onDone: () => 
     isEdit: exercise !== null,
     values,
     setField,
+    setMainMuscle: (muscle) => setValues((v) => withMainMuscle(v, muscle)),
+    toggleSecondaryMuscle: (muscle) => setValues((v) => ({ ...v, secondaryMuscles: toggleMuscle(v.secondaryMuscles, muscle) })),
     nameError: submitted && invalidName ? 'Escribe el nombre del ejercicio.' : undefined,
     linkError: submitted && invalidLink ? 'Escribe una dirección web completa, por ejemplo https://youtu.be/abc.' : undefined,
     similar,

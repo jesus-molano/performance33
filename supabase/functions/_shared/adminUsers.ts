@@ -43,6 +43,10 @@ export interface AdminBackend {
   setAuthPassword(userId: string, password: string): Promise<boolean>
   setAuthBanned(userId: string, banned: boolean): Promise<boolean>
   revokeSessions(userId: string): Promise<void>
+  /** Google accounts connected by hand, not the one of the profile's email. */
+  removeOtherGoogleIdentities(userId: string): Promise<void>
+  /** Unlocks a username locked by failed logins. */
+  clearLoginFailures(username: string): Promise<void>
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
@@ -53,7 +57,7 @@ async function createAccount(body: unknown, profiles: ProfileRecord[], backend: 
   const conflict = findAccountConflict(profiles, account)
   if (conflict) return fail(conflict)
   const temporaryPassword = generateTemporaryPassword(randomBytes)
-  const created = await backend.createAuthUser(account.email ?? internalEmail(account.username), temporaryPassword)
+  const created = await backend.createAuthUser(account.email ?? internalEmail(randomBytes), temporaryPassword)
   if ('error' in created) return fail(created.error)
   const refused = await backend.insertProfile(created.userId, account)
   if (refused) {
@@ -65,11 +69,14 @@ async function createAccount(body: unknown, profiles: ProfileRecord[], backend: 
 
 async function resetPassword(target: ProfileRecord, backend: AdminBackend, randomBytes: RandomBytes): Promise<HandlerResult> {
   const temporaryPassword = generateTemporaryPassword(randomBytes)
+  // First: if it fails nothing has changed yet, and the admin can simply try again.
+  await backend.removeOtherGoogleIdentities(target.user_id)
   if (!(await backend.setAuthPassword(target.user_id, temporaryPassword))) return fail('failed')
   // After the password: the database remembers which password was the temporary one.
   const refused = await backend.updateProfile(target.id, { must_change_password: true })
   if (refused) return fail(refused)
   await backend.revokeSessions(target.user_id)
+  await backend.clearLoginFailures(target.username)
   return ok({ temporaryPassword })
 }
 
@@ -78,7 +85,10 @@ async function setActive(target: ProfileRecord, active: boolean, backend: AdminB
   if (active && !(await backend.setAuthBanned(target.user_id, false))) return fail('failed')
   const refused = await backend.updateProfile(target.id, { active })
   if (refused) return fail(refused)
-  if (active) return ok({})
+  if (active) {
+    await backend.clearLoginFailures(target.username)
+    return ok({})
+  }
   if (!(await backend.setAuthBanned(target.user_id, true))) return fail('failed')
   await backend.revokeSessions(target.user_id)
   return ok({})

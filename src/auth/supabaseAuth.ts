@@ -23,7 +23,7 @@ function failIf(error: ServerError | null): void {
 
 const toAuthUser = (user: User): AuthUser => ({ id: user.id, email: user.email ?? null })
 
-export function createSupabaseAuth(client: SupabaseClient): AuthService {
+export function createSupabaseAuth(client: SupabaseClient, createCheckClient: () => SupabaseClient): AuthService {
   const loadIdentities = async () => {
     const { data, error } = await client.auth.getUserIdentities()
     failIf(error)
@@ -75,7 +75,22 @@ export function createSupabaseAuth(client: SupabaseClient): AuthService {
       failIf(error)
     },
 
-    getSignInMethods: async () => signInMethodsFrom((await loadIdentities()).map((identity) => identity.provider)),
+    async verifyPassword(password) {
+      const { data } = await client.auth.getSession()
+      const email = data.session?.user.email
+      if (!email) return false
+      // A throwaway client: a sign-in on the main one would replace the session and wake every listener.
+      const checker = createCheckClient()
+      const { error } = await checker.auth.signInWithPassword({ email, password })
+      if (error) {
+        if (isAuthRetryableFetchError(error)) failIf(error)
+        return false
+      }
+      await checker.auth.signOut({ scope: 'local' })
+      return true
+    },
+
+    getSignInMethods: async (hasOwnPassword) => signInMethodsFrom((await loadIdentities()).map((identity) => identity.provider), hasOwnPassword),
 
     async connectGoogle() {
       const { error } = await client.auth.linkIdentity({ provider: 'google', options: googleOptions() })
@@ -85,7 +100,7 @@ export function createSupabaseAuth(client: SupabaseClient): AuthService {
     async disconnectGoogle() {
       const identities = await loadIdentities()
       const google = identities.find((identity) => identity.provider === 'google')
-      if (!google || !signInMethodsFrom(identities.map((identity) => identity.provider)).canDisconnectGoogle) return
+      if (!google || identities.length < 2) return
       const { error } = await client.auth.unlinkIdentity(google)
       failIf(error)
     },

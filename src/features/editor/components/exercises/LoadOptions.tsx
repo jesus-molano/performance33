@@ -16,19 +16,18 @@ export function LoadOptions({ entry, fields }: { entry: ExerciseEntry; fields: E
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium text-fg">Tipo de carga</span>
-      <div className="overflow-x-auto scrollbar-none">
-        <SegmentedControl
-          ariaLabel="Tipo de carga"
-          size="sm"
-          options={UNIT_OPTIONS}
-          value={entry.loadUnit}
-          onChange={(loadUnit) => fields.setField('loadUnit', loadUnit)}
-        />
-      </div>
+      <SegmentedControl
+        ariaLabel="Tipo de carga"
+        size="sm"
+        fullWidth
+        options={UNIT_OPTIONS}
+        value={entry.loadUnit}
+        onChange={(loadUnit) => fields.setField('loadUnit', loadUnit)}
+      />
       <p className="text-sm text-fg-muted">{meta.help}</p>
       {entry.loadUnit === 'pct1rm' && (
         <Input
-          label="1RM del cliente (opcional)"
+          label="1RM del usuario (opcional)"
           hint={preview ? `En pantalla: ${preview}` : 'Así la pantalla muestra también los kilos'}
           inputMode="decimal"
           suffix="kg"

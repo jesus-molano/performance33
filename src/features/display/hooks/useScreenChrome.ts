@@ -12,7 +12,7 @@ export interface ScreenChrome extends FontScaleApi, FullscreenApi {
 }
 
 /** Shared window behaviour of Pantalla and Modo TV: fading controls, hint, A-/A+, fullscreen. */
-export function useScreenChrome(screen: 'pantalla' | 'tv'): ScreenChrome {
+export function useScreenChrome(screen: string): ScreenChrome {
   const fontScale = useFontScale(screen)
   const fullscreen = useFullscreen()
   const controlsVisible = useIdleVisibility(CONTROLS_IDLE_MS)

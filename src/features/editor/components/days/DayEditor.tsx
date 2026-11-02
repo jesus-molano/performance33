@@ -23,7 +23,7 @@ export function DayEditor({ day, menuItems }: DayEditorProps) {
       <DayCapacityIndicator capacity={add.capacity} />
       <BlockList day={day} />
       <AddBlockButton onClick={add.openPicker} isFirst={day.blocks.length === 0} disabledReason={add.blockFullText} />
-      <MobileAddBar onAddBlock={add.tryAddBlock} onAddExercise={add.addToLastBlock} />
+      {day.blocks.length > 0 && <MobileAddBar onAddBlock={add.tryAddBlock} onAddExercise={add.addToLastBlock} />}
       <BlockTypePicker open={add.pickerOpen} onClose={add.closePicker} onPick={add.pickBlock} />
     </section>
   )

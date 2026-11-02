@@ -12,8 +12,8 @@ function ItemContent({ icon: Icon, active, children }: { icon: LucideIcon; activ
   return (
     <>
       <Icon size={19} aria-hidden className={active ? 'text-brand' : undefined} />
-      <span className="flex-1 text-left">{children}</span>
-      {active && <span aria-hidden className="h-5 w-1 rounded-full bg-brand" />}
+      <span className="hidden flex-1 text-left lg:block">{children}</span>
+      {active && <span aria-hidden className="hidden h-5 w-1 rounded-full bg-brand lg:block" />}
     </>
   )
 }
@@ -27,7 +27,7 @@ export interface SidebarLinkProps {
 
 export function SidebarLink({ href, icon, label, active }: SidebarLinkProps) {
   return (
-    <a href={href} aria-current={active ? 'page' : undefined} className={cn(ITEM_CLASSES, itemTone(active))}>
+    <a href={href} aria-label={label} title={label} aria-current={active ? 'page' : undefined} className={cn(ITEM_CLASSES, itemTone(active))}>
       <ItemContent icon={icon} active={active}>
         {label}
       </ItemContent>
@@ -38,14 +38,15 @@ export function SidebarLink({ href, icon, label, active }: SidebarLinkProps) {
 export interface SidebarActionProps {
   icon: LucideIcon
   label: string
-  hint?: string
+  /** Set when the action opens a menu: whether it is open. */
+  expanded?: boolean
   onClick: () => void
 }
 
-/** Sidebar entry that runs an action (e.g. opening the TV window) instead of navigating. */
-export function SidebarAction({ icon, label, hint, onClick }: SidebarActionProps) {
+/** Sidebar entry that runs an action (e.g. the menu of TV screens) instead of navigating. */
+export function SidebarAction({ icon, label, expanded, onClick }: SidebarActionProps) {
   return (
-    <button type="button" onClick={onClick} title={hint} className={cn(ITEM_CLASSES, itemTone(false))}>
+    <button type="button" onClick={onClick} aria-label={label} title={label} aria-expanded={expanded} className={cn(ITEM_CLASSES, itemTone(false))}>
       <ItemContent icon={icon} active={false}>
         {label}
       </ItemContent>

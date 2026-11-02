@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR } from '@/config/branding'
-import { EXERCISE_LIBRARY } from '@/data/exercises'
+import { EXERCISE_LIBRARY, EXERCISES_ADDED_IN_V2 } from '@/data/exercises'
 import { createSeedData } from '@/data/seed'
+import { SCHEMA_VERSION } from '@/types'
 import { normalizeAppData } from './migrate'
 
 describe('normalizeAppData', () => {
@@ -47,7 +48,16 @@ describe('normalizeAppData', () => {
     const own = { id: 'custom_1', name: 'Propio', category: 'Core', equipment: [], defaultMeasure: 'reps', custom: true, createdAt: 'x' }
     const library = normalizeAppData({ clients: [], customExercises: [own] })?.library ?? []
     expect(library.length).toBe(EXERCISE_LIBRARY.length + 1)
-    expect(library[0]).toEqual({ id: 'custom_1', name: 'Propio', category: 'Core', equipment: [], defaultMeasure: 'reps', createdAt: 'x' })
+    expect(library[0]).toEqual({ id: 'custom_1', name: 'Propio', muscle: 'Core', type: 'Fuerza', equipment: [], defaultMeasure: 'reps', createdAt: 'x' })
+  })
+
+  it('a library from the previous version gets its tags and, once, the exercises added since', () => {
+    const old = { id: 'press-banca', name: 'Press de la casa', category: 'Empuje', equipment: ['Barra'], defaultMeasure: 'reps' }
+    const library = normalizeAppData({ clients: [], schemaVersion: 1, library: [old] })?.library ?? []
+    expect(library[0]).toMatchObject({ id: 'press-banca', name: 'Press de la casa', muscle: 'Pecho', type: 'Fuerza', equipment: ['Barra'] })
+    expect(library[0]).not.toHaveProperty('category')
+    expect(library).toHaveLength(1 + EXERCISES_ADDED_IN_V2.size)
+    expect(normalizeAppData({ clients: [], schemaVersion: SCHEMA_VERSION, library: [library[0]] })?.library).toEqual([library[0]])
   })
 
   it('an empty library stays empty: nobody deleted it by accident', () => {

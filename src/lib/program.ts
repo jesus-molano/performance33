@@ -2,7 +2,7 @@
 
 import type { Client, ISODate, Program } from '@/types'
 import { EXPIRING_THRESHOLD_DAYS } from '@/config/app'
-import { diffDays, formatDateShort, todayISO } from './dates'
+import { diffDays, formatDate, todayISO } from './dates'
 
 export type ProgramPhase = 'upcoming' | 'active' | 'expired'
 
@@ -39,9 +39,9 @@ export function getProgressionWeek(info: Pick<ProgramWeekInfo, 'phase' | 'week'>
   return info.phase === 'active' ? info.week : null
 }
 
-/** Header line for the TV: 'Semana 2 de 4', 'Empieza el 3 nov' or 'Rutina finalizada'. */
+/** Header line for the TV: 'Semana 2 de 4', 'Empieza el 03/11/2026' or 'Rutina finalizada'. */
 export function formatProgramPeriod(info: ProgramWeekInfo, startDate: ISODate): string {
-  if (info.phase === 'upcoming') return `Empieza el ${formatDateShort(startDate)}`
+  if (info.phase === 'upcoming') return `Empieza el ${formatDate(startDate)}`
   if (info.phase === 'expired') return 'Rutina finalizada'
   return formatWeekOf(info.week, info.totalWeeks)
 }
@@ -58,7 +58,7 @@ export interface ProgramStatus {
   kind: ProgramStatusKind
   /** Main label: 'Sin rutina' | 'Empieza en 3 días' | 'Semana 2 de 4' | 'Termina en 3 días' | 'Termina hoy' | 'Finalizada'. */
   label: string
-  /** Secondary detail: 'Semana 4 de 4 · termina 2 nov', 'Terminó hace 10 días'… */
+  /** Secondary detail: 'Semana 4 de 4 · termina el 02/11/2026', 'Terminó hace 10 días'… */
   detail: string
   tone: StatusTone
   info: ProgramWeekInfo | null
@@ -71,7 +71,7 @@ export function getProgramStatus(program: Program | null | undefined, today: ISO
   const info = getProgramWeekInfo(program, today)
   if (info.phase === 'upcoming') {
     const label = info.daysUntilStart === 1 ? 'Empieza mañana' : `Empieza en ${info.daysUntilStart} días`
-    return { kind: 'upcoming', label, detail: `Empieza el ${formatDateShort(program.startDate)}`, tone: 'info', info }
+    return { kind: 'upcoming', label, detail: `Empieza el ${formatDate(program.startDate)}`, tone: 'info', info }
   }
   if (info.phase === 'expired') {
     const ago = -info.daysLeft
@@ -92,7 +92,7 @@ export function getProgramStatus(program: Program | null | undefined, today: ISO
   return {
     kind: 'active',
     label: weekLabel,
-    detail: `Termina el ${formatDateShort(program.endDate)}`,
+    detail: `Termina el ${formatDate(program.endDate)}`,
     tone: 'success',
     info,
   }
@@ -111,7 +111,7 @@ export function getClientPrograms(clientId: string, programs: Program[]): Progra
     .sort((a, b) => (a.startDate < b.startDate ? 1 : a.startDate > b.startDate ? -1 : 0))
 }
 
-/** Name to show for a program: its name, or 'Rutina del 27 oct'. */
+/** Name to show for a program: its name, or 'Rutina del 27/10/2026'. */
 export function getProgramDisplayName(program: Pick<Program, 'name' | 'startDate'>): string {
-  return program.name.trim() || `Rutina del ${formatDateShort(program.startDate)}`
+  return program.name.trim() || `Rutina del ${formatDate(program.startDate)}`
 }

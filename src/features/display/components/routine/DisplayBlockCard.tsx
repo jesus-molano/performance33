@@ -12,6 +12,8 @@ import { DisplayExerciseList } from './DisplayExerciseList'
 
 interface DisplayBlockCardProps {
   block: DisplayBlock
+  /** Position in the day, shown big when the screen is split. */
+  number: number
   density: DisplayDensity
   theme: DisplayThemeClasses
   flashing: boolean
@@ -21,15 +23,18 @@ interface DisplayBlockCardProps {
  * One block: type header, free text (warm-up), exercise rows, client-visible note and footer.
  * Compact: one-line header (it carries the footer) and the free text folded onto one flowing line.
  */
-export function DisplayBlockCard({ block, density, theme, flashing }: DisplayBlockCardProps) {
+export function DisplayBlockCard({ block, number, density, theme, flashing }: DisplayBlockCardProps) {
   const compact = density === 'compact'
   const styles = DENSITY_STYLES[density]
-  const Header = compact ? DisplayBlockHeaderCompact : DisplayBlockHeader
   return (
     <article
       className={cn('break-inside-avoid', styles.card, block.muted ? theme.mutedCard : theme.card, flashing && 'animate-flash')}
     >
-      <Header block={block} theme={theme} flashing={flashing} />
+      {compact ? (
+        <DisplayBlockHeaderCompact block={block} theme={theme} flashing={flashing} />
+      ) : (
+        <DisplayBlockHeader block={block} number={number} theme={theme} flashing={flashing} />
+      )}
       {block.text && (
         <p className={cn('font-medium [overflow-wrap:anywhere]', styles.blockText, theme.secondaryText)}>
           {compact ? foldLines(block.text) : block.text}

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
 import { createSeedData } from '@/data/seed'
 import type { LibraryExercise } from '@/types'
 import { applyRemoteRows, hydrateData, undo, watchLatestUndoStep } from './history'
@@ -77,7 +76,7 @@ describe('loadDemoData', () => {
   })
 
   it('fills an empty database and keeps the branding and the library', () => {
-    const custom: LibraryExercise = { id: 'x1', name: 'Propio', category: EXERCISE_CATEGORY_OPTIONS[0].value, equipment: [], defaultMeasure: 'reps', createdAt: '' }
+    const custom: LibraryExercise = { id: 'x1', name: 'Propio', muscle: 'Core', type: 'Fuerza', equipment: [], defaultMeasure: 'reps', createdAt: '' }
     hydrateData({ ...seed, clients: [], programs: [], notes: [], branding: { ...seed.branding, gymName: 'Mi gym' }, library: [custom] })
     actions().loadDemoData()
     const { data } = actions()

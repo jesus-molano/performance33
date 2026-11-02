@@ -43,7 +43,7 @@ export function Input({
           {...(nativeUndo ? { [NATIVE_UNDO_ATTRIBUTE]: '' } : {})}
           className={
             hasSuffix
-              ? cn('h-full min-w-0 flex-1 bg-transparent px-3.5 text-md text-fg placeholder:text-fg-subtle focus:outline-none', LeftIcon && 'pl-10', className)
+              ? cn('h-full min-w-0 flex-1 bg-transparent px-3.5 text-base text-fg md:text-md placeholder:text-fg-subtle focus:outline-none', LeftIcon && 'pl-10', className)
               : controlClasses(!!error, cn('h-11', LeftIcon && 'pl-10', className))
           }
           {...props}

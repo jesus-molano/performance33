@@ -11,7 +11,7 @@ export function CompactImportantNotes({ clientId }: { clientId: string }) {
   const notes = usePinnedNotes(clientId)
   if (notes.length === 0) return null
   return (
-    <PrivateSurface role="note" aria-label="Notificaciones importantes del cliente" className="flex items-start gap-3 border-2 px-3 py-2.5 sm:px-4">
+    <PrivateSurface role="note" aria-label="Notificaciones importantes del usuario" className="flex items-start gap-3 border-2 px-3 py-2.5 sm:px-4">
       <BellRing size={20} aria-hidden className="mt-0.5 shrink-0 text-private-icon" />
       <ul className="min-w-0 flex-1 text-md font-medium text-amber-950">
         {notes.map((note) => (
@@ -20,11 +20,11 @@ export function CompactImportantNotes({ clientId }: { clientId: string }) {
           </li>
         ))}
       </ul>
-      <span className="hidden shrink-0 items-center gap-1 text-[0.8125rem] font-semibold tracking-wide uppercase sm:inline-flex">
+      <span className="hidden shrink-0 items-center gap-1 text-[0.8125rem] font-semibold tracking-wide uppercase lg:inline-flex">
         <Lock size={14} aria-hidden />
         Solo monitores
       </span>
-      <a href={paths.client(clientId)} className="shrink-0 rounded-lg px-1 text-sm font-semibold underline underline-offset-2 hover:text-amber-950">
+      <a href={paths.client(clientId)} className="-my-2 inline-flex min-h-11 shrink-0 items-center rounded-lg px-1 text-sm font-semibold underline underline-offset-2 hover:text-amber-950">
         Ver ficha
       </a>
     </PrivateSurface>

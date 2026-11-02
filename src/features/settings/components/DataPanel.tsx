@@ -27,7 +27,7 @@ export function DataPanel() {
         }
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat value={stats.clients} label="Clientes" />
+          <Stat value={stats.clients} label="Usuarios" />
           <Stat value={stats.programs} label="Rutinas" />
           <Stat value={stats.notes} label="Notas internas" />
           <Stat value={stats.exercises} label="Ejercicios" />
@@ -42,7 +42,7 @@ export function DataPanel() {
           <input ref={importInputRef} type="file" accept="application/json,.json" onChange={onImportFile} className="hidden" tabIndex={-1} aria-hidden />
         </div>
       </SettingsSection>
-      <SettingsSection title="Datos de demostración" description="Vuelve a cargar los clientes y rutinas de ejemplo. Borra todo lo actual, también para el resto del equipo.">
+      <SettingsSection title="Datos de demostración" description="Vuelve a cargar los usuarios y rutinas de ejemplo. Borra todo lo actual, también para el resto del equipo.">
         <Button variant="danger" leftIcon={RotateCcw} onClick={resetDemo} wrap className="self-start">
           Restablecer datos de demostración
         </Button>

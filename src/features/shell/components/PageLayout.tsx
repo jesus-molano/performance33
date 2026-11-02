@@ -26,12 +26,12 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
   )
 }
 
-/** '‹ Clientes' link above a detail page title. */
+/** '‹ Usuarios' link above a detail page title. */
 export function BackLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a
       href={href}
-      className="-ml-2 mb-3 inline-flex h-10 items-center gap-1 rounded-lg px-2 text-md font-medium text-fg-muted hover:bg-fg/5 hover:text-fg"
+      className="-ml-2 mb-3 inline-flex h-11 items-center gap-1 rounded-lg px-2 text-md font-medium text-fg-muted hover:bg-fg/5 hover:text-fg"
     >
       <ChevronLeft size={18} aria-hidden />
       {children}
