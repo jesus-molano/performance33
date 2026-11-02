@@ -1,4 +1,4 @@
-import { Pencil, Pin, PinOff, Trash2, TriangleAlert } from 'lucide-react'
+import { Pencil, Pin, PinOff, Trash2, BellRing } from 'lucide-react'
 import { Avatar, Badge, Button, DropdownMenu, Textarea, type MenuItem } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import type { ClientNote } from '@/types'
@@ -9,8 +9,8 @@ export function NoteItem({ note }: { note: ClientNote }) {
   const item = useNoteItem(note)
   const menu: MenuItem[] = [
     note.pinned
-      ? { label: 'Quitar alerta', icon: PinOff, onSelect: item.togglePin }
-      : { label: 'Fijar como alerta', icon: Pin, onSelect: item.togglePin },
+      ? { label: 'Quitar de importantes', icon: PinOff, onSelect: item.togglePin }
+      : { label: 'Marcar como importante', icon: Pin, onSelect: item.togglePin },
     { label: 'Editar', icon: Pencil, onSelect: item.startEditing },
     'separator',
     { label: 'Eliminar nota', icon: Trash2, danger: true, onSelect: item.remove },
@@ -30,8 +30,8 @@ export function NoteItem({ note }: { note: ClientNote }) {
           <p className="text-xs text-fg-subtle">{item.dateLabel}</p>
         </div>
         {note.pinned && (
-          <Badge tone="private" icon={TriangleAlert} size="sm">
-            Alerta
+          <Badge tone="private" icon={BellRing} size="sm">
+            Importante
           </Badge>
         )}
         {item.canEdit && <DropdownMenu items={menu} label={`Opciones de la nota de ${item.authorName}`} />}

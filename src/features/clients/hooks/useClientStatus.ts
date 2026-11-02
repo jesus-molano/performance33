@@ -8,7 +8,7 @@ export interface ClientStatus {
   status: ProgramStatus
 }
 
-/** Current routine of a client and its status ('Semana 2 de 4', 'Caduca en 3 días'…). */
+/** Current routine of a client and its status ('Semana 2 de 4', 'Termina en 3 días'…). */
 export function useClientStatus(clientId: string): ClientStatus {
   const program = useCurrentProgram(clientId)
   const status = useMemo(() => getProgramStatus(program), [program])

@@ -4,6 +4,7 @@ import type { NewStaffInput, StaffAccessPatch, StaffMember, StaffProfilePatch, S
 
 export interface AuthUser {
   id: string
+  email: string | null
 }
 
 export type AuthEvent =
@@ -14,6 +15,7 @@ export type AuthEvent =
 
 export interface AuthService {
   readonly isLocal: boolean
+  /** null = nobody is signed in. Rejects when it could not be checked (no connection): that is not a sign-out. */
   getUser(): Promise<AuthUser | null>
   /** Also fires when another window of this browser signs in or out. */
   onChange(listener: (event: AuthEvent) => void): () => void

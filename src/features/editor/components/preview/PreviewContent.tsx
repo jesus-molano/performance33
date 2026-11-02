@@ -1,4 +1,4 @@
-import { Lock, MonitorPlay, TriangleAlert } from 'lucide-react'
+import { Info, Lock, MonitorPlay, TriangleAlert } from 'lucide-react'
 import { Button, Callout } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { RoutinePreview } from '@/features/display'
@@ -23,6 +23,7 @@ export function PreviewContent({ programId, dayId, onOpenScreen, frameClassName 
           {fit.warning}
         </Callout>
       )}
+      {fit.notice && <Callout icon={Info}>{fit.notice}</Callout>}
       <p className="flex items-start gap-1.5 text-sm text-fg-muted">
         <Lock size={15} aria-hidden className="mt-0.5 shrink-0 text-private-icon" />
         Las notas internas nunca aparecen en la pantalla.

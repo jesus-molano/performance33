@@ -80,6 +80,13 @@ export function toPublicClient(c: Client): PublicClient {
   }
 }
 
+/** What the screens need by default, for when the device has no room for all of it. */
+export function toCompactDisplayData(data: DisplayData): DisplayData {
+  const clients = data.clients.filter((client) => !client.archived)
+  const current = new Set(clients.map((client) => client.currentProgramId))
+  return { ...data, clients, programs: data.programs.filter((program) => current.has(program.id)) }
+}
+
 /** Strip all private data (notes, internal notes, goals, library). */
 export function toDisplayData(data: AppData): DisplayData {
   return {

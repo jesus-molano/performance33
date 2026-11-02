@@ -1,7 +1,7 @@
 // The sanitised copy for Pantalla / TV windows, kept on this device while someone is signed in.
 
 import { STORAGE_KEYS } from '@/config/app'
-import { toDisplayData } from '@/lib/display'
+import { toCompactDisplayData, toDisplayData } from '@/lib/display'
 import { removeStorage } from '@/lib/safeStorage'
 import type { DisplayData } from '@/types'
 import { normalizeAppData } from './migrate'
@@ -40,8 +40,21 @@ function parseDisplayEnvelope(raw: string | null): StoredEnvelope<DisplayData> |
   return envelope && data ? { ...metaOf(envelope), data } : null
 }
 
+function tryWriteDisplayCache(data: DisplayData, meta: ChangeMeta): boolean {
+  try {
+    localStorage.setItem(STORAGE_KEYS.display, JSON.stringify({ ...meta, data }))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Never throws: this copy must never get in the way of saving the shared data. Open TV windows keep
+ * updating over the live channel even when it fails (storage full or blocked).
+ */
 export function writeDisplayCache(data: DisplayData, meta: ChangeMeta): void {
-  localStorage.setItem(STORAGE_KEYS.display, JSON.stringify({ ...meta, data }))
+  if (!tryWriteDisplayCache(data, meta)) tryWriteDisplayCache(toCompactDisplayData(data), meta)
 }
 
 export function readDisplayCache(): DisplayData | null {

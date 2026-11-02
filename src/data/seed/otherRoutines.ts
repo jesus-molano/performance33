@@ -1,4 +1,4 @@
-// Javier (Standard, 2 días), Carlos (Plus, caducada) and Andrés (1 día).
+// Javier (Standard, 2 días), Carlos (Plus, finalizada) and Andrés (1 día).
 
 import type { Day } from '@/types'
 import { WARMUP_TEXT, block, day, ex, kgProgression, roundEx } from './builders'

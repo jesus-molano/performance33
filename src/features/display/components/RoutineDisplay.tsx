@@ -45,12 +45,12 @@ export function RoutineDisplay({
 }: RoutineDisplayProps) {
   const day = routine.days[dayNumber - 1] ?? null
   const theme = getDisplayTheme(routine.branding.displayTheme)
-  const { containerRef, contentRef, style, density, overflowing, tooSmall } = useAutoFit({
+  const { containerRef, contentRef, style, density, overflowing, tooSmall, detailHidden } = useAutoFit({
     preferColumns: layout === 'full',
     fontScale,
     fitKey: day,
   })
-  useEffect(() => onFitChange?.({ overflowing, tooSmall }), [onFitChange, overflowing, tooSmall])
+  useEffect(() => onFitChange?.({ overflowing, tooSmall, detailHidden }), [onFitChange, overflowing, tooSmall, detailHidden])
   const Header = density === 'compact' ? DisplayHeaderCompact : DisplayHeader
 
   return (
@@ -60,7 +60,6 @@ export function RoutineDisplay({
         {day && day.blocks.length > 0 ? (
           <DisplayBlockList
             blocks={day.blocks}
-            week={routine.week}
             density={density}
             theme={theme}
             flashBlockIds={flashBlockIds}

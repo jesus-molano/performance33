@@ -5,13 +5,13 @@ import type { ProgramStatus } from '@/lib/program'
 
 const COPY: Partial<Record<ProgramStatus['kind'], { title: string; text: string; tone: string }>> = {
   expired: {
-    title: 'Esta rutina ha caducado',
+    title: 'Esta rutina ha finalizado',
     text: 'Crea la siguiente rutina a partir de esta y ajusta solo lo que cambie.',
     tone: 'border-red-200 bg-red-50 text-red-800',
   },
   expiring: {
     title: 'Queda poco para terminar la rutina',
-    text: 'Puedes preparar ya el siguiente partiendo de esta rutina.',
+    text: 'Puedes preparar ya la siguiente partiendo de esta rutina.',
     tone: 'border-amber-200 bg-amber-50 text-amber-900',
   },
 }

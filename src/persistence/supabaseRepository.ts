@@ -2,7 +2,7 @@
 // clients never overwrite each other (same row: last write wins). `base` is the last version known
 // to be on the server; every save and every live update is measured against it.
 
-import { CLOUD_REFETCH_INTERVAL_MS, CLOUD_REFETCH_MIN_GAP_MS, REMOTE_BATCH_MS } from '@/config/app'
+import { CLOUD_REFETCH_INTERVAL_MS, CLOUD_REFETCH_MIN_GAP_MS, CLOUD_REFETCH_RETRY_MS, REMOTE_BATCH_MS } from '@/config/app'
 import { toDisplayData } from '@/lib/display'
 import { deepEqual } from '@/lib/deepEqual'
 import { diffRowSets, DOMAIN_TABLES, toRowSet, type DomainRow, type DomainTable, type RowChange, type RowSet } from '@/lib/dataRows'
@@ -27,6 +27,10 @@ export class SupabaseRepository implements Repository {
   /** Saves run one after another, always from the latest `base`. */
   private queue: Promise<void> = Promise.resolve()
   private savesStarted = 0
+  /** Changes when the session ends: anything still queued from before must not run in the next one. */
+  private session = 0
+  private rowEventsReceived = 0
+  private retryTimer: ReturnType<typeof setTimeout> | null = null
   private lastFetchAt = 0
   private revision = 0
   private listener: ((change: RemoteChange) => void) | null = null
@@ -50,7 +54,8 @@ export class SupabaseRepository implements Repository {
 
   save(getData: () => AppData, meta: ChangeMeta): Promise<void> {
     writeDisplayCache(toDisplayData(getData()), meta)
-    const run = this.queue.then(() => this.push(getData()))
+    const { session } = this
+    const run = this.queue.then(() => (session === this.session ? this.push(getData()) : undefined))
     this.queue = run.catch(() => undefined)
     return run
   }
@@ -64,6 +69,8 @@ export class SupabaseRepository implements Repository {
   }
 
   release(): void {
+    this.session++
+    this.clearRetry()
     this.base = null
     this.deleteEchoes.clear()
     this.incoming.clear()
@@ -95,25 +102,38 @@ export class SupabaseRepository implements Repository {
       window.removeEventListener('online', catchUp)
       if (this.incomingTimer) clearTimeout(this.incomingTimer)
       this.incomingTimer = null
+      this.clearRetry()
     }
   }
 
-  /** Reloads everything and applies the differences. Skipped if a save overlaps: it could look like a remote change. */
+  /** Reloads everything and applies the differences. A save or a live change overlapping could look like a remote change: try again. */
   async refetch(): Promise<void> {
     await this.queue
     if (!this.base) return
-    const started = this.savesStarted
+    const { session, savesStarted, rowEventsReceived } = this
     let remote: RowSet
     try {
       remote = toRowSet(await this.fetchData())
     } catch {
       return
     }
-    if (!this.base || started !== this.savesStarted) return
+    if (!this.base || session !== this.session) return
+    if (savesStarted !== this.savesStarted || rowEventsReceived !== this.rowEventsReceived) {
+      this.retryTimer ??= setTimeout(() => {
+        this.retryTimer = null
+        void this.refetch()
+      }, CLOUD_REFETCH_RETRY_MS)
+      return
+    }
     const changes = diffRowSets(this.base, remote)
     this.base = remote
     this.deleteEchoes.clear()
     if (changes.length > 0) this.emit(changes)
+  }
+
+  private clearRetry(): void {
+    if (this.retryTimer) clearTimeout(this.retryTimer)
+    this.retryTimer = null
   }
 
   private async fetchData(): Promise<AppData> {
@@ -160,8 +180,14 @@ export class SupabaseRepository implements Repository {
   /** Returns true when the server deleted fewer rows than asked (refused, or already gone). */
   private async deleteRows(table: DomainTable, deletes: RowChange[]): Promise<boolean> {
     const ids = deletes.map((change) => change.id)
-    const deleted = await this.gateway.remove(table, ids)
-    for (const id of deleted) this.deleteEchoes.add(echoKey(table, id))
+    // Before asking: the live event can arrive before the response does.
+    for (const id of ids) this.deleteEchoes.add(echoKey(table, id))
+    let deleted: string[] = []
+    try {
+      deleted = await this.gateway.remove(table, ids)
+    } finally {
+      for (const id of ids) if (!deleted.includes(id)) this.deleteEchoes.delete(echoKey(table, id))
+    }
     for (const id of ids) this.base?.[table].delete(id)
     return deleted.length < ids.length
   }
@@ -174,6 +200,7 @@ export class SupabaseRepository implements Repository {
     if (!this.base) return
     if (raw?.client_origin === this.origin) return
     if (!raw && this.deleteEchoes.delete(echoKey(table, id))) return
+    this.rowEventsReceived++
     const key = echoKey(table, id)
     const previous = this.incoming.get(key)?.previous ?? this.base[table].get(id) ?? null
     const row = raw ? rowFromDb(table, raw) : null

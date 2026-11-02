@@ -9,8 +9,8 @@ describe('getProgramStatus', () => {
   it('labels each phase', () => {
     expect(getProgramStatus(null, TODAY).label).toBe('Sin rutina')
     expect(getProgramStatus(program('2026-10-24', '2026-11-20'), TODAY).label).toBe('Semana 2 de 4')
-    expect(getProgramStatus(program('2026-10-06', '2026-11-02'), TODAY).label).toBe('Caduca en 2 días')
-    expect(getProgramStatus(program('2026-09-01', '2026-09-28'), TODAY).label).toBe('Caducada')
+    expect(getProgramStatus(program('2026-10-06', '2026-11-02'), TODAY).label).toBe('Termina en 2 días')
+    expect(getProgramStatus(program('2026-09-01', '2026-09-28'), TODAY).label).toBe('Finalizada')
     expect(getProgramStatus(program('2026-11-01', '2026-11-28'), TODAY).label).toBe('Empieza mañana')
   })
 })
@@ -24,6 +24,6 @@ describe('progression week policy', () => {
 
   it('does not claim a running week for an expired program', () => {
     const expired = program('2026-09-01', '2026-09-28')
-    expect(formatProgramPeriod(getProgramWeekInfo(expired, TODAY), expired.startDate)).toBe('Rutina terminada')
+    expect(formatProgramPeriod(getProgramWeekInfo(expired, TODAY), expired.startDate)).toBe('Rutina finalizada')
   })
 })

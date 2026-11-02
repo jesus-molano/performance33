@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { STORAGE_KEYS } from '@/config/app'
 import { BACKEND } from '@/config/backend'
+import { withKeepalive } from './keepalive'
 
 /**
  * The one cloud connection, or null in local test mode. PKCE keeps login tokens out of the address
@@ -16,5 +17,6 @@ export const cloudClient: SupabaseClient | null =
           detectSessionInUrl: true,
           storageKey: STORAGE_KEYS.cloudSession,
         },
+        global: { fetch: (input, init) => fetch(input, withKeepalive(init)) },
       })
     : null

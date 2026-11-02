@@ -31,7 +31,7 @@ export function ProgramHistoryRow({ program, actions }: ProgramHistoryRowProps) 
         </p>
       </div>
       <Badge tone={status.kind === 'expired' ? 'neutral' : status.tone} size="sm" className="hidden sm:inline-flex">
-        {status.kind === 'expired' ? 'Terminada' : status.label}
+        {status.label}
       </Badge>
       <Button variant="secondary" size="sm" onClick={() => actions.open(program)} className="h-11 px-4">
         Ver

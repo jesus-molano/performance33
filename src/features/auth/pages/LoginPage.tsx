@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { Badge } from '@/components/ui'
 import { useDisclosure } from '@/hooks'
 import { useSessionNotice } from '@/store'
+import { AUTH_COPY } from '@/features/auth/config'
 import { AuthShell } from '@/features/auth/components/AuthShell'
 import { ForgotPasswordForm } from '@/features/auth/components/ForgotPasswordForm'
 import { FormError } from '@/features/auth/components/FormError'
@@ -19,7 +20,7 @@ export function LoginPage() {
     return (
       <AuthShell
         title="Entrar"
-        description="Prueba la aplicación con datos de demostración, guardados solo en este navegador."
+        description={AUTH_COPY.demoDescription}
         badge={
           <Badge tone="warning" icon={FlaskConical}>
             Modo local de pruebas

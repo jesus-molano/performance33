@@ -30,6 +30,18 @@ describe('normalizeAppData', () => {
     expect(data).not.toHaveProperty('coaches')
   })
 
+  it('fills params only when a block has none: a cleared value stays cleared', () => {
+    const raw = { clients: [], programs: [{ id: 'p', days: [{ id: 'd', blocks: [{ id: 'a', type: 'superset', params: {} }, { id: 'b', type: 'superset' }] }] }] }
+    const [cleared, missing] = normalizeAppData(raw)?.programs[0].days[0].blocks ?? []
+    expect(cleared.params).toEqual({})
+    expect(Object.keys(missing.params).length).toBeGreaterThan(0)
+  })
+
+  it('keeps day names as they are', () => {
+    const raw = { clients: [], programs: [{ id: 'p', days: [{ id: 'd1', name: '' }, { id: 'd2', name: 'Día 7' }] }] }
+    expect(normalizeAppData(raw)?.programs[0].days.map((d) => d.name)).toEqual(['', 'Día 7'])
+  })
+
   it('migrates the old low-contrast accent colour', () => {
     const data = normalizeAppData({ clients: [], branding: { accentColor: LEGACY_ACCENT_COLOR } })
     expect(data?.branding.accentColor).toBe(DEFAULT_BRANDING.accentColor)

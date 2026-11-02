@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { refreshTeam, teamService } from '@/auth'
+import { refreshTeamQuietly, teamService } from '@/auth'
 import { useConfirm, useToast } from '@/hooks'
 import { accessChangeError } from '@/lib/ownership'
 import { useCurrentStaff, useTeam } from '@/store'
@@ -36,7 +36,7 @@ export function useTeamPanel(): TeamPanelApi {
       setBusy(true)
       try {
         await teamService.updateAccess(member.id, patch)
-        await refreshTeam()
+        await refreshTeamQuietly()
         toast({ message: done, tone: 'success' })
       } catch (error) {
         toast({ message: error instanceof Error ? error.message : 'No se ha podido guardar.', tone: 'error' })
@@ -51,7 +51,7 @@ export function useTeamPanel(): TeamPanelApi {
     if (!active) {
       const ok = await confirm({
         title: `¿Desactivar a ${member.name}?`,
-        description: 'Dejará de poder entrar. Sus notas se conservan y puedes reactivarla cuando quieras.',
+        description: 'Dejará de poder entrar. Sus notas se conservan y puedes devolverle el acceso cuando quieras.',
         confirmLabel: 'Desactivar',
         danger: true,
       })

@@ -26,6 +26,7 @@ export const useSessionStatus = (): SessionStatus => useSessionStore((s) => s.st
 export const useCurrentStaff = (): StaffMember | null => useSessionStore((s) => s.staff)
 export const useIsAdmin = (): boolean => useSessionStore((s) => s.staff?.role === 'admin')
 export const useSessionNotice = (): string | null => useSessionStore((s) => s.notice)
+export const useSessionEmail = (): string | null => useSessionStore((s) => s.email)
 /** Everyone on the staff list, deactivated people included. */
 export const useTeam = (): StaffMember[] => useSessionStore((s) => s.team)
 export const useStaffMember = (id: string | null): StaffMember | null =>
@@ -64,7 +65,7 @@ export function usePinnedNotes(clientId: string): ClientNote[] {
   return useMemo(() => notes.filter((n) => n.pinned), [notes])
 }
 
-/** clientId → number of pinned alert notes (for list badges). */
+/** clientId → number of important notifications (pinned notes) (for list badges). */
 export function usePinnedNoteCounts(): Record<string, number> {
   const notes = useAppStore((s) => s.data.notes)
   return useMemo(() => countPinnedNotes(notes), [notes])

@@ -28,6 +28,10 @@ export const SAVE_RETRY_DELAYS_MS = [2000, 5000, 15000, 30000] as const
 export const REMOTE_BATCH_MS = 100
 /** Safety net: reload shared data this often, in case a live update was missed. */
 export const CLOUD_REFETCH_INTERVAL_MS = 120_000
+/** A reload overlapped with a live change, so its result was dropped: try again after this long. */
+export const CLOUD_REFETCH_RETRY_MS = 2000
+/** Biggest request sent so that it survives the page closing (browsers cap these at 64 KB, in bytes). */
+export const KEEPALIVE_MAX_BODY_CHARS = 30_000
 /** Coming back to the tab or the network reloads shared data, at most this often. */
 export const CLOUD_REFETCH_MIN_GAP_MS = 10_000
 /** Coming back to the tab re-checks that this person still has access, at most this often. */
@@ -39,7 +43,7 @@ export const UNDO_GROUP_MS = 1000
 export const UNDO_LIMIT = 100
 
 export const TOAST_DURATION_MS = 6000
-/** Programs ending within this many days are flagged 'Caduca en N días'. */
+/** Programs ending within this many days are flagged 'Termina en N días'. */
 export const EXPIRING_THRESHOLD_DAYS = 5
 export const DEFAULT_PROGRAM_WEEKS = 4
 export const MAX_PROGRAM_WEEKS = 52
@@ -60,3 +64,9 @@ export const TV_MAX_SLOTS = 4
 export const TV_EMPTY_SLOT_TOKEN = '-'
 /** Pixels the pointer must move on a column grip before a drag starts (a click stays a click). */
 export const TV_DRAG_ACTIVATION_DISTANCE = 6
+
+/** Rows per page when browsing the exercise library. */
+export const EXERCISE_PAGE_SIZE = 20
+/** Google search behind the exercise link; the suffix keeps results about training. */
+export const GOOGLE_SEARCH_URL = 'https://www.google.com/search?q='
+export const EXERCISE_SEARCH_SUFFIX = 'ejercicio'

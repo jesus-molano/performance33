@@ -7,21 +7,19 @@ import { DisplayBlockCard } from './DisplayBlockCard'
 
 interface DisplayBlockListProps {
   blocks: DisplayBlock[]
-  week: number | null
   density: DisplayDensity
   theme: DisplayThemeClasses
   flashBlockIds: ReadonlySet<string>
 }
 
 /** Blocks flow in 1 or 2 balanced columns (column count set by auto-fit). */
-export function DisplayBlockList({ blocks, week, density, theme, flashBlockIds }: DisplayBlockListProps) {
+export function DisplayBlockList({ blocks, density, theme, flashBlockIds }: DisplayBlockListProps) {
   return (
     <div className={cn('[column-count:var(--display-columns,1)]', DENSITY_STYLES[density].columnGap)}>
       {blocks.map((block) => (
         <DisplayBlockCard
           key={block.id}
           block={block}
-          week={week}
           density={density}
           theme={theme}
           flashing={flashBlockIds.has(block.id)}

@@ -8,7 +8,6 @@ import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR } from '@/config/branding'
 import { UNKNOWN_AUTHOR_COLOR } from '@/config/colors'
 import { PLAN_BY_ID } from '@/config/plans'
 import { endDateFor, isValidISODate, todayISO } from '@/lib/dates'
-import { renumberDays } from '@/lib/days'
 import { createBlock, createExercise } from '@/lib/factories'
 import {
   SCHEMA_VERSION,
@@ -45,9 +44,11 @@ function normalizeExercise(raw: UnknownRecord & { id: string }): ExerciseEntry {
 
 function normalizeBlock(raw: UnknownRecord & { id: string }): Block {
   const type = (typeof raw.type === 'string' && raw.type in BLOCK_TYPE_META ? raw.type : 'normal') as Block['type']
-  const base = createBlock(type, { params: isRecord(raw.params) ? raw.params : {} })
+  const base = createBlock(type)
   return {
     ...base,
+    // As stored: a value the coach cleared must not come back from the defaults (see dbRows round-trip test).
+    params: isRecord(raw.params) ? raw.params : base.params,
     id: raw.id,
     title: text(raw.title),
     note: text(raw.note),
@@ -71,7 +72,7 @@ export function normalizeProgram(raw: UnknownRecord & { id: string }): Program {
     startDate,
     endDate,
     weeks,
-    days: renumberDays(normalizeList(raw.days, normalizeDay)),
+    days: normalizeList(raw.days, normalizeDay),
   }
 }
 

@@ -30,18 +30,28 @@ interface FitState extends FitResult, FitStatus {
   density: DisplayDensity
 }
 
-const INITIAL_FIT: FitState = { unit: 16, columns: 1, density: 'comfortable', overflowing: false, tooSmall: false }
+const INITIAL_FIT: FitState = {
+  unit: 16,
+  columns: 1,
+  detail: 0,
+  density: 'comfortable',
+  overflowing: false,
+  tooSmall: false,
+  detailHidden: false,
+}
 
 const sameFit = (a: FitState, b: FitState) =>
   a.unit === b.unit &&
   a.columns === b.columns &&
+  a.detail === b.detail &&
   a.density === b.density &&
   a.overflowing === b.overflowing &&
   a.tooSmall === b.tooSmall
 
 /**
  * Scales a routine view to fill its container without scrolling: binary-searches the root
- * font-size (all inner sizes are em) between the readable floor and a max, and picks the compact
+ * font-size (all inner sizes are em), hiding secondary content before going below the target
+ * size (see planFit), and picks the compact
  * or comfortable density from the container's shape. Re-fits on container resize, content resize
  * (late web fonts, live edits), content change, density change and font loading.
  */
@@ -78,6 +88,7 @@ export function useAutoFit({ preferColumns, fontScale, fitKey }: AutoFitOptions)
       density,
       overflowing: fittedHeight.current > height || content.scrollWidth > container.clientWidth,
       tooSmall: best.unit < readableMinUnit(height, density),
+      detailHidden: best.detail > 0,
     }
     setFit((prev) => (sameFit(prev, next) ? prev : next))
   }, [preferColumns, fontScale])
@@ -117,5 +128,6 @@ export function useAutoFit({ preferColumns, fontScale, fitKey }: AutoFitOptions)
     density: fit.density,
     overflowing: fit.overflowing,
     tooSmall: fit.tooSmall,
+    detailHidden: fit.detailHidden,
   }
 }

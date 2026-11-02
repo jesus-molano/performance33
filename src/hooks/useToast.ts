@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { COPY } from '@/config/copy'
-import { currentDataVersion, isLatestData, onDataChange, undo } from '@/store/history'
+import { undo, watchLatestUndoStep } from '@/store/history'
+import type { UndoStepWatch } from '@/store/history'
 import { useToastStore, type ToastInput } from '@/store/toastStore'
 
 export interface ToastApi {
@@ -8,7 +9,8 @@ export interface ToastApi {
   toast: (input: ToastInput) => string
   /**
    * 'Ejercicio eliminado · Deshacer'. Call right after the change it announces: the button undoes
-   * exactly that change, and the toast goes away as soon as anything else changes the data.
+   * exactly that change. It goes away when this person changes something else; a change from another
+   * coach leaves it in place unless that change cancels the step.
    */
   toastUndo: (message: string) => string
   dismiss: (id: string) => void
@@ -20,21 +22,21 @@ export function useToast(): ToastApi {
 
   const toastUndo = useCallback(
     (message: string) => {
-      const version = currentDataVersion()
+      let watch: UndoStepWatch | null = null
       const id = show({
         message,
         actionLabel: COPY.undo,
         onAction: () => {
-          if (isLatestData(version)) undo()
+          if (watch?.isCurrent()) undo()
         },
       })
-      const stop = onDataChange(() => {
-        stop()
+      watch = watchLatestUndoStep(() => {
+        watch?.stop()
         dismiss(id)
       })
       const stopWhenGone = useToastStore.subscribe((state) => {
         if (state.toasts.some((t) => t.id === id)) return
-        stop()
+        watch?.stop()
         stopWhenGone()
       })
       return id

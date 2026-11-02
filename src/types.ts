@@ -63,7 +63,7 @@ export interface ClientNote {
   /** Staff id of the author ('' or unknown when that person is gone: show 'Monitor eliminado'). */
   authorId: ID
   text: string
-  /** Pinned = shown as an alert badge/banner on the client. */
+  /** Pinned = important notification: badge and banner on the client. */
   pinned: boolean
   createdAt: ISODateTime
   updatedAt: ISODateTime

@@ -1,5 +1,7 @@
 import { Button, Callout, Input, Modal, Select } from '@/components/ui'
+import { EXERCISE_NAME_MAX_LENGTH } from '@/config/capacity'
 import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
+import { getLengthHint } from '@/lib/capacity'
 import { formatExerciseMeta } from '@/lib/exerciseLibrary'
 import type { ExerciseCategory } from '@/types'
 import type { SaveToLibraryApi } from '@/features/editor/hooks/useSaveToLibrary'
@@ -61,7 +63,15 @@ export function SaveToLibraryModal({ api, onClose }: SaveToLibraryModalProps) {
             </div>
           </Callout>
         )}
-        <Input label="Nombre" nativeUndo value={api.draft.name} onChange={(e) => api.setField('name', e.target.value)} autoFocus />
+        <Input
+          label="Nombre"
+          nativeUndo
+          value={api.draft.name}
+          maxLength={EXERCISE_NAME_MAX_LENGTH}
+          hint={getLengthHint(api.draft.name, EXERCISE_NAME_MAX_LENGTH)}
+          onChange={(e) => api.setField('name', e.target.value)}
+          autoFocus
+        />
         <Select<ExerciseCategory>
           label="Categoría"
           options={EXERCISE_CATEGORY_OPTIONS}

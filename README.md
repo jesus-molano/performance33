@@ -13,9 +13,20 @@ npm install
 npm run dev       # abre http://localhost:5173
 ```
 
-Sin configurar nada, arranca en **Modo local de pruebas**: entras con los botones «Entrar como
-administrador» o «Entrar como monitor», sin contraseña, y los datos se quedan solo en ese navegador.
-En cuanto configuras la conexión (más abajo), ese modo desaparece por completo.
+Sin configurar nada, en tu ordenador arranca en **Modo local de pruebas**: entras con los botones
+«Entrar como administrador» o «Entrar como monitor», sin contraseña, y los datos se quedan solo en ese
+navegador. En cuanto configuras la conexión (más abajo), ese modo desaparece por completo.
+
+## Enseñar la demo en Vercel, sin configurar nada más
+
+Para que lo prueben y den su opinión, sin base de datos: en [vercel.com](https://vercel.com), **Add New →
+Project**, importa el repositorio, añade la variable `VITE_ALLOW_LOCAL_DEMO` con el valor `true` y pulsa **Deploy**.
+
+- Entra quien tenga el enlace, sin contraseña, como administrador o como monitor.
+- Cada navegador tiene sus propios datos: no se comparten entre monitores ni dispositivos.
+- **No metas datos reales de clientes**: se quedan en ese navegador y los verá quien entre después.
+
+Sin esa variable, y sin la conexión de abajo, la web publicada avisa de que falta configuración y no arranca.
 
 Otros comandos:
 
@@ -37,13 +48,16 @@ Se hace una sola vez. Calcula unos 30 minutos.
 
 ### 2. Crear las tablas y los permisos
 
-1. Abre `supabase/schema.sql` y, **al final del archivo**, cambia `TU_EMAIL@ejemplo.com` por tu email.
-   Ese será el primer administrador.
-2. En Supabase ve a **SQL Editor → New query**, pega el archivo entero y pulsa **Run**.
+1. En Supabase ve a **SQL Editor → New query**, pega el archivo `supabase/schema.sql` entero y pulsa **Run**.
+   Se puede volver a ejecutar sin romper nada.
+2. En otra consulta nueva, añade al primer administrador con **tu email de Google** y pulsa **Run**:
 
-Se puede volver a ejecutar sin romper nada. Si lo ejecutas con otro email, añade otro administrador.
+   ```sql
+   insert into public.staff (email, name, role)
+   values (lower('tu.email@gmail.com'), 'Tu nombre', 'admin');
+   ```
 
-No subas al repositorio el archivo con tu email: cámbialo solo para pegarlo en Supabase.
+Tu email no se guarda en el repositorio: solo en la base de datos.
 
 ### 3. Direcciones permitidas
 
@@ -55,9 +69,6 @@ En **Authentication → URL Configuration**:
 ### 4. Comprobar la confirmación de email (importante)
 
 En **Authentication → Sign In / Providers → Email**, deja **Confirm email** activado (viene así).
-
-La lista de acceso se fía de que el email de cada cuenta esté verificado. Si lo desactivas, cualquiera
-podría registrarse con el email de un monitor que aún no haya entrado y ocupar su sitio.
 
 ### 5. Entrar con Google
 
@@ -90,8 +101,10 @@ En Supabase, ve a **Authentication → Sign In / Providers → Google**, actíva
 La clave `anon` es pública y va dentro de la web: lo que protege los datos son los permisos del paso 2.
 **Nunca** uses la clave `service_role` aquí.
 
-Si solo pones una de las dos variables, la web muestra un aviso y no arranca. Si no pones ninguna,
-arranca en Modo local de pruebas, con datos solo en cada navegador.
+Si falta alguna de las dos, la web muestra un aviso y no arranca.
+
+`vercel.json` añade las cabeceras de seguridad de la web. Si usas un dominio propio en Supabase, añádelo
+en `connect-src`; si no, la web no podrá conectar.
 
 Para usar la nube desde tu ordenador, copia `.env.example` como `.env.local` y rellénalo.
 
@@ -103,13 +116,23 @@ Para usar la nube desde tu ordenador, copia `.env.example` como `.env.local` y r
 
 ## Cómo entra cada persona
 
-Nadie puede registrarse por su cuenta: solo entra quien esté activo en **Ajustes → Equipo**. Cualquier
-otra cuenta ve «Tu cuenta no tiene acceso» y ningún dato.
+Solo entra quien esté activo en **Ajustes → Equipo**. Cualquier otra cuenta ve «Tu cuenta no tiene
+acceso», con el email con el que ha entrado, y ningún dato.
 
 - **Con Google**: basta con que el administrador añada su email en Equipo. Es lo más sencillo.
-- **Con email y contraseña**: además de añadirla en Equipo, el administrador crea la cuenta en Supabase:
-  **Authentication → Users → Add user → Create new user**, con ese mismo email, una contraseña y
-  **Auto Confirm User** activado. Después la persona puede cambiarla desde «He olvidado mi contraseña».
+- **Con email y contraseña**: hoy no se puede hacer desde la aplicación. Además de añadirla en Equipo, quien
+  gestiona Supabase tiene que hacer dos cosas, en este orden:
+  1. **Authentication → Users → Add user → Create new user**, con ese mismo email, una contraseña y
+     **Auto Confirm User** activado.
+  2. En **SQL Editor**: `select public.allow_password_account('su.email@ejemplo.com');`
+
+  Después la persona puede cambiarla desde «He olvidado mi contraseña».
+
+**Por qué el segundo paso.** Registrarse no se puede desactivar solo para las contraseñas (Google lo
+necesita), así que alguien podría crear una cuenta con el email de un monitor y una contraseña suya, y
+esperar a que el monitor confirme el correo. Por eso el primer acceso solo se concede a cuentas de
+Google con ese mismo email o a las autorizadas así. **Avisa al equipo: que no pulse un correo de
+confirmación que no haya pedido.**
 
 ## Correos de contraseña
 
@@ -117,20 +140,21 @@ El correo que trae Supabase de serie es solo para probar: **solo envía a direcc
 (las que estén en la organización de Supabase) y muy pocos mensajes por hora. Para que «He olvidado mi
 contraseña» funcione con cualquier monitor, configura un proveedor propio en **Authentication → Emails → SMTP Settings**.
 
-El enlace del correo hay que abrirlo en el mismo navegador en el que se pidió, y caduca pasado un tiempo.
+El enlace del correo hay que abrirlo en el mismo navegador en el que se pidió, y deja de valer pasado un tiempo.
 
 ## Roles
 
 | | Monitor | Administrador |
 |---|---|---|
 | Clientes, rutinas y biblioteca de ejercicios | Sí | Sí |
+| Eliminar un cliente (se lleva sus notas) | No: lo archiva | Sí |
 | Leer todas las notas internas | Sí | Sí |
 | Escribir notas firmadas por uno mismo | Sí | Sí |
 | Editar o borrar notas | Solo las suyas | Todas |
-| Su propio nombre y color (Mi perfil) | Sí | Sí |
+| Su propio nombre y color (Mi perfil), sin repetir el nombre de otro | Sí | Sí |
 | Marca, equipo, copias de seguridad, restablecer datos | No | Sí |
 
-Nadie puede cambiar su propio rol ni desactivarse, y siempre queda al menos un administrador activo.
+Nadie puede cambiar su propio rol, desactivarse ni borrarse, y siempre queda al menos un administrador activo que ya haya entrado.
 Estas reglas las aplica la base de datos, no solo la pantalla: las pruebas de `supabase/schema.test.ts` lo comprueban.
 
 ## Las pantallas del gimnasio
@@ -157,5 +181,8 @@ molestias): en Europa son datos de categoría especial según el RGPD. Antes de 
   contienen datos privados.
 - Da de baja en **Ajustes → Equipo** a quien deje de trabajar en el gimnasio.
 - En el ordenador compartido, cierra sesión al acabar si no vas a dejar las teles funcionando.
+
+Antes de abrirlo a más gente, comprueba en el proyecto real, con una cuenta nueva que no esté en Equipo, que
+no ve ningún dato. Esto no se puede probar sin un proyecto de Supabase: ver la lista al final de [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 La arquitectura y las normas de código están en [ARCHITECTURE.md](./ARCHITECTURE.md).

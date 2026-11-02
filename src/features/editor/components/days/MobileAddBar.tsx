@@ -2,6 +2,7 @@ import { LayoutGrid, Plus } from 'lucide-react'
 import { Button } from '@/components/ui'
 
 export interface MobileAddBarProps {
+  /** A full day explains itself with a toast when tapped. */
   onAddBlock: () => void
   /** Adds a row to the last block of the day; omitted when the day has no blocks. */
   onAddExercise?: () => void

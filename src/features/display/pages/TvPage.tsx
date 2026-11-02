@@ -1,4 +1,6 @@
+import { TV_MAX_SLOTS } from '@/config/app'
 import type { TvSlot } from '@/lib/routes'
+import { TV_COLUMN_TEXTS } from '@/features/display/config/tv'
 import { FadingOverlay } from '@/features/display/components/screen/FadingOverlay'
 import { ScreenShell } from '@/features/display/components/screen/ScreenShell'
 import { ScreenToolbar } from '@/features/display/components/screen/ScreenToolbar'
@@ -56,6 +58,9 @@ export function TvPage({ slots }: TvPageProps) {
             onAdd={screen.addColumn}
             onRemove={screen.removeColumn}
           />
+          {slots.length === TV_MAX_SLOTS && (
+            <span className="hidden px-2 text-sm font-medium whitespace-nowrap opacity-80 md:inline">{TV_COLUMN_TEXTS.fourColumnsNote}</span>
+          )}
         </ScreenToolbar>
       </FadingOverlay>
     </ScreenShell>

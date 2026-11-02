@@ -1,19 +1,22 @@
 import { useCallback } from 'react'
 import { useConfirm, useToast } from '@/hooks'
 import { formatFullName } from '@/lib/format'
+import { canDeleteClient } from '@/lib/ownership'
 import { navigate, paths } from '@/lib/routes'
-import { useAppActions } from '@/store'
+import { useAppActions, useCurrentStaff } from '@/store'
 import type { Client } from '@/types'
 
 export interface ClientActionsApi {
   archive: (client: Client) => void
   restore: (client: Client) => void
+  canRemove: boolean
   /** Asks first; offers archiving as the gentler option in the description. */
   remove: (client: Client) => Promise<void>
 }
 
 export function useClientActions(): ClientActionsApi {
   const { archiveClient, restoreClient, deleteClient } = useAppActions()
+  const canRemove = canDeleteClient(useCurrentStaff())
   const { toast, toastUndo } = useToast()
   const confirm = useConfirm()
 
@@ -49,5 +52,5 @@ export function useClientActions(): ClientActionsApi {
     [confirm, deleteClient, toastUndo],
   )
 
-  return { archive, restore, remove }
+  return { archive, restore, canRemove, remove }
 }

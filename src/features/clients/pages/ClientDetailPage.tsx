@@ -9,7 +9,7 @@ import { ClientProfileHeader } from '@/features/clients/components/ClientProfile
 import { CurrentProgramSection } from '@/features/clients/components/CurrentProgramSection'
 import { NewProgramModal } from '@/features/clients/components/NewProgramModal'
 import { NotesPanel } from '@/features/clients/components/NotesPanel'
-import { PinnedAlerts } from '@/features/clients/components/PinnedAlerts'
+import { ImportantNotes } from '@/features/clients/components/ImportantNotes'
 import { ProgramHistory } from '@/features/clients/components/ProgramHistory'
 
 export interface ClientDetailPageProps {
@@ -40,7 +40,7 @@ export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
     <PageContainer>
       <BackLink href={paths.clients()}>Clientes</BackLink>
       <ClientProfileHeader client={client} onEdit={editClient.open} />
-      <PinnedAlerts clientId={client.id} />
+      <ImportantNotes clientId={client.id} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex min-w-0 flex-col gap-6">
           <CurrentProgramSection client={client} onNewProgram={newProgram.open} />

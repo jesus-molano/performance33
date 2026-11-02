@@ -12,7 +12,6 @@ import { DisplayExerciseList } from './DisplayExerciseList'
 
 interface DisplayBlockCardProps {
   block: DisplayBlock
-  week: number | null
   density: DisplayDensity
   theme: DisplayThemeClasses
   flashing: boolean
@@ -22,7 +21,7 @@ interface DisplayBlockCardProps {
  * One block: type header, free text (warm-up), exercise rows, client-visible note and footer.
  * Compact: one-line header (it carries the footer) and the free text folded onto one flowing line.
  */
-export function DisplayBlockCard({ block, week, density, theme, flashing }: DisplayBlockCardProps) {
+export function DisplayBlockCard({ block, density, theme, flashing }: DisplayBlockCardProps) {
   const compact = density === 'compact'
   const styles = DENSITY_STYLES[density]
   const Header = compact ? DisplayBlockHeaderCompact : DisplayBlockHeader
@@ -32,14 +31,14 @@ export function DisplayBlockCard({ block, week, density, theme, flashing }: Disp
     >
       <Header block={block} theme={theme} flashing={flashing} />
       {block.text && (
-        <p className={cn('[overflow-wrap:anywhere]', styles.blockText, theme.secondaryText)}>
+        <p className={cn('font-medium [overflow-wrap:anywhere]', styles.blockText, theme.secondaryText)}>
           {compact ? foldLines(block.text) : block.text}
         </p>
       )}
-      {block.exercises.length > 0 && <DisplayExerciseList block={block} week={week} density={density} theme={theme} />}
+      {block.exercises.length > 0 && <DisplayExerciseList block={block} density={density} theme={theme} />}
       {block.note && <DisplayBlockNote note={block.note} className={styles.note} theme={theme} />}
       {block.footer && !compact && (
-        <p className={cn('mt-[0.5em] flex items-center gap-[0.45em] text-[1.25em] font-medium', theme.subtleText)}>
+        <p className={cn('mt-[0.4em] flex items-center gap-[0.45em] text-[1.35em] font-semibold', theme.subtleText)}>
           <Repeat size="1em" aria-hidden className="shrink-0" />
           {block.footer}
         </p>

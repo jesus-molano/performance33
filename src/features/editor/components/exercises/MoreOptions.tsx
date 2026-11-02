@@ -1,6 +1,7 @@
 import { ChevronDown, Lock, SlidersHorizontal } from 'lucide-react'
 import { useId } from 'react'
 import { PrivacyLabel, Switch } from '@/components/ui'
+import { EXERCISE_CUE_MAX_LENGTH } from '@/config/capacity'
 import { useDisclosure } from '@/hooks'
 import { cn } from '@/lib/cn'
 import type { ExerciseEntry } from '@/types'
@@ -59,6 +60,7 @@ export function MoreOptions({ entry, fields }: MoreOptionsProps) {
             label="Indicación"
             value={entry.cue}
             placeholder="Ej. codos pegados, espalda neutra"
+            maxLength={EXERCISE_CUE_MAX_LENGTH}
             onChange={(cue) => fields.setField('cue', cue)}
           />
           <ProgressionStrip entry={entry} />

@@ -1,17 +1,26 @@
 import { useCallback } from 'react'
+import { findAddExerciseRefusal } from '@/lib/capacity'
 import { useAppActions } from '@/store'
 import { useEditorUi } from '@/features/editor/store/editorUiStore'
+import { useCapacityToast } from './useCapacityToast'
+import { useEditorContext } from './useEditorContext'
 
-/** Appends a row to a block (copying series/reps/rest from the row above) and opens it on its name. */
-export function useAddExercise(): (blockId: string) => void {
+/**
+ * Adds a row to a block, at the end or at `index` (copying series/reps/rest from the row above), and
+ * opens it on its name. A full block or day explains itself with a toast.
+ */
+export function useAddExercise(): (blockId: string, index?: number) => void {
   const { addExercise } = useAppActions()
   const openRow = useEditorUi((s) => s.openRow)
+  const { days } = useEditorContext()
+  const notifyRefusal = useCapacityToast()
   return useCallback(
-    (blockId: string) => {
-      const id = addExercise(blockId)
+    (blockId: string, index?: number) => {
+      const id = addExercise(blockId, {}, { index })
       if (id) openRow(id, 'name')
+      else notifyRefusal(findAddExerciseRefusal(days, blockId))
     },
-    [addExercise, openRow],
+    [addExercise, days, notifyRefusal, openRow],
   )
 }
 

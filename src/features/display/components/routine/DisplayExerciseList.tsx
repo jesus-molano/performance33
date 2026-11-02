@@ -4,19 +4,16 @@ import type { DisplayDensity } from '@/features/display/utils/autoFit'
 import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { DENSITY_STYLES } from './densityStyles'
 import { DisplayExerciseRow } from './DisplayExerciseRow'
-import { DisplayExerciseRowCompact } from './DisplayExerciseRowCompact'
 
 interface DisplayExerciseListProps {
   block: DisplayBlock
-  week: number | null
   density: DisplayDensity
   theme: DisplayThemeClasses
 }
 
-/** Exercise rows; supersets get a vertical bracket joining A1/A2. Warm-up/mobility rows are smaller. */
-export function DisplayExerciseList({ block, week, density, theme }: DisplayExerciseListProps) {
+/** Exercise rows; supersets get a vertical bracket joining A1/A2. */
+export function DisplayExerciseList({ block, density, theme }: DisplayExerciseListProps) {
   const styles = DENSITY_STYLES[density]
-  const Row = density === 'compact' ? DisplayExerciseRowCompact : DisplayExerciseRow
   return (
     <ul
       className={cn(
@@ -27,7 +24,7 @@ export function DisplayExerciseList({ block, week, density, theme }: DisplayExer
       )}
     >
       {block.exercises.map((line) => (
-        <Row key={line.id} line={line} week={week} muted={block.muted} theme={theme} />
+        <DisplayExerciseRow key={line.id} line={line} density={density} muted={block.muted} theme={theme} />
       ))}
     </ul>
   )

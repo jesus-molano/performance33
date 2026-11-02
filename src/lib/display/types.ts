@@ -15,8 +15,6 @@ export interface DisplayExerciseLine {
   detail: string
   /** Client-visible cue or ''. */
   cue: string
-  /** True when this week's progression value was applied. */
-  progressed: boolean
 }
 
 export interface DisplayBlock {
@@ -62,7 +60,7 @@ export interface DisplayRoutine {
   /** Week whose progression values apply (1..totalWeeks), null outside the program's dates. */
   week: number | null
   totalWeeks: number
-  /** 'Semana 2 de 4', 'Empieza el 3 nov' or 'Rutina terminada'. */
+  /** 'Semana 2 de 4', 'Empieza el 3 nov' or 'Rutina finalizada'. */
   weekLabel: string
   days: DisplayDay[]
 }

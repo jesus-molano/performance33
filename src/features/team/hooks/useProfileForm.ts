@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { refreshTeam, teamService } from '@/auth'
+import { refreshTeamQuietly, teamService } from '@/auth'
 import { useToast } from '@/hooks'
+import { useTeam } from '@/store'
 import type { StaffMember } from '@/types'
+import { isStaffNameTaken } from '@/features/team/utils/staffForm'
 
 export interface ProfileFormApi {
   name: string
@@ -16,6 +18,7 @@ export interface ProfileFormApi {
 /** 'Mi perfil': own name and colour only. */
 export function useProfileForm(staff: StaffMember, onDone: () => void): ProfileFormApi {
   const { toast } = useToast()
+  const team = useTeam()
   const [name, setName] = useState(staff.name)
   const [color, setColor] = useState(staff.color)
   const [error, setError] = useState<string>()
@@ -27,11 +30,15 @@ export function useProfileForm(staff: StaffMember, onDone: () => void): ProfileF
       setError('Escribe un nombre.')
       return
     }
+    if (isStaffNameTaken(name, team, staff.id)) {
+      setError('Ya hay alguien en el equipo con ese nombre.')
+      return
+    }
     setError(undefined)
     setBusy(true)
     try {
       await teamService.updateOwnProfile(staff.id, { name: name.trim(), color })
-      await refreshTeam()
+      await refreshTeamQuietly()
       toast({ message: 'Perfil actualizado', tone: 'success' })
       onDone()
     } catch (failure) {

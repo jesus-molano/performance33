@@ -1,7 +1,17 @@
 import { LayoutGrid, Plus } from 'lucide-react'
 
-/** Large dashed '+ Añadir bloque' at the end of the day. */
-export function AddBlockButton({ onClick, isFirst }: { onClick: () => void; isFirst: boolean }) {
+export interface AddBlockButtonProps {
+  onClick: () => void
+  isFirst: boolean
+  /** Why the day takes no more blocks, or null. */
+  disabledReason: string | null
+}
+
+/** Large dashed '+ Añadir bloque' at the end of the day, replaced by the explanation when the day is full. */
+export function AddBlockButton({ onClick, isFirst, disabledReason }: AddBlockButtonProps) {
+  if (disabledReason) {
+    return <p className="flex min-h-14 items-center justify-center rounded-2xl bg-fg/5 px-4 text-center text-sm text-fg-muted">{disabledReason}</p>
+  }
   return (
     <button
       type="button"

@@ -25,16 +25,18 @@ export interface ModalProps {
   children?: ReactNode
   /** Ctrl+Z stays native inside (default, for local-state forms). Pass false when the fields are bound to the store. */
   nativeUndo?: boolean
+  /** Focus the first field on open (default). False focuses the panel, so a phone doesn't raise its keyboard. */
+  focusFirstField?: boolean
 }
 
 /**
  * Centered dialog on desktop, bottom sheet on mobile (< 768 px). Escape / backdrop / X close it.
  * Its content keeps native Ctrl+Z unless nativeUndo is false, see NATIVE_UNDO_ATTRIBUTE.
  */
-export function Modal({ open, onClose, title, description, footer, size = 'md', children, nativeUndo = true }: ModalProps) {
+export function Modal({ open, onClose, title, description, footer, size = 'md', children, nativeUndo = true, focusFirstField = true }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
-  useModalBehavior(open, onClose, panelRef)
+  useModalBehavior(open, onClose, panelRef, focusFirstField)
   if (!open) return null
 
   return createPortal(
@@ -45,9 +47,10 @@ export function Modal({ open, onClose, title, description, footer, size = 'md', 
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         {...(nativeUndo ? { [NATIVE_UNDO_ATTRIBUTE]: '' } : {})}
         className={cn(
-          'relative flex max-h-[92dvh] w-full flex-col bg-surface shadow-pop',
+          'relative flex max-h-[92dvh] w-full flex-col bg-surface shadow-pop outline-none',
           'animate-slide-up rounded-t-3xl md:animate-pop-in md:rounded-2xl',
           SIZES[size],
         )}

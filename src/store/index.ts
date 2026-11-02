@@ -3,12 +3,10 @@ export {
   applyRemoteRows,
   breakUndoGroup,
   clearHistory,
-  currentDataVersion,
   hydrateData,
-  isLatestData,
-  onDataChange,
   redo,
   undo,
+  watchLatestUndoStep,
   withoutHistory,
 } from './history'
 export * from './hooks'

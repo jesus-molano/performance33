@@ -17,9 +17,9 @@ interface ScreenToolbarProps {
 /** Pill with [extra] · A- A+ · full screen. */
 export function ScreenToolbar({ theme, isFullscreen, onToggleFullscreen, onBigger, onSmaller, children }: ScreenToolbarProps) {
   return (
-    <div className={cn('flex items-center gap-1 rounded-full p-1 shadow-pop', theme.overlay)}>
+    <div className={cn('flex max-w-[calc(100vw-1rem)] flex-wrap items-center justify-center gap-1 rounded-3xl p-1 shadow-pop md:flex-nowrap md:rounded-full', theme.overlay)}>
       {children}
-      {children && <span aria-hidden className="mx-1 h-6 w-px bg-current/20" />}
+      {children && <span aria-hidden className="mx-1 hidden h-6 w-px bg-current/20 md:block" />}
       <OverlayButton label="Texto más pequeño (−)" onClick={onSmaller}>
         <span className="text-sm">A−</span>
       </OverlayButton>

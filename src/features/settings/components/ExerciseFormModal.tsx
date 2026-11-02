@@ -1,6 +1,8 @@
 import { useId } from 'react'
 import { Button, Callout, Input, Modal, SegmentedControl, Select, Switch } from '@/components/ui'
+import { EXERCISE_NAME_MAX_LENGTH } from '@/config/capacity'
 import { EXERCISE_CATEGORY_OPTIONS } from '@/config/exerciseCategories'
+import { getLengthHint } from '@/lib/capacity'
 import type { AnyLibraryExercise } from '@/types'
 import { MEASURE_OPTIONS } from '@/features/settings/config'
 import { useExerciseForm } from '@/features/settings/hooks/useExerciseForm'
@@ -34,7 +36,17 @@ export function ExerciseFormModal({ exercise, onClose }: ExerciseFormModalProps)
     >
       <form id={formId} onSubmit={submit} noValidate className="flex flex-col gap-5 pt-1">
         <div className="flex flex-col gap-2">
-          <Input label="Nombre" placeholder="Ej.: Remo con TRX" value={values.name} onChange={(e) => setField('name', e.target.value)} error={nameError} autoFocus autoComplete="off" />
+          <Input
+            label="Nombre"
+            placeholder="Ej.: Remo con TRX"
+            value={values.name}
+            maxLength={EXERCISE_NAME_MAX_LENGTH}
+            hint={getLengthHint(values.name, EXERCISE_NAME_MAX_LENGTH)}
+            onChange={(e) => setField('name', e.target.value)}
+            error={nameError}
+            autoFocus
+            autoComplete="off"
+          />
           {similar.length > 0 && (
             <Callout>
               Ya existe algo parecido: <strong>{similar.map((e) => e.name).join(', ')}</strong>. Comprueba que no sea el mismo.

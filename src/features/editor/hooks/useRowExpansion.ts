@@ -33,7 +33,8 @@ export function useRowExpansion(entryId: string): RowExpansion {
     toggle: () => (expanded ? closeRow() : openRow(entryId)),
     close: closeRow,
     onKeyDown: (event) => {
-      if (event.key === 'Escape' && !event.defaultPrevented) closeRow()
+      // React bubbles through portals: Escape inside a modal opened from this row only closes that modal.
+      if (event.key === 'Escape' && !event.defaultPrevented && event.currentTarget.contains(event.target as Node)) closeRow()
     },
     toggleRef,
   }

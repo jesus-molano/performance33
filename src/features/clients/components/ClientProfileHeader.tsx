@@ -13,13 +13,12 @@ export interface ClientProfileHeaderProps {
 
 /** Avatar, name, plan and the client-level actions. */
 export function ClientProfileHeader({ client, onEdit }: ClientProfileHeaderProps) {
-  const { archive, restore, remove } = useClientActions()
+  const { archive, restore, canRemove, remove } = useClientActions()
   const menu: MenuItem[] = [
     client.archived
       ? { label: 'Restaurar cliente', icon: ArchiveRestore, onSelect: () => restore(client) }
       : { label: 'Archivar cliente', icon: Archive, onSelect: () => archive(client) },
-    'separator',
-    { label: 'Eliminar cliente…', icon: Trash2, danger: true, onSelect: () => remove(client) },
+    ...(canRemove ? (['separator', { label: 'Eliminar cliente…', icon: Trash2, danger: true, onSelect: () => remove(client) }] satisfies MenuItem[]) : []),
   ]
 
   return (

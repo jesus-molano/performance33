@@ -12,7 +12,8 @@ const SUPABASE_STUBS = `
   create role authenticated nologin;
   create schema auth;
   grant usage on schema auth, public to anon, authenticated;
-  create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz);
+  create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz, raw_app_meta_data jsonb);
+  create table auth.identities (user_id uuid references auth.users (id) on delete cascade, provider text, identity_data jsonb);
   create function auth.jwt() returns jsonb language sql stable as
     $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
   create function auth.uid() returns uuid language sql stable as $$ select (auth.jwt() ->> 'sub')::uuid $$;
@@ -86,6 +87,8 @@ async function seedPeople(): Promise<void> {
       ('${ID.stranger}', 'stranger@p33.test', now()),
       ('${ID.unverified}', 'unverified@p33.test', null),
       ('${ID.former}', 'former@p33.test', now());
+    insert into auth.identities (user_id, provider, identity_data)
+      select id, 'google', jsonb_build_object('email', email) from auth.users;
     insert into public.staff (email, name, role, active) values
       ('admin@p33.test', 'Admin', 'admin', true),
       ('ana@p33.test', 'Ana', 'monitor', true),
@@ -123,8 +126,22 @@ describe('schema.sql', () => {
   it('can run twice without failing', async () => {
     await asSuperuser()
     await expect(db.exec(SCHEMA)).resolves.toBeDefined()
-    // Placeholder admin from the last section of the file: no real address in the repo.
-    expect(await rows('select 1 from public.staff where email = $1', ['tu_email@ejemplo.com'])).toHaveLength(1)
+  })
+
+  it('creates no staff row by itself: the first admin is added on purpose', async () => {
+    const fresh = new PGlite()
+    await fresh.exec(SUPABASE_STUBS)
+    await fresh.exec(SCHEMA)
+    const { rows: staff } = await fresh.query('select 1 from public.staff')
+    await fresh.close()
+    expect(staff).toEqual([])
+  })
+
+  it('keeps names short and colours as plain hex, and no two people with one name', async () => {
+    await asPerson(ANA)
+    await expect(rows(`update public.staff set color = 'url(https://evil.test/x)' where email = 'ana@p33.test'`)).rejects.toThrow(/staff_color_hex/)
+    await expect(rows(`update public.staff set name = repeat('a', 61) where email = 'ana@p33.test'`)).rejects.toThrow(/staff_name_length/)
+    await expect(rows(`update public.staff set name = ' admin ' where email = 'ana@p33.test'`)).rejects.toThrow(/staff_name_unique/)
   })
 
   it('publishes every table for realtime', async () => {
@@ -171,6 +188,70 @@ describe('claim_staff_profile', () => {
     expect(await rows('select * from public.claim_staff_profile()')).toEqual([])
   })
 
+  describe('accounts that cannot be trusted with a first link', () => {
+    const unlinkAna = async () => {
+      await asSuperuser()
+      await db.exec(`update public.staff set user_id = null where email = 'ana@p33.test'`)
+    }
+    const anaRowLink = async () => {
+      await asSuperuser()
+      return (await rows<{ user_id: string | null }>(`select user_id from public.staff where email = 'ana@p33.test'`))[0].user_id
+    }
+
+    it('refuses a password account registered from outside, even once its email is confirmed', async () => {
+      await unlinkAna()
+      await db.exec(`
+        delete from auth.identities where user_id = '${ID.ana}';
+        insert into auth.identities (user_id, provider, identity_data) values ('${ID.ana}', 'email', '{"email":"ana@p33.test"}');
+      `)
+      await asPerson(ANA)
+      expect(await rows('select * from public.claim_staff_profile()')).toEqual([])
+      expect(await anaRowLink()).toBeNull()
+    })
+
+    it('refuses an account that added Google on top of an outside password', async () => {
+      await unlinkAna()
+      await db.exec(`insert into auth.identities (user_id, provider, identity_data) values ('${ID.ana}', 'email', '{"email":"ana@p33.test"}')`)
+      await asPerson(ANA)
+      expect(await rows('select * from public.claim_staff_profile()')).toEqual([])
+    })
+
+    it('refuses a stranger who changed their account email to a coach email', async () => {
+      await unlinkAna()
+      await db.exec(`
+        delete from auth.users where id = '${ID.ana}';
+        update auth.users set email = 'ana@p33.test' where id = '${ID.stranger}';
+      `)
+      await asPerson({ id: ID.stranger, email: 'ana@p33.test' })
+      expect(await rows('select * from public.claim_staff_profile()')).toEqual([])
+      expect(await anaRowLink()).toBeNull()
+    })
+
+    it('accepts a password account once the database owner has allowed it', async () => {
+      await unlinkAna()
+      await db.exec(`
+        delete from auth.identities where user_id = '${ID.ana}';
+        insert into auth.identities (user_id, provider, identity_data) values ('${ID.ana}', 'email', '{"email":"ana@p33.test"}');
+        select public.allow_password_account(' Ana@p33.test ');
+      `)
+      await asPerson(ANA)
+      expect(await rows('select * from public.claim_staff_profile()')).toHaveLength(1)
+      expect(await anaRowLink()).toBe(ID.ana)
+    })
+
+    it('nobody can allow a password account from the app', async () => {
+      await asPerson(ADMIN)
+      await expect(rows(`select public.allow_password_account('ana@p33.test')`)).rejects.toThrow(/permission denied/)
+    })
+
+    it('an account already linked keeps working after adding a password', async () => {
+      await asSuperuser()
+      await db.exec(`insert into auth.identities (user_id, provider, identity_data) values ('${ID.ana}', 'email', '{"email":"ana@p33.test"}')`)
+      await asPerson(ANA)
+      expect(await rows('select * from public.claim_staff_profile()')).toHaveLength(1)
+    })
+  })
+
   it('never trusts a forged email claim: the account email must match', async () => {
     await asSuperuser()
     await db.exec(`update public.staff set user_id = null where email = 'ana@p33.test'`)
@@ -215,6 +296,14 @@ describe('people without access', () => {
 })
 
 describe('active coaches and shared data', () => {
+  it('only the admin can delete a client: a monitor archives', async () => {
+    await asPerson(ANA)
+    expect(await affected(`delete from public.clients where true`)).toBe(0)
+    expect(await count('clients')).toBe(1)
+    await asPerson(ADMIN)
+    expect(await affected(`delete from public.clients where id = 'c1'`)).toBe(1)
+  })
+
   it('can read and write clients, programs and the library', async () => {
     await asPerson(ANA)
     expect(await count('clients')).toBe(1)
@@ -312,13 +401,25 @@ describe('private notes', () => {
     expect(await count('notes')).toBe(1)
   })
 
-  it('go away with their client, even when written by another coach', async () => {
+  it('survive a monitor trying to delete their client', async () => {
     const ana = await staffId('ana@p33.test')
     await asPerson(ANA)
     await insertNote('n1', ana)
     await asPerson(BEN)
+    expect(await affected(`delete from public.clients where id = 'c1'`)).toBe(0)
+    expect(await count('notes')).toBe(1)
+  })
+
+  it('go away with their client when the admin deletes it, and undoing it brings them back', async () => {
+    const ana = await staffId('ana@p33.test')
+    await asPerson(ANA)
+    await insertNote('n1', ana)
+    await asPerson(ADMIN)
     expect(await affected(`delete from public.clients where id = 'c1'`)).toBe(1)
     expect(await count('notes')).toBe(0)
+    await rows(`insert into public.clients (id, data) values ('c1', '{}')`)
+    await insertNote('n1', ana)
+    expect(await count('notes')).toBe(1)
   })
 
   it('keep existing when their author is removed from the team', async () => {
@@ -350,6 +451,20 @@ describe('the team list', () => {
     await expect(rows(`update public.staff set active = false where email = 'ana@p33.test'`)).rejects.toThrow(/staff_own_access_locked/)
     await expect(rows(`update public.staff set email = 'otro@p33.test' where email = 'ana@p33.test'`)).rejects.toThrow(/staff_field_locked/)
     await expect(rows(`update public.staff set user_id = '${ID.ben}' where email = 'ana@p33.test'`)).rejects.toThrow(/staff_field_locked/)
+  })
+
+  it('nobody can delete their own row, not even an admin while another remains', async () => {
+    await asSuperuser()
+    await db.exec(`update public.staff set role = 'admin' where email = 'ben@p33.test'`)
+    await asPerson(ADMIN)
+    await expect(rows(`delete from public.staff where email = 'admin@p33.test'`)).rejects.toThrow(/staff_own_access_locked/)
+  })
+
+  it('an admin row nobody has claimed does not count as the admin that must remain', async () => {
+    await asSuperuser()
+    await db.exec(`insert into public.staff (email, name, role) values ('sin-entrar@p33.test', 'Sin entrar', 'admin')`)
+    await expect(db.exec(`update public.staff set active = false where email = 'admin@p33.test'`)).rejects.toThrow(/staff_last_admin/)
+    await expect(db.exec(`delete from public.staff where email = 'sin-entrar@p33.test'`)).resolves.toBeDefined()
   })
 
   it('a monitor cannot add people', async () => {

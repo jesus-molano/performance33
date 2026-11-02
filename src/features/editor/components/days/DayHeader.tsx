@@ -13,7 +13,7 @@ export interface DayHeaderProps {
 
 /** Day name + optional focus label ('Pierna', 'Empuje') with one-tap suggestions (also while editing it). */
 export function DayHeader({ day, menuItems }: DayHeaderProps) {
-  const { rename, setLabel } = useDayFields(day.id)
+  const { rename, finishRename, setLabel } = useDayFields(day.id)
   const labelFocus = useDisclosure()
   const showSuggestions = !day.label.trim() || labelFocus.isOpen
   return (
@@ -25,6 +25,7 @@ export function DayHeader({ day, menuItems }: DayHeaderProps) {
           value={day.name}
           placeholder="Día"
           onValueChange={rename}
+          onBlur={finishRename}
           className="max-w-[60%] sm:max-w-xs"
         />
         <span className="text-fg-subtle" aria-hidden>

@@ -1,20 +1,20 @@
-import { Lock, TriangleAlert } from 'lucide-react'
+import { BellRing, Lock } from 'lucide-react'
 import { PrivateSurface } from '@/components/ui'
 import { paths } from '@/lib/routes'
 import { usePinnedNotes } from '@/store'
 
 /**
- * One amber line per pinned private note, for the routine editor: the coach sees health alerts
+ * One amber line per important notification, for the routine editor: the coach sees them
  * while picking exercises. Coach-only, never part of the TV data.
  */
-export function CompactPinnedAlerts({ clientId }: { clientId: string }) {
-  const alerts = usePinnedNotes(clientId)
-  if (alerts.length === 0) return null
+export function CompactImportantNotes({ clientId }: { clientId: string }) {
+  const notes = usePinnedNotes(clientId)
+  if (notes.length === 0) return null
   return (
-    <PrivateSurface role="note" aria-label="Alertas internas del cliente" className="flex items-start gap-3 border-2 px-3 py-2.5 sm:px-4">
-      <TriangleAlert size={20} aria-hidden className="mt-0.5 shrink-0 text-private-icon" />
+    <PrivateSurface role="note" aria-label="Notificaciones importantes del cliente" className="flex items-start gap-3 border-2 px-3 py-2.5 sm:px-4">
+      <BellRing size={20} aria-hidden className="mt-0.5 shrink-0 text-private-icon" />
       <ul className="min-w-0 flex-1 text-md font-medium text-amber-950">
-        {alerts.map((note) => (
+        {notes.map((note) => (
           <li key={note.id} className="line-clamp-2">
             {note.text}
           </li>

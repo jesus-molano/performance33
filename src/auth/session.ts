@@ -3,12 +3,12 @@
 // dashboardSync watches the status and wipes the rest. Results go to useSessionStore.
 
 import { ACCESS_RECHECK_MIN_GAP_MS, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from '@/config/app'
-import { removeStorage } from '@/lib/safeStorage'
+import { readStorage, removeStorage } from '@/lib/safeStorage'
 import { clearDisplayCache } from '@/persistence/displayCache'
 import { useSessionStore } from '@/store/sessionStore'
 import { auth, teamService } from './instance'
 import { readRedirectError } from './messages'
-import type { AuthEvent } from './types'
+import type { AuthEvent, AuthUser } from './types'
 
 const getState = () => useSessionStore.getState()
 const setState = useSessionStore.setState
@@ -19,24 +19,24 @@ let recovering = false
 let checkRun = 0
 let lastCheckAt = 0
 
-function leave(status: 'signed-out' | 'no-access', userId: string | null): void {
+function leave(status: 'signed-out' | 'no-access', user: AuthUser | null): void {
   checkRun++
   recovering = false
   clearDisplayCache()
-  setState({ status, userId, staff: null, team: [] })
+  setState({ status, userId: user?.id ?? null, email: user?.email ?? null, staff: null, team: [] })
 }
 
-async function checkAccess(userId: string): Promise<void> {
+async function checkAccess(user: AuthUser): Promise<void> {
   const run = ++checkRun
   lastCheckAt = Date.now()
   try {
     const staff = await teamService.claimProfile()
     if (run !== checkRun || recovering) return
-    if (staff) setState({ status: 'ready', userId, staff, notice: null })
-    else leave('no-access', userId)
+    if (staff) setState({ status: 'ready', userId: user.id, email: user.email, staff, notice: null })
+    else leave('no-access', user)
   } catch {
     // Already working: keep going, the next check will tell. On a cold start there is nothing to show.
-    if (run === checkRun && !recovering && getState().status !== 'ready') setState({ status: 'offline', userId })
+    if (run === checkRun && !recovering && getState().status !== 'ready') setState({ status: 'offline', userId: user.id, email: user.email })
   }
 }
 
@@ -46,20 +46,27 @@ function onAuthEvent(event: AuthEvent): void {
   } else if (event.type === 'recovery') {
     recovering = true
     checkRun++
-    setState({ status: 'recovery', userId: event.user.id, staff: null })
+    setState({ status: 'recovery', userId: event.user.id, email: event.user.email, staff: null })
   } else {
     // The login client repeats this event when the tab regains focus.
     const { status, userId } = getState()
     if (recovering || (status === 'ready' && userId === event.user.id)) return
     setState({ status: 'loading' })
-    void checkAccess(event.user.id)
+    void checkAccess(event.user)
   }
 }
 
 /** Runs the check again: from 'offline', or because this person may have lost access meanwhile. */
 export async function retrySession(): Promise<void> {
-  const user = await auth.getUser()
-  if (user) await checkAccess(user.id)
+  let user: AuthUser | null
+  try {
+    user = await auth.getUser()
+  } catch {
+    // Could not check, which is not the same as signed out: leaving now would lose unsaved work.
+    if (!recovering && getState().status !== 'ready') setState({ status: 'offline' })
+    return
+  }
+  if (user) await checkAccess(user)
   else if (!recovering) leave('signed-out', null)
 }
 
@@ -72,6 +79,8 @@ function removeLeftovers(): void {
   for (const key of LEGACY_STORAGE_KEYS) removeStorage(key)
   // A browser that used the demo before the cloud was configured must not keep that dataset.
   if (!auth.isLocal) for (const key of [STORAGE_KEYS.data, STORAGE_KEYS.localSession, STORAGE_KEYS.localTeam]) removeStorage(key)
+  // And the other way round: a site moved from the cloud back to the demo must not keep the login or the TV copy.
+  else if (readStorage(STORAGE_KEYS.cloudSession)) for (const key of [STORAGE_KEYS.cloudSession, STORAGE_KEYS.display]) removeStorage(key)
 }
 
 function takeRedirectNotice(): void {
@@ -113,7 +122,12 @@ export async function refreshTeam(): Promise<void> {
   else if (getState().status === 'ready') void retrySession()
 }
 
+/** After a change that already worked: a failed reload must not look like a failed change. Live updates catch up later. */
+export function refreshTeamQuietly(): Promise<void> {
+  return refreshTeam().catch(() => undefined)
+}
+
 /** Keeps the team list live while a dashboard is open. */
 export function watchTeam(): () => void {
-  return teamService.subscribe(() => void refreshTeam().catch(() => undefined))
+  return teamService.subscribe(() => void refreshTeamQuietly())
 }

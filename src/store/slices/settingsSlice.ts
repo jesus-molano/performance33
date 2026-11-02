@@ -58,5 +58,10 @@ export function createSettingsSlice({ commit, clearHistory }: SliceContext): Set
       commit(() => adopt(createSeedData()))
       clearHistory()
     },
+    loadDemoData: () => {
+      const demo = adopt(createSeedData())
+      commit((d) => ({ ...d, clients: demo.clients, programs: demo.programs, notes: demo.notes }))
+      clearHistory()
+    },
   }
 }

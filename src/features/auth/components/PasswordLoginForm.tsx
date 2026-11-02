@@ -2,7 +2,7 @@ import { LogIn } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
 import { useLoginForm } from '@/features/auth/hooks/useLoginForm'
 import { FormError } from './FormError'
-import { GoogleIcon } from './GoogleIcon'
+import { GoogleIcon } from '@/components/GoogleIcon'
 
 /** Email + password and Google. There is no sign-up: the administrator adds people to the team. */
 export function PasswordLoginForm({ onForgotPassword }: { onForgotPassword: () => void }) {

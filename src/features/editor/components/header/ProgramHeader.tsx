@@ -56,7 +56,7 @@ export function ProgramHeader({ client, program, api, dayIndex, previewVisible, 
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex min-w-0 flex-wrap gap-2">
           <Button
             variant="secondary"
             leftIcon={previewVisible ? EyeOff : Eye}
@@ -64,10 +64,12 @@ export function ProgramHeader({ client, program, api, dayIndex, previewVisible, 
             aria-expanded={previewVisible}
             className="flex-1 lg:flex-none"
           >
-            {previewVisible ? 'Ocultar vista previa' : 'Mostrar vista previa'}
+            <span className="sm:hidden">Vista previa</span>
+            <span className="hidden sm:inline">{previewVisible ? 'Ocultar vista previa' : 'Mostrar vista previa'}</span>
           </Button>
           <Button leftIcon={MonitorPlay} onClick={() => api.openOnScreen(dayIndex)} className="flex-1 lg:flex-none">
-            Abrir en pantalla
+            <span className="sm:hidden">En pantalla</span>
+            <span className="hidden sm:inline">Abrir en pantalla</span>
           </Button>
         </div>
       </div>

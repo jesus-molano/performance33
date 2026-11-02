@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { refreshTeam, teamService } from '@/auth'
+import { refreshTeamQuietly, teamService } from '@/auth'
 import { useToast } from '@/hooks'
 import { useTeam } from '@/store'
 import type { StaffRole } from '@/types'
@@ -35,7 +35,7 @@ export function useAddStaffForm(): AddStaffFormApi {
     setBusy(true)
     try {
       await teamService.add({ email: email.trim().toLowerCase(), name: name.trim(), role }, suggestStaffColor(team))
-      await refreshTeam()
+      await refreshTeamQuietly()
       toast({ message: `${name.trim()} ya está en el equipo`, tone: 'success' })
       setEmail('')
       setName('')

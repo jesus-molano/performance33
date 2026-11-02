@@ -8,12 +8,19 @@ export interface StaffFormErrors {
   name?: string
 }
 
+/** Notes are signed with the name: two people cannot share one (the database refuses it too). */
+export function isStaffNameTaken(name: string, team: readonly StaffMember[], exceptId?: string): boolean {
+  const clean = name.trim().toLowerCase()
+  return team.some((member) => member.id !== exceptId && member.name.trim().toLowerCase() === clean)
+}
+
 export function validateNewStaff(email: string, name: string, team: readonly StaffMember[]): StaffFormErrors {
   const errors: StaffFormErrors = {}
   const clean = email.trim().toLowerCase()
   if (!EMAIL_PATTERN.test(clean)) errors.email = 'Escribe un email válido.'
   else if (team.some((member) => member.email === clean)) errors.email = 'Ya hay alguien en el equipo con ese email.'
   if (!name.trim()) errors.name = 'Escribe un nombre.'
+  else if (isStaffNameTaken(name, team)) errors.name = 'Ya hay alguien en el equipo con ese nombre.'
   return errors
 }
 

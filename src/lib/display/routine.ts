@@ -4,7 +4,6 @@ import { blockShowsSets } from '@/lib/blocks'
 import { todayISO } from '@/lib/dates'
 import { formatDayTitle, getBlockHeader, getEntryParts, getExerciseLabels } from '@/lib/format'
 import { formatProgramPeriod, getProgramWeekInfo, getProgressionWeek } from '@/lib/program'
-import { getProgressionValue } from '@/lib/progression'
 import type { DisplayBlock, DisplayDay, DisplayRoutine } from './types'
 
 export interface BuildRoutineOptions {
@@ -34,7 +33,6 @@ function formatBlock(day: PublicDay, blockIndex: number, week: number | null): D
         load: parts.load,
         detail: [parts.tempo, parts.rest].filter(Boolean).join(' · '),
         cue: entry.cue.trim(),
-        progressed: getProgressionValue(entry, week) != null,
       }
     }),
   }

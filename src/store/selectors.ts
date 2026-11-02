@@ -20,7 +20,7 @@ export function selectClientNotes(notes: ClientNote[], clientId: string): Client
     .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.createdAt.localeCompare(a.createdAt))
 }
 
-/** Number of pinned (alert) notes per client id. */
+/** Number of important notifications (pinned notes) per client id. */
 export function countPinnedNotes(notes: ClientNote[]): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const note of notes) if (note.pinned) counts[note.clientId] = (counts[note.clientId] ?? 0) + 1

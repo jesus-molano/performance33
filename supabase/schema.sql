@@ -1,6 +1,6 @@
 -- Performance33 · Rutinas: base de datos, permisos y tiempo real.
--- Ejecútalo una vez en el SQL Editor de Supabase (se puede repetir sin romper nada).
--- Antes de ejecutarlo, cambia el email del final por el tuyo. Paso a paso en README.md.
+-- Ejecútalo en el SQL Editor de Supabase (se puede repetir sin romper nada).
+-- El primer administrador se añade aparte, con la instrucción del README.md.
 
 -- ── Tablas ──────────────────────────────────────────────────────────────────
 
@@ -15,6 +15,13 @@ create table if not exists public.staff (
   user_id uuid unique references auth.users (id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+alter table public.staff drop constraint if exists staff_name_length;
+alter table public.staff add constraint staff_name_length check (char_length(name) <= 60);
+alter table public.staff drop constraint if exists staff_color_hex;
+alter table public.staff add constraint staff_color_hex check (color ~ '^#[0-9a-fA-F]{6}$');
+-- Las notas firman con el nombre y el color: nadie puede ponerse el nombre de otro.
+create unique index if not exists staff_name_unique on public.staff (lower(trim(name))) where trim(name) <> '';
 
 -- Una fila por entidad; `data` guarda el objeto de la app tal cual. `client_origin` identifica la
 -- ventana que escribió (para ignorar el eco de sus propios cambios en tiempo real).
@@ -42,8 +49,8 @@ create table if not exists public.library_exercises (
   updated_by uuid references public.staff (id) on delete set null
 );
 
--- Al borrar un cliente sus notas se borran con él, sean de quien sean: un monitor no puede borrar
--- notas ajenas directamente, y una nota de salud no debe quedar huérfana.
+-- Al borrar un cliente sus notas se borran con él, sean de quien sean: una nota de salud no debe
+-- quedar huérfana. Por eso solo el administrador puede borrar clientes (ver los permisos más abajo).
 create table if not exists public.notes (
   id text primary key,
   data jsonb not null,
@@ -97,18 +104,11 @@ as $$
   select exists (select 1 from public.staff where user_id = auth.uid() and active and role = 'admin')
 $$;
 
-create or replace function public.other_active_admin_exists(excluded_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (select 1 from public.staff where id <> excluded_id and active and role = 'admin')
-$$;
-
--- Primer acceso: enlaza la cuenta con su fila de `staff`, solo si el email está verificado.
--- Una fila ya enlazada a otra cuenta no se puede reclamar. Devuelve la fila activa, o nada si no hay acceso.
+-- Primer acceso: enlaza la cuenta con su fila de `staff`, solo si el email está verificado y además la
+-- cuenta es de fiar. Un email verificado no basta: cualquiera puede registrar el email de un monitor con
+-- su propia contraseña, y el monitor confirmarlo sin darse cuenta. Son de fiar las cuentas solo de Google
+-- con ese mismo email, y las autorizadas con allow_password_account. Una fila ya enlazada a otra cuenta
+-- no se puede reclamar. Devuelve la fila activa, o nada si no hay acceso.
 create or replace function public.claim_staff_profile()
 returns setof public.staff
 language plpgsql
@@ -122,29 +122,54 @@ begin
   from auth.users u
   where u.id = auth.uid()
     and u.email_confirmed_at is not null
-    and lower(u.email) = lower(auth.jwt() ->> 'email');
+    and lower(u.email) = lower(auth.jwt() ->> 'email')
+    and (
+      u.raw_app_meta_data ->> 'p33_password_allowed' = 'true'
+      or (
+        exists (select 1 from auth.identities i where i.user_id = u.id)
+        and not exists (
+          select 1 from auth.identities i
+          where i.user_id = u.id
+            and (i.provider <> 'google' or lower(i.identity_data ->> 'email') is distinct from lower(u.email))
+        )
+      )
+    );
 
-  if verified_email is null then
-    return;
+  if verified_email is not null then
+    update public.staff
+    set user_id = auth.uid()
+    where email = verified_email and active and user_id is null;
   end if;
-
-  update public.staff
-  set user_id = auth.uid()
-  where email = verified_email and active and user_id is null;
 
   return query select * from public.staff where user_id = auth.uid() and active;
 end;
 $$;
 
+-- Autoriza una cuenta con contraseña creada a mano en el panel de Supabase. Se ejecuta en el SQL Editor,
+-- nunca desde la app: solo el dueño de la base de datos puede llamarla.
+create or replace function public.allow_password_account(account_email text)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  update auth.users
+  set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"p33_password_allowed": true}'::jsonb
+  where lower(email) = lower(trim(account_email));
+  if not found then
+    raise exception 'No hay ninguna cuenta con ese email: créala primero en Authentication > Users.';
+  end if;
+end;
+$$;
+
+revoke all on function public.allow_password_account(text) from public, anon, authenticated;
 revoke all on function public.current_staff_id() from public, anon;
 revoke all on function public.is_active_staff() from public, anon;
 revoke all on function public.is_admin() from public, anon;
-revoke all on function public.other_active_admin_exists(uuid) from public, anon;
 revoke all on function public.claim_staff_profile() from public, anon;
 grant execute on function public.current_staff_id() to authenticated;
 grant execute on function public.is_active_staff() to authenticated;
 grant execute on function public.is_admin() to authenticated;
-grant execute on function public.other_active_admin_exists(uuid) to authenticated;
 grant execute on function public.claim_staff_profile() to authenticated;
 
 -- ── Reglas del equipo (triggers) ────────────────────────────────────────────
@@ -189,17 +214,36 @@ begin
 end;
 $$;
 
--- Siempre tiene que quedar un administrador activo. El bloqueo evita que dos admins se quiten a la vez.
-create or replace function public.staff_keep_last_admin()
+-- Nadie puede borrarse a sí mismo: quedaría fuera sin poder volver a entrar.
+create or replace function public.staff_guard_delete()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
 begin
-  if old.role = 'admin' and old.active
+  if current_user = 'authenticated' and old.user_id = auth.uid() then
+    raise exception 'staff_own_access_locked' using errcode = 'P0001';
+  end if;
+  return old;
+end;
+$$;
+
+-- Siempre tiene que quedar un administrador activo que ya haya entrado: una fila sin reclamar no cuenta,
+-- y se puede quitar (por si se escribió mal un email). El bloqueo evita que dos admins se quiten a la vez.
+create or replace function public.staff_keep_last_admin()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if old.role = 'admin' and old.active and old.user_id is not null
     and (tg_op = 'DELETE' or new.role <> 'admin' or not new.active) then
     perform pg_advisory_xact_lock(hashtext('public.staff.admins'));
-    if not public.other_active_admin_exists(old.id) then
+    if not exists (
+      select 1 from public.staff
+      where id <> old.id and active and role = 'admin' and user_id is not null
+    ) then
       raise exception 'staff_last_admin' using errcode = 'P0001';
     end if;
   end if;
@@ -210,6 +254,9 @@ begin
 end;
 $$;
 
+-- Sustituida por la comprobación de arriba: ya no hace falta exponerla a la app.
+drop function if exists public.other_active_admin_exists(uuid);
+
 drop trigger if exists staff_normalize_email on public.staff;
 create trigger staff_normalize_email before insert or update of email on public.staff
   for each row execute function public.staff_normalize_email();
@@ -217,6 +264,10 @@ create trigger staff_normalize_email before insert or update of email on public.
 drop trigger if exists staff_guard_update on public.staff;
 create trigger staff_guard_update before update on public.staff
   for each row execute function public.staff_guard_update();
+
+drop trigger if exists staff_guard_delete on public.staff;
+create trigger staff_guard_delete before delete on public.staff
+  for each row execute function public.staff_guard_delete();
 
 drop trigger if exists staff_keep_last_admin on public.staff;
 create trigger staff_keep_last_admin before update or delete on public.staff
@@ -255,7 +306,7 @@ alter table public.library_exercises enable row level security;
 alter table public.notes enable row level security;
 alter table public.settings enable row level security;
 
-revoke all on public.staff, public.clients, public.programs, public.library_exercises, public.notes, public.settings from anon;
+revoke all on public.staff, public.clients, public.programs, public.library_exercises, public.notes, public.settings from anon, authenticated;
 grant select, insert, update, delete
   on public.staff, public.clients, public.programs, public.library_exercises, public.notes, public.settings
   to authenticated;
@@ -272,12 +323,12 @@ create policy staff_update on public.staff for update to authenticated
 drop policy if exists staff_delete on public.staff;
 create policy staff_delete on public.staff for delete to authenticated using (public.is_admin());
 
--- Clientes, rutinas y biblioteca: todo el equipo activo.
+-- Rutinas y biblioteca: todo el equipo activo.
 do $$
 declare
   t text;
 begin
-  foreach t in array array['clients', 'programs', 'library_exercises'] loop
+  foreach t in array array['programs', 'library_exercises'] loop
     execute format('drop policy if exists %I on public.%I', t || '_all', t);
     execute format(
       'create policy %I on public.%I for all to authenticated using (public.is_active_staff()) with check (public.is_active_staff())',
@@ -286,6 +337,17 @@ begin
   end loop;
 end;
 $$;
+
+-- Clientes: todo el equipo; borrarlos, solo el admin, porque se llevan las notas de todos. Los monitores archivan.
+drop policy if exists clients_all on public.clients;
+drop policy if exists clients_select on public.clients;
+create policy clients_select on public.clients for select to authenticated using (public.is_active_staff());
+drop policy if exists clients_insert on public.clients;
+create policy clients_insert on public.clients for insert to authenticated with check (public.is_active_staff());
+drop policy if exists clients_update on public.clients;
+create policy clients_update on public.clients for update to authenticated using (public.is_active_staff()) with check (public.is_active_staff());
+drop policy if exists clients_delete on public.clients;
+create policy clients_delete on public.clients for delete to authenticated using (public.is_admin());
 
 -- Notas: las lee todo el equipo; cada uno crea, edita y borra las suyas. El admin también puede actuar
 -- sobre las de otros: lo necesita para restaurar una copia con sus firmas originales.
@@ -328,11 +390,3 @@ begin
   end loop;
 end;
 $$;
-
--- ═══════════════════════════════════════════════════════════════════════════
--- PRIMER ADMINISTRADOR: cambia 'TU_EMAIL@ejemplo.com' por tu email antes de ejecutar.
--- ═══════════════════════════════════════════════════════════════════════════
-
-insert into public.staff (email, name, role)
-values ('TU_EMAIL@ejemplo.com', 'Administrador', 'admin')
-on conflict (email) do nothing;

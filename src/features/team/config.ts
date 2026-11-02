@@ -15,5 +15,5 @@ export const STAFF_NAME_MAX_LENGTH = 30
 
 export const TEAM_COPY = {
   googleHint: 'Esa persona podrá entrar con Google usando ese email.',
-  passwordHint: 'Si prefiere email y contraseña, el administrador tiene que crearle la cuenta y la contraseña: los pasos están en la guía de instalación (README).',
+  passwordHint: 'Por ahora, la forma más sencilla de entrar es con Google. Para usar email y contraseña, pídeselo a quien instaló la aplicación.',
 } as const

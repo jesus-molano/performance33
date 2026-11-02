@@ -25,7 +25,7 @@ export function useNoteComposer(clientId: string): NoteComposerApi {
     event?.preventDefault()
     if (!canSubmit) return
     addNote(clientId, text.trim(), { pinned })
-    toast({ message: pinned ? 'Alerta fijada' : 'Nota guardada', tone: 'success' })
+    toast({ message: pinned ? 'Notificación importante guardada' : 'Nota guardada', tone: 'success' })
     setText('')
     setPinned(false)
   }

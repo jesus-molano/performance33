@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { AUTO_FIT } from '@/features/display/config/display'
+import { AUTO_FIT, DETAIL_LEVELS } from '@/features/display/config/display'
 
 /** compact = narrow slot (one-line exercise rows, small header); comfortable = more air. */
 export type DisplayDensity = keyof typeof AUTO_FIT.readableUnitPerHeight
@@ -9,17 +9,26 @@ export interface FitBounds {
   max: number
 }
 
+export interface UnitBounds extends FitBounds {
+  /** Size a day should keep: secondary content drops before text goes below this. */
+  target: number
+}
+
 export interface FitResult {
   /** Root font-size in px; every size inside the routine view is in em. */
   unit: number
   columns: number
+  /** Index in DETAIL_LEVELS: how much secondary content is hidden. */
+  detail: number
 }
 
 export interface FitStatus {
-  /** Content still taller than the container at the readable floor (the bottom is cut off). */
+  /** Content still taller than the container at the smallest size (the bottom is cut off). */
   overflowing: boolean
-  /** Text below the readable floor (A- or a tiny container). */
+  /** Text below the readable floor (too much content, A- or a tiny container). */
   tooSmall: boolean
+  /** Cues, tempo/rest lines or notes are hidden so the day fits at a readable size. */
+  detailHidden: boolean
 }
 
 export interface UnitSearch {
@@ -42,25 +51,30 @@ export interface FitPlanInput {
   measure: MeasureFit
 }
 
-/** CSS variable read by the block list (column-count). */
+/** CSS variables read by the block list (column-count) and the rows (secondary content). */
 export const COLUMNS_VAR = '--display-columns'
+const CUE_VAR = '--display-cue'
+const DETAIL_VAR = '--display-detail'
+const NOTE_VAR = '--display-note'
 
 export function getDisplayDensity(width: number, height: number): DisplayDensity {
   return width < height * AUTO_FIT.compactMaxAspect ? 'compact' : 'comfortable'
 }
 
-/** Smallest readable unit for a container of this height (scales down for the editor preview). */
+/** Readable floor for a container of this height (scales down for the editor preview). */
 export function readableMinUnit(height: number, density: DisplayDensity): number {
   return height * AUTO_FIT.readableUnitPerHeight[density]
 }
 
 /**
- * Unit range for a container: the max keeps a short routine from becoming absurdly huge and the
- * min is the readable floor. `fontScale` (A-/A+) scales the max, so A+ only enlarges text while it fits.
+ * Unit range for a container: the max keeps a short routine from becoming absurdly huge, the target is
+ * what a day should keep and the min is the last resort so it still fits. `fontScale` (A-/A+) scales
+ * the max, so A+ only enlarges text while it fits.
  */
-export function getUnitBounds(width: number, height: number, density: DisplayDensity, fontScale = 1): FitBounds {
+export function getUnitBounds(width: number, height: number, density: DisplayDensity, fontScale = 1): UnitBounds {
   const max = Math.min(width * AUTO_FIT.maxUnitPerWidth, height * AUTO_FIT.maxUnitPerHeight) * fontScale
-  return { min: Math.min(readableMinUnit(height, density), max), max }
+  const target = Math.min(width * AUTO_FIT.targetUnitPerWidth, height * AUTO_FIT.targetUnitPerHeight, max)
+  return { min: Math.min(height * AUTO_FIT.lastResortUnitPerHeight[density], target), target, max }
 }
 
 /** Bounds for `columns` sub-columns, each at least minColumnWidthUnits wide; null when the slot is too narrow. */
@@ -93,27 +107,51 @@ export function prefersTwoColumns(oneColumnUnit: number, twoColumnUnit: number):
   return twoColumnUnit > oneColumnUnit * AUTO_FIT.twoColumnGain
 }
 
-/**
- * Picks unit and column count: one column between the readable floor and the max; if it does not fit
- * at the floor (or a landscape full screen prefers columns) and the slot is wide enough, two sub-columns.
- */
-export function planFit({ width, height, density, fontScale, preferColumns, measure }: FitPlanInput): FitResult {
-  const bounds = getUnitBounds(width, height, density, fontScale)
-  const single = findFittingUnit((unit) => measure({ unit, columns: 1 }), height, bounds)
+/** Unit and column count for one detail level: one column, or two when it does not fit or reads clearly bigger. */
+function planColumns(input: FitPlanInput, bounds: FitBounds, detail: number): FitResult & { fits: boolean } {
+  const { width, height, preferColumns, measure } = input
+  const single = findFittingUnit((unit) => measure({ unit, columns: 1, detail }), height, bounds)
   const wantsSplit = !single.fits || (preferColumns && width > height)
   const splitBounds = wantsSplit ? getColumnBounds(bounds, width, 2) : null
-  if (!splitBounds) return { unit: single.unit, columns: 1 }
-  const double = findFittingUnit((unit) => measure({ unit, columns: 2 }), height, splitBounds)
+  const oneColumn = { unit: single.unit, columns: 1, detail, fits: single.fits }
+  if (!splitBounds) return oneColumn
+  const double = findFittingUnit((unit) => measure({ unit, columns: 2, detail }), height, splitBounds)
   const useSplit = single.fits ? double.fits && prefersTwoColumns(single.unit, double.unit) : true
-  return useSplit ? { unit: double.unit, columns: 2 } : { unit: single.unit, columns: 1 }
+  return useSplit ? { unit: double.unit, columns: 2, detail, fits: double.fits } : oneColumn
 }
 
-export function fitStyle({ unit, columns }: FitResult): CSSProperties {
-  return { fontSize: `${unit}px`, [COLUMNS_VAR]: String(columns) } as CSSProperties
+/**
+ * Secondary content drops before text shrinks: keeps the target size hiding cues, then tempo/rest, then
+ * notes. Only with all of that gone does the text go below the target, down to the last-resort size.
+ */
+export function planFit(input: FitPlanInput): FitResult {
+  const { width, height, density, fontScale } = input
+  const { min, target, max } = getUnitBounds(width, height, density, fontScale)
+  for (let detail = 0; detail < DETAIL_LEVELS.length; detail++) {
+    const plan = planColumns(input, { min: target, max }, detail)
+    if (plan.fits) return { unit: plan.unit, columns: plan.columns, detail }
+  }
+  const detail = DETAIL_LEVELS.length - 1
+  const { unit, columns } = planColumns(input, { min, max }, detail)
+  return { unit, columns, detail }
+}
+
+function fitVars({ columns, detail }: FitResult): Record<string, string> {
+  const level = DETAIL_LEVELS[detail]
+  return {
+    [COLUMNS_VAR]: String(columns),
+    [CUE_VAR]: level.cues ? 'block' : 'none',
+    [DETAIL_VAR]: level.details ? 'block' : 'none',
+    [NOTE_VAR]: level.notes ? 'flex' : 'none',
+  }
+}
+
+export function fitStyle(fit: FitResult): CSSProperties {
+  return { fontSize: `${fit.unit}px`, ...fitVars(fit) } as CSSProperties
 }
 
 /** Imperative twin of fitStyle, used while measuring. */
-export function applyFitToElement(el: HTMLElement, { unit, columns }: FitResult): void {
-  el.style.fontSize = `${unit}px`
-  el.style.setProperty(COLUMNS_VAR, String(columns))
+export function applyFitToElement(el: HTMLElement, fit: FitResult): void {
+  el.style.fontSize = `${fit.unit}px`
+  for (const [name, value] of Object.entries(fitVars(fit))) el.style.setProperty(name, value)
 }

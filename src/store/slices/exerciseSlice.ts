@@ -1,7 +1,8 @@
 import { insertAt, moveItem, removeById } from '@/lib/arrays'
+import { clampExerciseTexts, getDayChangeRefusal } from '@/lib/capacity'
 import { cloneExercise, createExercise } from '@/lib/factories'
 import type { ExerciseEntry } from '@/types'
-import { blockAt, exerciseAt, locateBlock, locateExercise, sameBlock, withBlock, withExercise } from '@/store/locate'
+import { blockAt, dayAt, exerciseAt, locateBlock, locateExercise, sameBlock, withBlock, withExercise } from '@/store/locate'
 import type { ExerciseActions, SliceContext } from '@/store/types'
 import { groupKey } from '@/store/undoGroup'
 
@@ -20,20 +21,24 @@ export function createExerciseSlice({ commit, commitSilently, getData }: SliceCo
       const index = opts.index ?? exercises.length
       const previous = exercises[index - 1] ?? exercises[exercises.length - 1]
       const inherited = (opts.inherit ?? true) ? inheritedFields(previous) : {}
-      const entry = createExercise({ ...inherited, ...init })
-      commit((d) => withBlock(d, loc, (b) => ({ ...b, exercises: insertAt(b.exercises, index, entry) })))
+      const entry = createExercise(clampExerciseTexts({ ...inherited, ...init }))
+      const next = withBlock(getData(), loc, (b) => ({ ...b, exercises: insertAt(b.exercises, index, entry) }))
+      if (getDayChangeRefusal(dayAt(getData(), loc), dayAt(next, loc))) return ''
+      commit(() => next)
       return entry.id
     },
     updateExercise: (exerciseId, patch) => {
       const loc = locateExercise(getData(), exerciseId)
       if (!loc) return
-      commit((d) => withExercise(d, loc, (e) => ({ ...e, ...patch })), groupKey('exercise', exerciseId, patch))
+      commit((d) => withExercise(d, loc, (e) => ({ ...e, ...clampExerciseTexts(patch) })), groupKey('exercise', exerciseId, patch))
     },
     duplicateExercise: (exerciseId) => {
       const loc = locateExercise(getData(), exerciseId)
       if (!loc) return ''
       const copy = cloneExercise(exerciseAt(getData(), loc))
-      commit((d) => withBlock(d, loc, (b) => ({ ...b, exercises: insertAt(b.exercises, loc.ei + 1, copy) })))
+      const next = withBlock(getData(), loc, (b) => ({ ...b, exercises: insertAt(b.exercises, loc.ei + 1, copy) }))
+      if (getDayChangeRefusal(dayAt(getData(), loc), dayAt(next, loc))) return ''
+      commit(() => next)
       return copy.id
     },
     deleteExercise: (exerciseId) => {
@@ -59,13 +64,13 @@ export function createExerciseSlice({ commit, commitSilently, getData }: SliceCo
         return
       }
       const entry = exerciseAt(data, from)
-      commit((d) =>
-        withBlock(
-          withBlock(d, from, (b) => ({ ...b, exercises: removeById(b.exercises, exerciseId) })),
-          to,
-          (b) => ({ ...b, exercises: insertAt(b.exercises, toIndex, entry) }),
-        ),
+      const next = withBlock(
+        withBlock(data, from, (b) => ({ ...b, exercises: removeById(b.exercises, exerciseId) })),
+        to,
+        (b) => ({ ...b, exercises: insertAt(b.exercises, toIndex, entry) }),
       )
+      if (getDayChangeRefusal(dayAt(data, to), dayAt(next, to))) return
+      commit(() => next)
     },
   }
 }

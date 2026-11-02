@@ -7,7 +7,7 @@ import { newId } from '@/lib/ids'
 import { accessChangeError } from '@/lib/ownership'
 import { readStorage, removeStorage, writeStorage } from '@/lib/safeStorage'
 import type { StaffMember } from '@/types'
-import type { AuthEvent, AuthService, TeamService } from './types'
+import type { AuthEvent, AuthService, AuthUser, TeamService } from './types'
 
 const NOT_IN_LOCAL_MODE = 'No disponible en el modo local de pruebas.'
 
@@ -21,6 +21,7 @@ function readTeam(): StaffMember[] {
 }
 
 const readSessionId = (): string | null => readStorage(STORAGE_KEYS.localSession)
+const toAuthUser = (member: StaffMember): AuthUser => ({ id: member.id, email: member.email })
 
 function findSessionMember(): StaffMember | null {
   const id = readSessionId()
@@ -32,8 +33,8 @@ export function createLocalBackend(): { auth: AuthService; team: TeamService } {
   const teamListeners = new Set<() => void>()
 
   const emitAuth = () => {
-    const id = readSessionId()
-    const event: AuthEvent = id ? { type: 'signed-in', user: { id } } : { type: 'signed-out' }
+    const member = findSessionMember()
+    const event: AuthEvent = member ? { type: 'signed-in', user: toAuthUser(member) } : { type: 'signed-out' }
     for (const listener of authListeners) listener(event)
   }
 
@@ -53,7 +54,7 @@ export function createLocalBackend(): { auth: AuthService; team: TeamService } {
     isLocal: true,
     getUser: async () => {
       const member = findSessionMember()
-      return member ? { id: member.id } : null
+      return member ? toAuthUser(member) : null
     },
     onChange: (listener) => {
       authListeners.add(listener)

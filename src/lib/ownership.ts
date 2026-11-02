@@ -9,6 +9,9 @@ export const isActiveAdmin = (staff: StaffMember | null): boolean => staff?.role
 export const canEditNote = (note: Pick<ClientNote, 'authorId'>, staff: StaffMember | null): boolean =>
   staff !== null && (isActiveAdmin(staff) || note.authorId === staff.id)
 
+/** Deleting a client takes everyone's notes with it, so only an admin can. Monitors archive. */
+export const canDeleteClient = isActiveAdmin
+
 /** Spanish reason why this access change is not allowed, or null when it is. */
 export function accessChangeError(
   team: readonly StaffMember[],

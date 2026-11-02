@@ -9,10 +9,10 @@ interface DisplayBlockNoteProps {
   theme: DisplayThemeClasses
 }
 
-/** Client-visible block note ('Ritmo constante…') with a speech icon. */
+/** Client-visible block note ('Ritmo constante…') with a speech icon; hides when the day needs the room. */
 export function DisplayBlockNote({ note, className, theme }: DisplayBlockNoteProps) {
   return (
-    <p className={cn('flex items-start', className, theme.noteSurface, theme.secondaryText)}>
+    <p className={cn('items-start font-medium [display:var(--display-note,flex)]', className, theme.noteSurface, theme.secondaryText)}>
       <MessageSquareText size="1em" aria-hidden className={cn('mt-[0.2em] shrink-0', theme.accentText)} />
       <span className="min-w-0 [overflow-wrap:anywhere]">{note}</span>
     </p>

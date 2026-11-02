@@ -1,6 +1,7 @@
 // Modo TV copy (column controls, drag to reorder, client picker).
 
 export const TV_COLUMN_TEXTS = {
+  fourColumnsNote: 'Con 4 columnas la letra es más pequeña',
   remove: '− columna',
   add: '+ columna',
   removeLabel: 'Quitar la última columna',

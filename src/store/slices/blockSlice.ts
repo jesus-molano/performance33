@@ -1,8 +1,9 @@
 import { BLOCK_TYPE_META } from '@/config/blockTypes'
 import { insertAt, moveItem, removeById } from '@/lib/arrays'
+import { getDayChangeRefusal } from '@/lib/capacity'
 import { cloneBlock, createBlock, createExercise } from '@/lib/factories'
 import type { BlockParams } from '@/types'
-import { blockAt, locateBlock, locateDay, sameDay, withBlock, withDay, withProgram } from '@/store/locate'
+import { blockAt, dayAt, locateBlock, locateDay, sameDay, withBlock, withDay, withProgram } from '@/store/locate'
 import type { BlockActions, SliceContext } from '@/store/types'
 import { groupKey } from '@/store/undoGroup'
 import { copyIntoDay, copyIntoDayAt } from './blockCopy'
@@ -21,7 +22,10 @@ export function createBlockSlice({ commit, getData }: SliceContext): BlockAction
       const loc = locateDay(getData(), dayId)
       if (!loc) return ''
       const block = createBlock(type, { exercises: opts.withExercise ? [createExercise()] : [] })
-      commit((d) => withDay(d, loc, (day) => ({ ...day, blocks: insertAt(day.blocks, opts.index ?? day.blocks.length, block) })))
+      const day = dayAt(getData(), loc)
+      const next = { ...day, blocks: insertAt(day.blocks, opts.index ?? day.blocks.length, block) }
+      if (getDayChangeRefusal(day, next)) return ''
+      commit((d) => withDay(d, loc, () => next))
       return block.id
     },
     updateBlock: (blockId, patch) => {
@@ -45,7 +49,10 @@ export function createBlockSlice({ commit, getData }: SliceContext): BlockAction
       const loc = locateBlock(getData(), blockId)
       if (!loc) return ''
       const copy = cloneBlock(blockAt(getData(), loc))
-      commit((d) => withDay(d, loc, (day) => ({ ...day, blocks: insertAt(day.blocks, loc.bi + 1, copy) })))
+      const day = dayAt(getData(), loc)
+      const next = { ...day, blocks: insertAt(day.blocks, loc.bi + 1, copy) }
+      if (getDayChangeRefusal(day, next)) return ''
+      commit((d) => withDay(d, loc, () => next))
       return copy.id
     },
     deleteBlock: (blockId) => {
@@ -62,42 +69,36 @@ export function createBlockSlice({ commit, getData }: SliceContext): BlockAction
         if (from.bi !== toIndex) commit((d) => withDay(d, from, (day) => ({ ...day, blocks: moveItem(day.blocks, from.bi, toIndex) })))
         return
       }
-      const block = blockAt(data, from)
-      commit((d) =>
-        withDay(
-          withDay(d, from, (day) => ({ ...day, blocks: removeById(day.blocks, blockId) })),
-          to,
-          (day) => ({ ...day, blocks: insertAt(day.blocks, toIndex, block) }),
-        ),
-      )
+      const target = dayAt(data, to)
+      const next = { ...target, blocks: insertAt(target.blocks, toIndex, blockAt(data, from)) }
+      if (getDayChangeRefusal(target, next)) return
+      commit((d) => withDay(withDay(d, from, (day) => ({ ...day, blocks: removeById(day.blocks, blockId) })), to, () => next))
     },
     copyBlockToDay: (blockId, dayId) => {
       const data = getData()
       const from = locateBlock(data, blockId)
       const to = locateDay(data, dayId)
       if (!from || !to) return ''
-      let copyId = ''
-      commit((d) =>
-        withDay(d, to, (day) => {
-          const result = copyIntoDay(day, blockAt(data, from))
-          copyId = result.copy.id
-          return result.day
-        }),
-      )
-      return copyId
+      const target = dayAt(data, to)
+      const { day: next, copy } = copyIntoDay(target, blockAt(data, from))
+      if (getDayChangeRefusal(target, next)) return ''
+      commit((d) => withDay(d, to, () => next))
+      return copy.id
     },
     copyBlockToAllDays: (blockId) => {
       const data = getData()
       const from = locateBlock(data, blockId)
       if (!from) return 0
       const source = blockAt(data, from)
-      commit((d) =>
-        withProgram(d, from.pi, (p) => ({
-          ...p,
-          days: p.days.map((day, di) => (di === from.di ? day : copyIntoDayAt(day, source, from.bi))),
-        })),
-      )
-      return data.programs[from.pi].days.length - 1
+      const { days } = data.programs[from.pi]
+      const nextDays = days.map((day, di) => {
+        if (di === from.di) return day
+        const next = copyIntoDayAt(day, source, from.bi)
+        return getDayChangeRefusal(day, next) ? day : next
+      })
+      const copied = nextDays.filter((day, di) => day !== days[di]).length
+      if (copied > 0) commit((d) => withProgram(d, from.pi, (p) => ({ ...p, days: nextDays })))
+      return copied
     },
   }
 }

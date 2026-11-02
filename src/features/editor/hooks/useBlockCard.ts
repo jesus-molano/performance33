@@ -26,9 +26,9 @@ export function useBlockCard(block: Block, blockIndex: number, day: Day): BlockC
   const fields = useBlockFields(block.id)
   const actions = useBlockActions({
     blockId: block.id,
-    dayId: day.id,
+    day,
     blockIndex,
-    blockCount: day.blocks.length,
+    exerciseCount: block.exercises.length,
     dayCount: days.length,
     onChangeType: typePicker.open,
     onCopyToDay: copyModal.open,

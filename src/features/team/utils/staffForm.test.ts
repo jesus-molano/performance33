@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AVATAR_COLORS } from '@/config/colors'
 import { SEED_TEAM } from '@/data/seed/staff'
-import { suggestStaffColor, validateNewStaff } from './staffForm'
+import { isStaffNameTaken, suggestStaffColor, validateNewStaff } from './staffForm'
 
 describe('validateNewStaff', () => {
   it('accepts a new person', () => {
@@ -11,6 +11,16 @@ describe('validateNewStaff', () => {
   it('needs a valid, unused email and a name', () => {
     expect(validateNewStaff('nueva', '', SEED_TEAM)).toEqual({ email: 'Escribe un email válido.', name: 'Escribe un nombre.' })
     expect(validateNewStaff(' DANI@demo.local ', 'Dani', SEED_TEAM).email).toMatch(/ese email/)
+  })
+})
+
+describe('isStaffNameTaken', () => {
+  const [first] = SEED_TEAM
+
+  it('ignores case and spaces, but not your own row', () => {
+    expect(isStaffNameTaken(`  ${first.name.toUpperCase()} `, SEED_TEAM)).toBe(true)
+    expect(isStaffNameTaken(first.name, SEED_TEAM, first.id)).toBe(false)
+    expect(isStaffNameTaken('Otra persona', SEED_TEAM)).toBe(false)
   })
 })
 

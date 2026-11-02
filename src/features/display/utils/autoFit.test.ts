@@ -10,37 +10,42 @@ import {
 } from './autoFit'
 
 const TV_HEIGHT = 1080
-/** Content whose height is `units` em tall in one column (halved, rounded up, in two). */
-const contentOf = (units: number) => ({ unit, columns }: FitResult) => Math.ceil(units / columns) * unit
+/** Content `units` em tall in one column (halved, rounded up, in two); each detail level dropped saves `saved` em. */
+const contentOf = (units: number, saved = 0) => ({ unit, columns, detail }: FitResult) =>
+  Math.ceil((units - detail * saved) / columns) * unit
 
 describe('getDisplayDensity', () => {
-  it('uses the compact layout for 3 and 4 TV columns and the editor preview', () => {
+  it('uses the compact layout for 2 to 4 TV columns and the editor preview', () => {
     expect(getDisplayDensity(480, TV_HEIGHT)).toBe('compact')
     expect(getDisplayDensity(640, TV_HEIGHT)).toBe('compact')
+    expect(getDisplayDensity(960, TV_HEIGHT)).toBe('compact')
     expect(getDisplayDensity(320, 540)).toBe('compact')
   })
 
-  it('keeps the comfortable layout for 1-2 columns', () => {
-    expect(getDisplayDensity(960, TV_HEIGHT)).toBe('comfortable')
+  it('keeps the comfortable layout for a full screen', () => {
     expect(getDisplayDensity(1920, TV_HEIGHT)).toBe('comfortable')
   })
 })
 
 describe('readable floor', () => {
-  it('keeps compact exercise names (1.45em) at 20 px or more on a 1080 px TV', () => {
-    expect(readableMinUnit(TV_HEIGHT, 'compact') * 1.45).toBeGreaterThanOrEqual(20)
+  it('aims for compact exercise names (1.5em) of 28 px at 3 columns and 24 px at 4 on a 1080 px TV', () => {
+    expect(getUnitBounds(640, TV_HEIGHT, 'compact').target * 1.5).toBeGreaterThanOrEqual(28)
+    expect(getUnitBounds(480, TV_HEIGHT, 'compact').target * 1.5).toBeGreaterThanOrEqual(25)
+    expect(readableMinUnit(TV_HEIGHT, 'compact') * 1.5).toBeGreaterThanOrEqual(23.9)
   })
 
   it('scales with the container height', () => {
     expect(readableMinUnit(540, 'compact')).toBeCloseTo(readableMinUnit(TV_HEIGHT, 'compact') / 2)
   })
 
-  it('is the minimum of the unit bounds unless A- pushes the max below it', () => {
+  it('keeps min, target and max in order unless A- pushes the max below them', () => {
     const bounds = getUnitBounds(480, TV_HEIGHT, 'compact')
-    expect(bounds.min).toBeCloseTo(readableMinUnit(TV_HEIGHT, 'compact'))
-    expect(bounds.max).toBeCloseTo(16.8)
-    const shrunk = getUnitBounds(480, TV_HEIGHT, 'compact', 0.7)
+    expect(bounds.min).toBeLessThan(readableMinUnit(TV_HEIGHT, 'compact'))
+    expect(bounds.target).toBeGreaterThan(readableMinUnit(TV_HEIGHT, 'compact'))
+    expect(bounds.max).toBeCloseTo(19.2)
+    const shrunk = getUnitBounds(480, TV_HEIGHT, 'compact', 0.5)
     expect(shrunk.min).toBe(shrunk.max)
+    expect(shrunk.target).toBe(shrunk.max)
   })
 })
 
@@ -81,34 +86,51 @@ describe('findFittingUnit', () => {
 })
 
 describe('planFit', () => {
-  const plan = (width: number, units: number, preferColumns = false) =>
+  const plan = (width: number, units: number, preferColumns = false, saved = 0) =>
     planFit({
       width,
       height: TV_HEIGHT,
       density: getDisplayDensity(width, TV_HEIGHT),
       fontScale: 1,
       preferColumns,
-      measure: contentOf(units),
+      measure: contentOf(units, saved),
     })
 
-  it('uses one column when the content fits above the floor', () => {
-    const fit = plan(480, 70)
-    expect(fit.columns).toBe(1)
-    expect(fit.unit).toBeGreaterThanOrEqual(readableMinUnit(TV_HEIGHT, 'compact'))
+  const target = getUnitBounds(640, TV_HEIGHT, 'compact').target
+
+  it('keeps everything when the content fits at the target size', () => {
+    const fit = plan(640, 50)
+    expect(fit).toMatchObject({ columns: 1, detail: 0 })
+    expect(fit.unit).toBeGreaterThanOrEqual(target)
   })
 
-  it('stays at the floor in a narrow slot that cannot split (overflow indicator)', () => {
-    expect(plan(480, 120)).toEqual({ unit: readableMinUnit(TV_HEIGHT, 'compact'), columns: 1 })
+  it('hides secondary content, one level at a time, before going below the target size', () => {
+    const atTarget = Math.floor(TV_HEIGHT / target)
+    expect(plan(640, atTarget + 5, false, 6).detail).toBe(1)
+    expect(plan(640, atTarget + 11, false, 6).detail).toBe(2)
+    expect(plan(640, atTarget + 17, false, 6).detail).toBe(3)
+    expect(plan(640, atTarget + 5, false, 6).unit).toBeGreaterThanOrEqual(target)
   })
 
-  it('splits a wide slot into two sub-columns when one column does not fit at the floor', () => {
-    const fit = plan(960, 160)
+  it('shrinks the text only with everything secondary hidden', () => {
+    const fit = plan(640, 80, false, 2)
+    expect(fit.detail).toBe(3)
+    expect(fit.unit).toBeLessThan(target)
+    expect(fit.unit).toBeGreaterThanOrEqual(getUnitBounds(640, TV_HEIGHT, 'compact').min)
+  })
+
+  it('stays at the last-resort size in a narrow slot that cannot split (overflow indicator)', () => {
+    expect(plan(480, 120)).toEqual({ unit: getUnitBounds(480, TV_HEIGHT, 'compact').min, columns: 1, detail: 3 })
+  })
+
+  it('splits a wide slot into two sub-columns when one column does not fit at the last-resort size', () => {
+    const fit = plan(1920, 160)
     expect(fit.columns).toBe(2)
-    expect(fit.unit).toBeGreaterThanOrEqual(readableMinUnit(TV_HEIGHT, 'comfortable'))
+    expect(fit.unit).toBeGreaterThanOrEqual(getUnitBounds(1920, TV_HEIGHT, 'comfortable').min)
   })
 
   it('keeps one column in a wide slot when it fits', () => {
-    expect(plan(960, 60).columns).toBe(1)
+    expect(plan(960, 45).columns).toBe(1)
   })
 
   it('prefers two columns on a landscape full screen only when text grows clearly', () => {

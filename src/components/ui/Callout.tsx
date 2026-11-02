@@ -16,7 +16,7 @@ export interface CalloutProps {
   className?: string
 }
 
-/** Inline hint box (suggestions, warnings). Private health alerts use PrivateSurface instead. */
+/** Inline hint box (suggestions, warnings). Important notifications use PrivateSurface instead. */
 export function Callout({ tone = 'info', icon: Icon, children, className }: CalloutProps) {
   return (
     <div role={tone === 'warning' ? 'status' : undefined} className={cn('flex items-start gap-2 rounded-xl px-3 py-2 text-sm', TONES[tone], className)}>

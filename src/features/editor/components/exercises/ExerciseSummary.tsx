@@ -1,5 +1,6 @@
 import { ChevronUp, Eye, Lock, TrendingUp } from 'lucide-react'
 import type { RefObject } from 'react'
+import { ExerciseSearchLink } from '@/components/exercises/ExerciseSearchLink'
 import { DropdownMenu, type MenuItem } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { formatEntrySummary } from '@/lib/format'
@@ -46,7 +47,13 @@ export function ExerciseSummary({ entry, label, showSets, week, expanded, handle
         {entry.progression && <TrendingUp size={15} role="img" aria-label="Tiene progresión semanal" className="text-emerald-600" />}
         {entry.internalNote.trim() && <Lock size={15} role="img" aria-label="Tiene nota interna" className="text-private-icon" />}
       </span>
-      {expanded && <ChevronUp size={18} aria-hidden className="hidden shrink-0 text-fg-subtle md:block" />}
+      {expanded ? (
+        <ChevronUp size={18} aria-hidden className="hidden shrink-0 text-fg-subtle md:block" />
+      ) : (
+        <span className="hidden md:contents">
+          <ExerciseSearchLink name={entry.name} />
+        </span>
+      )}
       <DropdownMenu items={menuItems} label={`Opciones de ${name}`} />
     </div>
   )

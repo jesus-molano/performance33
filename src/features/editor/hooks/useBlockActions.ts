@@ -2,16 +2,20 @@ import { ArrowDown, ArrowUp, Copy, CopyPlus, Files, Shapes, Trash2 } from 'lucid
 import { useMemo } from 'react'
 import type { MenuItem } from '@/components/ui'
 import { useToast } from '@/hooks'
+import { CAPACITY_TEXTS } from '@/config/capacity'
+import { getAddBlockRefusal } from '@/lib/capacity'
 import { formatDayTitle, plural } from '@/lib/format'
 import { useAppActions } from '@/store'
 import type { BlockType, Day } from '@/types'
 import { neighborIndex } from '@/features/editor/utils'
+import { useCapacityToast } from './useCapacityToast'
 
 export interface BlockActionsOptions {
   blockId: string
-  dayId: string
+  /** The block's day (its size decides whether a copy fits). */
+  day: Day
   blockIndex: number
-  blockCount: number
+  exerciseCount: number
   /** Days in the program (to know whether copying elsewhere makes sense). */
   dayCount: number
   onChangeType: () => void
@@ -25,24 +29,33 @@ export interface BlockActionsApi {
 }
 
 export function useBlockActions(options: BlockActionsOptions): BlockActionsApi {
-  const { blockId, dayId, blockIndex, blockCount, dayCount, onChangeType, onCopyToDay } = options
+  const { blockId, day, blockIndex, exerciseCount, dayCount, onChangeType, onCopyToDay } = options
+  const blockCount = day.blocks.length
   const actions = useAppActions()
   const { toast, toastUndo } = useToast()
+  const notifyRefusal = useCapacityToast()
 
   return useMemo<BlockActionsApi>(() => {
     const moveBy = (delta: -1 | 1) => {
       const to = neighborIndex(blockIndex, delta, blockCount)
-      if (to !== null) actions.moveBlock(blockId, dayId, to)
+      if (to !== null) actions.moveBlock(blockId, day.id, to)
     }
     const canCopy = dayCount > 1
     return {
       changeType: (type) => actions.changeBlockType(blockId, type),
-      copyToDay: (day) => {
-        if (actions.copyBlockToDay(blockId, day.id)) toast({ message: `Bloque copiado a ${formatDayTitle(day)}`, tone: 'success' })
+      copyToDay: (target) => {
+        if (actions.copyBlockToDay(blockId, target.id)) toast({ message: `Bloque copiado a ${formatDayTitle(target)}`, tone: 'success' })
+        else notifyRefusal(getAddBlockRefusal(target, exerciseCount))
       },
       menuItems: [
         { label: 'Cambiar tipo de bloque', icon: Shapes, onSelect: onChangeType },
-        { label: 'Duplicar bloque', icon: Copy, onSelect: () => actions.duplicateBlock(blockId) },
+        {
+          label: 'Duplicar bloque',
+          icon: Copy,
+          onSelect: () => {
+            if (!actions.duplicateBlock(blockId)) notifyRefusal(getAddBlockRefusal(day, exerciseCount))
+          },
+        },
         { label: 'Copiar a otro día…', icon: CopyPlus, disabled: !canCopy, onSelect: onCopyToDay },
         {
           label: 'Copiar a todos los días',
@@ -50,7 +63,12 @@ export function useBlockActions(options: BlockActionsOptions): BlockActionsApi {
           disabled: !canCopy,
           onSelect: () => {
             const count = actions.copyBlockToAllDays(blockId)
-            toast({ message: `Bloque copiado a ${plural(count, 'día', 'días')}`, tone: 'success' })
+            const copied = plural(count, 'día', 'días')
+            const skipped = dayCount - 1 - count
+            toast({
+              message: skipped > 0 ? CAPACITY_TEXTS.copiedExceptFull(copied, plural(skipped, 'día', 'días')) : `Bloque copiado a ${copied}`,
+              tone: 'success',
+            })
           },
         },
         { label: 'Subir bloque', icon: ArrowUp, disabled: blockIndex === 0, onSelect: () => moveBy(-1) },
@@ -67,5 +85,5 @@ export function useBlockActions(options: BlockActionsOptions): BlockActionsApi {
         },
       ],
     }
-  }, [actions, blockCount, blockId, blockIndex, dayCount, dayId, onChangeType, onCopyToDay, toast, toastUndo])
+  }, [actions, blockCount, blockId, blockIndex, day, dayCount, exerciseCount, notifyRefusal, onChangeType, onCopyToDay, toast, toastUndo])
 }

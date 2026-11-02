@@ -1,10 +1,11 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useDisclosure } from '@/hooks'
 import { exercisePatchFromLibrary } from '@/lib/factories'
 import { searchExercises, type ExerciseSearchResult } from '@/lib/search'
 import { useAppActions, useExerciseLibrary } from '@/store'
 import type { AnyLibraryExercise, ExerciseEntry } from '@/types'
-import { SEARCH_RESULT_LIMIT } from '@/features/editor/config'
-import { namePatch } from '@/features/editor/utils'
+import { NO_HIGHLIGHT, SEARCH_RESULT_LIMIT } from '@/features/editor/config'
+import { moveHighlight, namePatch } from '@/features/editor/utils'
 
 export interface AutocompleteOptions {
   entry: ExerciseEntry
@@ -17,46 +18,53 @@ export interface AutocompleteOptions {
 export interface ExerciseAutocomplete {
   isOpen: boolean
   results: ExerciseSearchResult[]
-  /** Last option: '+ Usar "<texto>" como ejercicio propio'. */
+  /** Option after the results: '+ Usar "<texto>" como ejercicio propio'. */
   showCustomOption: boolean
+  /** Last option: 'Ver todos los ejercicios'. */
+  browseIndex: number
   highlighted: number
   onChange: (value: string) => void
+  onFocus: () => void
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void
   close: () => void
   choose: (index: number) => void
   highlight: (index: number) => void
+  pickerOpen: boolean
+  closePicker: () => void
+  pick: (exercise: AnyLibraryExercise) => void
 }
 
 /** Type-ahead over the exercise library (accent-insensitive, synonyms, typos) with full keyboard support. */
 export function useExerciseAutocomplete({ entry, onDone, onExit }: AutocompleteOptions): ExerciseAutocomplete {
   const { updateExercise } = useAppActions()
   const library = useExerciseLibrary()
-  const [open, setOpen] = useState(false)
+  const picker = useDisclosure()
+  const [isOpen, setOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(0)
 
   const query = entry.name
-  const results = useMemo(() => (open ? searchExercises(query, library, SEARCH_RESULT_LIMIT) : []), [open, query, library])
+  const results = useMemo(() => (isOpen ? searchExercises(query, library, SEARCH_RESULT_LIMIT) : []), [isOpen, query, library])
   const showCustomOption = query.trim() !== '' && entry.libraryId === null
-  const optionCount = results.length + (showCustomOption ? 1 : 0)
-  const isOpen = open && optionCount > 0
+  const browseIndex = results.length + (showCustomOption ? 1 : 0)
+  const isHighlighting = highlighted !== NO_HIGHLIGHT
 
   const close = () => setOpen(false)
   const pick = (exercise: AnyLibraryExercise) => {
     updateExercise(entry.id, exercisePatchFromLibrary(exercise, entry))
     close()
+    picker.close()
     onDone()
   }
   const choose = (index: number) => {
     const result = results[index]
+    close()
     if (result) pick(result.exercise)
-    else {
-      close()
-      onDone()
-    }
+    else if (index === browseIndex) picker.open()
+    else onDone()
   }
   const move = (delta: 1 | -1) => {
     setOpen(true)
-    setHighlighted((h) => (optionCount === 0 ? 0 : (h + delta + optionCount) % optionCount))
+    setHighlighted((h) => moveHighlight(h, delta, browseIndex + 1))
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -69,12 +77,12 @@ export function useExerciseAutocomplete({ entry, onDone, onExit }: AutocompleteO
         return
       case 'Enter':
         event.preventDefault()
-        if (isOpen) choose(highlighted)
+        if (isOpen && isHighlighting) choose(highlighted)
         else if (query.trim()) onDone()
         else onExit()
         return
       case 'Tab':
-        if (isOpen && highlighted < results.length && !event.shiftKey) {
+        if (isOpen && isHighlighting && highlighted < results.length && !event.shiftKey) {
           event.preventDefault()
           choose(highlighted)
         }
@@ -82,8 +90,8 @@ export function useExerciseAutocomplete({ entry, onDone, onExit }: AutocompleteO
       case 'Escape':
         event.preventDefault()
         event.stopPropagation()
-        if (isOpen) close()
-        else onExit()
+        close()
+        if (!isOpen || !isHighlighting) onExit()
     }
   }
 
@@ -93,5 +101,27 @@ export function useExerciseAutocomplete({ entry, onDone, onExit }: AutocompleteO
     setHighlighted(0)
   }
 
-  return { isOpen, results, showCustomOption, highlighted, onChange, onKeyDown, close, choose, highlight: setHighlighted }
+  /** An empty field offers 'Ver todos' right away, without taking over Enter or Escape. */
+  const onFocus = () => {
+    if (query.trim()) return
+    setOpen(true)
+    setHighlighted(NO_HIGHLIGHT)
+  }
+
+  return {
+    isOpen,
+    results,
+    showCustomOption,
+    browseIndex,
+    highlighted,
+    onChange,
+    onFocus,
+    onKeyDown,
+    close,
+    choose,
+    highlight: setHighlighted,
+    pickerOpen: picker.isOpen,
+    closePicker: picker.close,
+    pick,
+  }
 }

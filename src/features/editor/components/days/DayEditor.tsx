@@ -1,9 +1,8 @@
 import type { MenuItem } from '@/components/ui'
-import { useDisclosure } from '@/hooks'
 import type { Day } from '@/types'
-import { useAddBlock } from '@/features/editor/hooks/useAddBlock'
-import { useAddExercise } from '@/features/editor/hooks/useAddExercise'
+import { useDayAddActions } from '@/features/editor/hooks/useDayAddActions'
 import { AddBlockButton } from '@/features/editor/components/blocks/AddBlockButton'
+import { DayCapacityIndicator } from '@/features/editor/components/capacity/DayCapacityIndicator'
 import { BlockList } from '@/features/editor/components/blocks/BlockList'
 import { BlockTypePicker } from '@/features/editor/components/blocks/BlockTypePicker'
 import { DayHeader } from './DayHeader'
@@ -16,18 +15,16 @@ export interface DayEditorProps {
 
 /** Selected day: header, blocks and the add actions. */
 export function DayEditor({ day, menuItems }: DayEditorProps) {
-  const picker = useDisclosure()
-  const addBlock = useAddBlock(day.id)
-  const addExercise = useAddExercise()
-  const lastBlock = day.blocks.at(-1)
+  const add = useDayAddActions(day)
 
   return (
     <section role="tabpanel" aria-label={day.name} className="mt-3 flex flex-col gap-4">
       <DayHeader day={day} menuItems={menuItems} />
+      <DayCapacityIndicator capacity={add.capacity} />
       <BlockList day={day} />
-      <AddBlockButton onClick={picker.open} isFirst={day.blocks.length === 0} />
-      <MobileAddBar onAddBlock={picker.open} onAddExercise={lastBlock ? () => addExercise(lastBlock.id) : undefined} />
-      <BlockTypePicker open={picker.isOpen} onClose={picker.close} onPick={addBlock} />
+      <AddBlockButton onClick={add.openPicker} isFirst={day.blocks.length === 0} disabledReason={add.blockFullText} />
+      <MobileAddBar onAddBlock={add.tryAddBlock} onAddExercise={add.addToLastBlock} />
+      <BlockTypePicker open={add.pickerOpen} onClose={add.closePicker} onPick={add.pickBlock} />
     </section>
   )
 }

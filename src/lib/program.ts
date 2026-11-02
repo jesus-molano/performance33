@@ -39,10 +39,10 @@ export function getProgressionWeek(info: Pick<ProgramWeekInfo, 'phase' | 'week'>
   return info.phase === 'active' ? info.week : null
 }
 
-/** Header line for the TV: 'Semana 2 de 4', 'Empieza el 3 nov' or 'Rutina terminada'. */
+/** Header line for the TV: 'Semana 2 de 4', 'Empieza el 3 nov' or 'Rutina finalizada'. */
 export function formatProgramPeriod(info: ProgramWeekInfo, startDate: ISODate): string {
   if (info.phase === 'upcoming') return `Empieza el ${formatDateShort(startDate)}`
-  if (info.phase === 'expired') return 'Rutina terminada'
+  if (info.phase === 'expired') return 'Rutina finalizada'
   return formatWeekOf(info.week, info.totalWeeks)
 }
 
@@ -56,7 +56,7 @@ export type StatusTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
 export interface ProgramStatus {
   kind: ProgramStatusKind
-  /** Main label: 'Sin rutina' | 'Empieza en 3 días' | 'Semana 2 de 4' | 'Caduca en 3 días' | 'Caduca hoy' | 'Caducada'. */
+  /** Main label: 'Sin rutina' | 'Empieza en 3 días' | 'Semana 2 de 4' | 'Termina en 3 días' | 'Termina hoy' | 'Finalizada'. */
   label: string
   /** Secondary detail: 'Semana 4 de 4 · termina 2 nov', 'Terminó hace 10 días'… */
   detail: string
@@ -77,7 +77,7 @@ export function getProgramStatus(program: Program | null | undefined, today: ISO
     const ago = -info.daysLeft
     return {
       kind: 'expired',
-      label: 'Caducada',
+      label: 'Finalizada',
       detail: ago === 1 ? 'Terminó ayer' : `Terminó hace ${ago} días`,
       tone: 'danger',
       info,
@@ -86,7 +86,7 @@ export function getProgramStatus(program: Program | null | undefined, today: ISO
   const weekLabel = formatWeekOf(info.week, info.totalWeeks)
   if (info.daysLeft <= EXPIRING_THRESHOLD_DAYS) {
     const label =
-      info.daysLeft === 0 ? 'Caduca hoy' : info.daysLeft === 1 ? 'Caduca mañana' : `Caduca en ${info.daysLeft} días`
+      info.daysLeft === 0 ? 'Termina hoy' : info.daysLeft === 1 ? 'Termina mañana' : `Termina en ${info.daysLeft} días`
     return { kind: 'expiring', label, detail: weekLabel, tone: 'warning', info }
   }
   return {

@@ -12,7 +12,7 @@ export function ClientGrid({ clients, pinnedCounts, onEdit }: ClientGridProps) {
     <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
       {clients.map((client) => (
         <li key={client.id} className="flex">
-          <ClientCard client={client} alertCount={pinnedCounts[client.id] ?? 0} onEdit={onEdit} />
+          <ClientCard client={client} importantCount={pinnedCounts[client.id] ?? 0} onEdit={onEdit} />
         </li>
       ))}
     </ul>

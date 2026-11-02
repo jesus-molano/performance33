@@ -25,6 +25,13 @@ export function createDaySlice({ commit, getData }: SliceContext): DayActions {
       if (!loc) return
       commit((d) => withDay(d, loc, (day) => ({ ...day, ...patch })), groupKey('day', dayId, patch))
     },
+    settleDayNames: (dayId) => {
+      const loc = locateDay(getData(), dayId)
+      if (!loc) return
+      const { days } = getData().programs[loc.pi]
+      if (renumberDays(days).every((day, index) => day === days[index])) return
+      commit((d) => withDays(d, loc.pi, (current) => current), groupKey('day', dayId, { name: '' }))
+    },
     duplicateDay: (dayId) => {
       const loc = locateDay(getData(), dayId)
       if (!loc) return ''

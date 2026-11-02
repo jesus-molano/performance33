@@ -1,5 +1,5 @@
 import { Dumbbell, Plus } from 'lucide-react'
-import { Button, Card, EmptyState } from '@/components/ui'
+import { Button, Card, EmptyState, PaginatedList } from '@/components/ui'
 import type { AnyLibraryExercise } from '@/types'
 import { editedItem, useEditTarget } from '@/features/shell'
 import { useLibraryBrowser } from '@/features/settings/hooks/useLibraryBrowser'
@@ -7,11 +7,10 @@ import { ExerciseFormModal } from './ExerciseFormModal'
 import { LibraryExerciseRow } from './LibraryExerciseRow'
 import { LibraryToolbar } from './LibraryToolbar'
 
-/** Ajustes → Ejercicios: browse the library, add/edit/delete your own exercises. */
+/** Ajustes → Ejercicios: browse the library page by page, add/edit/delete your own exercises. */
 export function LibraryPanel() {
   const browser = useLibraryBrowser()
   const form = useEditTarget<AnyLibraryExercise>()
-  const hidden = browser.matchCount - browser.visible.length
 
   return (
     <Card padding="none">
@@ -25,14 +24,22 @@ export function LibraryPanel() {
             Añadir ejercicio
           </Button>
         </div>
-        <LibraryToolbar filters={browser.filters} setFilter={browser.setFilter} customCount={browser.customCount} totalCount={browser.totalCount} />
+        <LibraryToolbar
+          filters={browser.filters}
+          setFilter={browser.setFilter}
+          equipment={browser.equipment}
+          customCount={browser.customCount}
+          totalCount={browser.totalCount}
+        />
       </div>
-      {browser.visible.length > 0 ? (
-        <ul className="divide-y divide-line">
-          {browser.visible.map((exercise) => (
-            <LibraryExerciseRow key={exercise.id} exercise={exercise} onEdit={form.openEdit} onDelete={browser.remove} />
-          ))}
-        </ul>
+      {browser.pagination.total > 0 ? (
+        <PaginatedList
+          pagination={browser.pagination}
+          label="Ejercicios de la biblioteca"
+          listClassName="divide-y divide-line"
+          getKey={(exercise) => exercise.id}
+          renderItem={(exercise) => <LibraryExerciseRow exercise={exercise} onEdit={form.openEdit} onDelete={browser.remove} />}
+        />
       ) : (
         <EmptyState
           icon={Dumbbell}
@@ -40,7 +47,6 @@ export function LibraryPanel() {
           description="Puedes añadirlos aquí o guardarlos desde el editor de rutinas."
         />
       )}
-      {hidden > 0 && <p className="border-t border-line px-5 py-3 text-center text-sm text-fg-muted">Y {hidden} más. Escribe para afinar la búsqueda.</p>}
       {form.target && <ExerciseFormModal exercise={editedItem(form.target)} onClose={form.close} />}
     </Card>
   )

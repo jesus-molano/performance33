@@ -18,6 +18,7 @@ describe('authErrorMessage', () => {
 describe('teamErrorMessage', () => {
   it('explains the database rules', () => {
     expect(teamErrorMessage({ code: '23505' })).toMatch(/ese email/)
+    expect(teamErrorMessage({ code: '23505', message: 'violates unique constraint "staff_name_unique"' })).toMatch(/ese nombre/)
     expect(teamErrorMessage({ code: 'P0001', message: 'staff_last_admin' })).toMatch(/al menos un administrador/)
     expect(teamErrorMessage({ code: 'P0001', message: 'staff_own_access_locked' })).toMatch(/propio acceso/)
     expect(teamErrorMessage({ code: '42501', message: 'row-level security' })).toMatch(/permiso/)

@@ -7,6 +7,8 @@ import { rebaseSnapshots } from './rebase'
 
 const history = () => useAppStore.temporal.getState()
 
+let applyingRemoteRows = false
+
 export function undo(): void {
   undoGrouper.reset()
   history().undo()
@@ -46,12 +48,14 @@ export function applyRemoteRows(changes: readonly RowChange[]): void {
   if (changes.length === 0) return
   const current = useAppStore.getState().data
   const next = applyRowChanges(current, changes.filter((change) => !hasLocalEdit(current, change)))
+  applyingRemoteRows = true
   withoutHistory(() => useAppStore.setState({ data: next }))
   const { pastStates, futureStates } = history()
   useAppStore.temporal.setState({
     pastStates: rebaseSnapshots(pastStates, changes, next),
     futureStates: rebaseSnapshots(futureStates, changes, next),
   })
+  applyingRemoteRows = false
 }
 
 /** Initial load: set data and start with an empty history. */
@@ -60,19 +64,30 @@ export function hydrateData(data: AppData): void {
   clearHistory()
 }
 
-/** Opaque marker of the current data version (compare later with isLatestData). */
-export function currentDataVersion(): AppData {
-  return useAppStore.getState().data
+export interface UndoStepWatch {
+  /** True while undoing would undo exactly the step being watched. */
+  isCurrent: () => boolean
+  stop: () => void
 }
 
-/** True when nothing has changed since `version` was taken. */
-export function isLatestData(version: AppData): boolean {
-  return useAppStore.getState().data === version
-}
-
-/** Calls `listener` on every data change (local, undo/redo or remote). Returns an unsubscribe. */
-export function onDataChange(listener: () => void): () => void {
-  return useAppStore.subscribe((state, previous) => {
-    if (state.data !== previous.data) listener()
+/**
+ * Watches the undo step just recorded. `onGone` fires on any further local change, or when a change
+ * from another coach dropped steps. Other changes from other coaches leave it alone: they are in the snapshots too.
+ */
+export function watchLatestUndoStep(onGone: () => void): UndoStepWatch {
+  const depth = history().pastStates.length
+  const isCurrent = () => history().pastStates.length === depth
+  const stopData = useAppStore.subscribe((state, previous) => {
+    if (state.data !== previous.data && !applyingRemoteRows) onGone()
   })
+  const stopHistory = useAppStore.temporal.subscribe(() => {
+    if (!isCurrent()) onGone()
+  })
+  return {
+    isCurrent,
+    stop: () => {
+      stopData()
+      stopHistory()
+    },
+  }
 }

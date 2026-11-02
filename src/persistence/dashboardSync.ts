@@ -102,12 +102,17 @@ export function startDashboardSync(): () => void {
     if (useUiStore.getState().saveStatus === 'error') void saveLatest()
   }
   const onPageHide = () => save.flush()
+  // Phones often never fire pagehide: locking the screen or switching app only hides the page.
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') save.flush()
+  }
   const onBeforeUnload = (event: BeforeUnloadEvent) => {
     const { saveStatus } = useUiStore.getState()
     if (saveStatus === 'saving' || saveStatus === 'error') event.preventDefault()
   }
   window.addEventListener('online', retryNow)
   window.addEventListener('pagehide', onPageHide)
+  document.addEventListener('visibilitychange', onVisibilityChange)
   window.addEventListener('beforeunload', onBeforeUnload)
 
   const stop = () => {
@@ -120,6 +125,7 @@ export function startDashboardSync(): () => void {
     flushActive = null
     window.removeEventListener('online', retryNow)
     window.removeEventListener('pagehide', onPageHide)
+    document.removeEventListener('visibilitychange', onVisibilityChange)
     window.removeEventListener('beforeunload', onBeforeUnload)
   }
 

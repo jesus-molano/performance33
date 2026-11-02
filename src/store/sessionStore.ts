@@ -17,6 +17,8 @@ export type SessionStatus =
 interface SessionState {
   status: SessionStatus
   userId: string | null
+  /** Email of the signed-in account, on the list or not. */
+  email: string | null
   /** The signed-in coach once the status is 'ready'. */
   staff: StaffMember | null
   team: StaffMember[]
@@ -27,6 +29,7 @@ interface SessionState {
 export const useSessionStore = create<SessionState>()(() => ({
   status: 'loading',
   userId: null,
+  email: null,
   staff: null,
   team: [],
   notice: null,

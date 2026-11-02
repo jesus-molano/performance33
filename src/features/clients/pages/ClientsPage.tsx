@@ -5,14 +5,18 @@ import type { Client } from '@/types'
 import { editedItem, PageContainer, PageHeader, useEditTarget } from '@/features/shell'
 import { ClientFormModal } from '@/features/clients/components/ClientFormModal'
 import { ClientGrid } from '@/features/clients/components/ClientGrid'
+import { ClientList } from '@/features/clients/components/ClientList'
 import { ClientToolbar } from '@/features/clients/components/ClientToolbar'
 import { useClientList } from '@/features/clients/hooks/useClientList'
+import { useClientView } from '@/features/clients/hooks/useClientView'
 import { useDemoLoader } from '@/features/clients/hooks/useDemoLoader'
 
 export function ClientsPage() {
   const list = useClientList()
   const form = useEditTarget<Client>()
   const demo = useDemoLoader()
+  const { view, setView } = useClientView()
+  const ClientsView = view === 'list' ? ClientList : ClientGrid
   const addButton = (
     <Button leftIcon={UserPlus} onClick={form.openCreate}>
       Nuevo cliente
@@ -29,12 +33,14 @@ export function ClientsPage() {
       <ClientToolbar
         filters={list.filters}
         archivedCount={list.archivedCount}
+        view={view}
+        onViewChange={setView}
         onQueryChange={list.setQuery}
         onPlanChange={list.setPlan}
         onToggleArchived={list.toggleArchived}
       />
       {list.visible.length > 0 ? (
-        <ClientGrid clients={list.visible} pinnedCounts={list.pinnedCounts} onEdit={form.openEdit} />
+        <ClientsView clients={list.visible} pinnedCounts={list.pinnedCounts} onEdit={form.openEdit} />
       ) : list.isFiltering ? (
         <EmptyState
           icon={SearchX}

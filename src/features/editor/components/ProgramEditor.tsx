@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { Button, EmptyState } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import type { Client, Program } from '@/types'
-import { CompactPinnedAlerts } from '@/features/clients'
+import { CompactImportantNotes } from '@/features/clients'
 import { useDayActions } from '@/features/editor/hooks/useDayActions'
 import { useDiscardEmptyRows } from '@/features/editor/hooks/useDiscardEmptyRows'
 import { EditorContext } from '@/features/editor/hooks/useEditorContext'
@@ -22,7 +22,7 @@ export interface ProgramEditorProps {
   program: Program
 }
 
-/** Layout of the editor: header, health alerts, day tabs + selected day, live TV preview on wide screens. */
+/** Layout of the editor: header, important notifications, day tabs + selected day, live TV preview on wide screens. */
 export function ProgramEditor({ client, program }: ProgramEditorProps) {
   const { day, dayIndex, selectDay } = useSelectedDay(program)
   const dayActions = useDayActions(program, selectDay)
@@ -45,7 +45,7 @@ export function ProgramEditor({ client, program }: ProgramEditorProps) {
           onTogglePreview={preview.toggle}
         />
         <div className="mt-4">
-          <CompactPinnedAlerts clientId={client.id} />
+          <CompactImportantNotes clientId={client.id} />
         </div>
         <div className={cn('mt-6 grid items-start gap-8', preview.showAside && 'xl:grid-cols-[minmax(0,1fr)_360px]')}>
           <div className="min-w-0">

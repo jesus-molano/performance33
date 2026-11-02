@@ -10,7 +10,7 @@ export interface SwitchProps {
   className?: string
 }
 
-/** On/off toggle with a visible label (per side, fijar como alerta…). */
+/** On/off toggle with a visible label (per side, marcar como importante…). */
 export function Switch({ checked, onChange, label, description, disabled, className }: SwitchProps) {
   const id = useId()
   return (

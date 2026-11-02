@@ -1,35 +1,22 @@
-import { Archive, ArchiveRestore, MonitorPlay, Pencil } from 'lucide-react'
-import { Avatar, Badge, Card, DropdownMenu, IconButton, type MenuItem } from '@/components/ui'
-import { useDisplayWindow } from '@/hooks'
+import { MonitorPlay } from 'lucide-react'
+import { Avatar, Badge, Card, DropdownMenu, IconButton } from '@/components/ui'
 import { formatFullName } from '@/lib/format'
 import { getProgramDisplayName } from '@/lib/program'
 import { planLabel } from '@/lib/plans'
 import { paths } from '@/lib/routes'
 import type { Client } from '@/types'
-import { useClientActions } from '@/features/clients/hooks/useClientActions'
-import { useClientStatus } from '@/features/clients/hooks/useClientStatus'
-import { AlertBadge } from './AlertBadge'
+import { useClientEntry } from '@/features/clients/hooks/useClientEntry'
+import { ImportantBadge } from './ImportantBadge'
 import { ProgramProgressBar } from './ProgramProgressBar'
 
 export interface ClientCardProps {
   client: Client
-  alertCount: number
+  importantCount: number
   onEdit: (client: Client) => void
 }
 
-export function ClientCard({ client, alertCount, onEdit }: ClientCardProps) {
-  const { program, status } = useClientStatus(client.id)
-  const { archive, restore } = useClientActions()
-  const { openDisplay } = useDisplayWindow()
-
-  const menu: MenuItem[] = [
-    { label: 'Editar datos', icon: Pencil, onSelect: () => onEdit(client) },
-    { label: 'Abrir en pantalla', icon: MonitorPlay, disabled: !program, onSelect: () => openDisplay(client.id) },
-    'separator',
-    client.archived
-      ? { label: 'Restaurar cliente', icon: ArchiveRestore, onSelect: () => restore(client) }
-      : { label: 'Archivar cliente', icon: Archive, onSelect: () => archive(client) },
-  ]
+export function ClientCard({ client, importantCount, onEdit }: ClientCardProps) {
+  const { program, status, menu, openOnScreen } = useClientEntry(client, onEdit)
 
   return (
     <Card padding="none" className="relative flex w-full flex-col transition-shadow hover:shadow-pop">
@@ -44,7 +31,7 @@ export function ClientCard({ client, alertCount, onEdit }: ClientCardProps) {
         <div className="mt-auto flex flex-col gap-2.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge tone={status.tone}>{status.label}</Badge>
-            <AlertBadge count={alertCount} />
+            <ImportantBadge count={importantCount} />
             {client.archived && <Badge>Archivado</Badge>}
           </div>
           {program && (
@@ -57,13 +44,7 @@ export function ClientCard({ client, alertCount, onEdit }: ClientCardProps) {
       </a>
       <div className="absolute top-2 right-2 flex flex-col items-center gap-1">
         <DropdownMenu items={menu} label={`Opciones de ${client.firstName}`} />
-        {program && (
-          <IconButton
-            icon={MonitorPlay}
-            label={`Abrir la rutina de ${client.firstName} en pantalla`}
-            onClick={() => openDisplay(client.id)}
-          />
-        )}
+        {program && <IconButton icon={MonitorPlay} label={`Abrir la rutina de ${client.firstName} en pantalla`} onClick={openOnScreen} />}
       </div>
     </Card>
   )

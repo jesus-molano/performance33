@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { REMOTE_BATCH_MS, STORAGE_KEYS } from '@/config/app'
+import { CLOUD_REFETCH_RETRY_MS, REMOTE_BATCH_MS, STORAGE_KEYS } from '@/config/app'
 import { createSeedData } from '@/data/seed'
 import { DOMAIN_TABLES, type DomainTable } from '@/lib/dataRows'
 import type { AppData } from '@/types'
@@ -69,7 +69,7 @@ function stubBrowser() {
   const store = new Map<string, string>()
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => store.get(key) ?? null,
-    setItem: (key: string, value: string) => store.set(key, value),
+    setItem: vi.fn((key: string, value: string) => void store.set(key, value)),
     removeItem: (key: string) => store.delete(key),
   })
   vi.stubGlobal('window', { addEventListener: () => undefined, removeEventListener: () => undefined, localStorage: globalThis.localStorage })
@@ -266,6 +266,138 @@ describe('SupabaseRepository', () => {
     await push(repo, { ...data, clients: [], notes: [], programs: [] })
     expect(server.writes).toEqual([])
     expect(server.tables.clients.size).toBe(seed.clients.length)
+  })
+
+  it('a save queued before the session ended never runs in the next one', async () => {
+    const server = await serverWithSeed()
+    let release = () => {}
+    const gateway = server.gateway()
+    const hung = new Promise<void>((resolve) => (release = resolve))
+    const repo = new SupabaseRepository(
+      {
+        ...gateway,
+        upsert: async (table, rows) => {
+          await hung
+          await gateway.upsert(table, rows)
+        },
+      },
+      'a',
+    )
+    const data = await repo.load()
+    const first = push(repo, withGoal(data, seed.clients[0].id, 'Colgado'))
+    const second = push(repo, { ...data, clients: [], programs: [], notes: [] })
+    await vi.advanceTimersByTimeAsync(0)
+    repo.release()
+    await repo.load()
+    release()
+    await Promise.all([first, second])
+    expect(server.tables.clients.size).toBe(seed.clients.length)
+    expect(server.writes.flatMap((w) => w.ids)).toEqual([seed.clients[0].id])
+  })
+
+  it('its own delete is not taken for a remote one, even when the live event beats the response', async () => {
+    const server = await serverWithSeed()
+    const { repo, received } = await connect(server, 'a')
+    const data = await new SupabaseRepository(server.gateway(), 'x').load()
+    await push(repo, { ...data, notes: data.notes.filter((n) => n.id !== seed.notes[0].id) })
+    vi.advanceTimersByTime(REMOTE_BATCH_MS)
+    expect(received).toEqual([])
+  })
+
+  it('forgets the echo of a delete that did not happen, so a real one later still counts', async () => {
+    const server = await serverWithSeed()
+    const { repo, received } = await connect(server, 'a')
+    const data = await new SupabaseRepository(server.gateway(), 'x').load()
+    const noteId = seed.notes[0].id
+    server.refuse.add(noteId)
+    await push(repo, { ...data, notes: data.notes.filter((n) => n.id !== noteId) })
+    await vi.advanceTimersByTimeAsync(0)
+    received.length = 0
+    server.refuse.delete(noteId)
+    await server.gateway().remove('notes', [noteId])
+    vi.advanceTimersByTime(REMOTE_BATCH_MS)
+    expect(received).toHaveLength(1)
+  })
+
+  it('a live change arriving during a reload is not undone by the older copy', async () => {
+    const server = await serverWithSeed()
+    const gateway = server.gateway()
+    const client = seed.clients[0]
+    let during: (() => void) | null = null
+    const repo = new SupabaseRepository(
+      {
+        ...gateway,
+        fetchAll: async (table) => {
+          const rows = await gateway.fetchAll(table)
+          during?.()
+          during = null
+          return rows
+        },
+      },
+      'a',
+    )
+    const received: RemoteChange[] = []
+    repo.subscribe((change) => received.push(change))
+    await repo.load()
+    during = () => {
+      const row = server.tables.clients.get(client.id) as DbRow
+      const newer = { ...row, data: { ...(row.data as object), goal: 'Más nuevo' }, client_origin: 'b' }
+      server.tables.clients.set(client.id, newer)
+      for (const subscriber of server.subscribers) subscriber({ table: 'clients', id: client.id, row: newer })
+    }
+    await repo.refetch()
+    expect(received).toEqual([])
+    await vi.advanceTimersByTimeAsync(CLOUD_REFETCH_RETRY_MS)
+    const goals = received.flatMap((change) => (change.kind === 'rows' ? change.changes.map((c) => (c.row as { goal?: string } | null)?.goal) : []))
+    expect(goals.at(-1)).toBe('Más nuevo')
+    expect(goals).not.toContain(client.goal)
+  })
+
+  it('a full device still saves to the cloud, with a smaller copy for the screens', async () => {
+    const server = await serverWithSeed()
+    const { repo } = await connect(server, 'a')
+    const data = await new SupabaseRepository(server.gateway(), 'x').load()
+    const setItem = vi.mocked(localStorage.setItem)
+    setItem.mockImplementationOnce(() => {
+      throw new DOMException('full', 'QuotaExceededError')
+    })
+    await push(repo, withGoal(data, seed.clients[0].id, 'Sin sitio'))
+    expect(server.tables.clients.get(seed.clients[0].id)?.data).toMatchObject({ goal: 'Sin sitio' })
+    const copy = JSON.parse(storage.get(STORAGE_KEYS.display) ?? '{}') as { data: AppData }
+    expect(copy.data.programs.length).toBeLessThan(seed.programs.length)
+    expect(copy.data.clients.every((c) => !c.archived)).toBe(true)
+  })
+
+  it('still saves to the cloud when the device blocks storage altogether', async () => {
+    const server = await serverWithSeed()
+    const { repo } = await connect(server, 'a')
+    const data = await new SupabaseRepository(server.gateway(), 'x').load()
+    vi.mocked(localStorage.setItem).mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError')
+    })
+    await push(repo, withGoal(data, seed.clients[0].id, 'Bloqueado'))
+    expect(server.tables.clients.get(seed.clients[0].id)?.data).toMatchObject({ goal: 'Bloqueado' })
+  })
+
+  it('a refetch after clearing a value finds nothing new: it stays cleared', async () => {
+    const server = await serverWithSeed()
+    const { repo, received } = await connect(server, 'a')
+    const data = await new SupabaseRepository(server.gateway(), 'x').load()
+    const program = data.programs.find((p) => p.days.some((d) => d.blocks.some((b) => Object.keys(b.params).length > 0)))
+    if (!program) throw new Error('missing program')
+    const cleared = {
+      ...program,
+      days: program.days.map((day, index) => ({
+        ...day,
+        name: index === 0 ? '' : day.name,
+        blocks: day.blocks.map((block) => ({ ...block, params: {} })),
+      })),
+    }
+    await push(repo, { ...data, programs: data.programs.map((p) => (p.id === program.id ? cleared : p)) })
+    await repo.refetch()
+    expect(received).toEqual([])
+    const reloaded = await new SupabaseRepository(server.gateway(), 'z').load()
+    expect(reloaded.programs.find((p) => p.id === program.id)?.days[0].name).toBe('')
   })
 
   it('stores the note author in the column, and the column wins on read', async () => {

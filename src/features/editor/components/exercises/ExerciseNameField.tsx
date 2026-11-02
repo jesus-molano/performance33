@@ -1,12 +1,14 @@
 import { Search } from 'lucide-react'
 import { useId } from 'react'
+import { ExerciseSearchLink } from '@/components/exercises/ExerciseSearchLink'
 import { controlClasses } from '@/components/ui'
-import { findExerciseById } from '@/lib/search'
-import { breakUndoGroup, useExerciseLibrary } from '@/store'
+import { EXERCISE_NAME_MAX_LENGTH } from '@/config/capacity'
 import type { ExerciseEntry } from '@/types'
-import { useExerciseAutocomplete } from '@/features/editor/hooks/useExerciseAutocomplete'
+import { NO_HIGHLIGHT } from '@/features/editor/config'
+import { useExerciseNameField } from '@/features/editor/hooks/useExerciseNameField'
 import { useFieldFocus } from '@/features/editor/hooks/useFieldFocus'
 import { formatExerciseMeta } from '@/lib/exerciseLibrary'
+import { ExercisePickerModal } from './ExercisePickerModal'
 import { ExerciseSuggestions } from './ExerciseSuggestions'
 import { SaveToLibrary } from './SaveToLibrary'
 
@@ -21,9 +23,7 @@ export function ExerciseNameField({ entry, onDone, onExit }: ExerciseNameFieldPr
   const id = useId()
   const listId = `${id}-list`
   const ref = useFieldFocus<HTMLInputElement>(entry.id, 'name')
-  const ac = useExerciseAutocomplete({ entry, onDone, onExit })
-  const library = useExerciseLibrary()
-  const linked = findExerciseById(entry.libraryId, library)
+  const { ac, linked, lengthHint, onBlur } = useExerciseNameField({ entry, onDone, onExit })
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -39,27 +39,29 @@ export function ExerciseNameField({ entry, onDone, onExit }: ExerciseNameFieldPr
           aria-expanded={ac.isOpen}
           aria-controls={listId}
           aria-autocomplete="list"
-          aria-activedescendant={ac.isOpen ? `${listId}-${ac.highlighted}` : undefined}
+          aria-activedescendant={ac.isOpen && ac.highlighted !== NO_HIGHLIGHT ? `${listId}-${ac.highlighted}` : undefined}
           autoComplete="off"
           spellCheck={false}
           placeholder="Escribe para buscar: sentadilla, remo, plancha…"
+          maxLength={EXERCISE_NAME_MAX_LENGTH}
           value={entry.name}
           onChange={(e) => ac.onChange(e.target.value)}
           onKeyDown={ac.onKeyDown}
-          onBlur={() => {
-            ac.close()
-            breakUndoGroup()
-          }}
+          onFocus={ac.onFocus}
+          onBlur={onBlur}
           className={controlClasses(false, 'h-12 pl-10 text-base font-medium')}
         />
         {ac.isOpen && <ExerciseSuggestions id={listId} query={entry.name} ac={ac} />}
       </div>
+      {lengthHint && <p className="text-sm text-fg-muted tabular">{lengthHint}</p>}
       <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
-        <span className="text-sm text-fg-muted">
+        <span className="flex min-w-0 items-center gap-1 text-sm text-fg-muted">
           {linked ? formatExerciseMeta(linked) : entry.name.trim() ? 'Ejercicio propio (texto libre)' : ''}
+          <ExerciseSearchLink name={entry.name} />
         </span>
         <SaveToLibrary entry={entry} />
       </div>
+      {ac.pickerOpen && <ExercisePickerModal onPick={ac.pick} onClose={ac.closePicker} />}
     </div>
   )
 }

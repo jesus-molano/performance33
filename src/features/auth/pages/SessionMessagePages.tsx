@@ -2,6 +2,7 @@ import { LogOut, RefreshCw } from 'lucide-react'
 import { retrySession, signOut } from '@/auth'
 import { Button } from '@/components/ui'
 import { AuthShell } from '@/features/auth/components/AuthShell'
+import { useSessionEmail } from '@/store'
 import { AUTH_COPY } from '@/features/auth/config'
 
 interface SessionMessageProps {
@@ -28,10 +29,11 @@ function SessionMessage({ title, description, onRetry, retryLabel }: SessionMess
 
 /** Signed in, but this email is not on the active staff list. */
 export function NoAccessPage() {
+  const email = useSessionEmail()
   return (
     <SessionMessage
       title={AUTH_COPY.noAccessTitle}
-      description={AUTH_COPY.noAccessBody}
+      description={email ? AUTH_COPY.noAccessAs(email) : AUTH_COPY.noAccessBody}
       onRetry={() => void retrySession()}
       retryLabel="Volver a comprobar"
     />

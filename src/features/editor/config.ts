@@ -55,5 +55,11 @@ export const BLOCK_TEXT_PLACEHOLDER = 'Ej.\n5′ bici suave\n2 rondas: 10 sentad
 export const PREVIEW_FIT_WARNING =
   'Hay demasiado contenido para leerse bien en la tele: divide el bloque o pasa ejercicios a otro día.'
 
+export const PREVIEW_DETAIL_HIDDEN_NOTE =
+  'Para que se lea bien, en la tele se ocultan las indicaciones, el tempo o las notas de este día.'
+
 /** Summary text of a row that has no name yet. */
 export const UNNAMED_EXERCISE = 'Ejercicio sin nombre'
+
+/** Highlight of a list opened by focus alone: Enter and Escape keep their normal meaning. */
+export const NO_HIGHLIGHT = -1

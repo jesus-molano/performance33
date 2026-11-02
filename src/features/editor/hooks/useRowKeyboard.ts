@@ -1,7 +1,8 @@
 import { useCallback, type KeyboardEvent } from 'react'
-import { breakUndoGroup, useAppActions } from '@/store'
+import { breakUndoGroup } from '@/store'
 import { useEditorUi, type RowField } from '@/features/editor/store/editorUiStore'
 import { nextRowField, rowFieldOrder } from '@/features/editor/utils'
+import { useAddExercise } from './useAddExercise'
 
 export interface RowKeyboard {
   /** Focus the field after `field`, or add the next row when it is the last one. */
@@ -14,9 +15,8 @@ export interface RowKeyboard {
 
 /** Fast entry: type, Enter, next. Enter on the last field creates the next row and focuses its name. */
 export function useRowKeyboard(exerciseId: string, blockId: string, index: number, showSets: boolean): RowKeyboard {
-  const { addExercise } = useAppActions()
+  const addExercise = useAddExercise()
   const requestFocus = useEditorUi((s) => s.requestFocus)
-  const openRow = useEditorUi((s) => s.openRow)
   const exit = useEditorUi((s) => s.closeRow)
 
   const advance = useCallback(
@@ -27,10 +27,9 @@ export function useRowKeyboard(exerciseId: string, blockId: string, index: numbe
         requestFocus(exerciseId, next)
         return
       }
-      const id = addExercise(blockId, {}, { index: index + 1 })
-      if (id) openRow(id, 'name')
+      addExercise(blockId, index + 1)
     },
-    [showSets, requestFocus, exerciseId, addExercise, blockId, index, openRow],
+    [showSets, requestFocus, exerciseId, addExercise, blockId, index],
   )
 
   const onFieldKeyDown = useCallback(

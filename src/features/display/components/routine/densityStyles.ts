@@ -9,29 +9,43 @@ interface DensityStyles {
   note: string
   exerciseList: string
   bracket: string
+  row: string
+  label: string
+  /** Exercise name and prescription: the same size, the largest text in a block. */
+  main: string
+  /** Cue and tempo/rest lines. */
+  secondary: string
   /** 'Actualizado' tag placement: compact cards have no room above them, so it sits inline. */
   flashTag: string
 }
 
 export const DENSITY_STYLES: Record<DisplayDensity, DensityStyles> = {
   compact: {
-    content: 'gap-[0.6em] px-[0.75em] pt-[0.65em] pb-[0.3em]',
+    content: 'gap-[0.35em] px-[0.35em] pt-[0.35em] pb-[0.1em]',
     columnGap: '[column-gap:1em]',
-    card: 'mb-[0.45em] rounded-[0.6em] px-[0.7em] py-[0.4em]',
-    blockText: 'mt-[0.2em] text-[1.15em] leading-snug',
-    note: 'mt-[0.25em] gap-[0.4em] rounded-[0.45em] px-[0.5em] py-[0.2em] text-[1.1em] leading-snug',
-    exerciseList: 'mt-[0.15em]',
-    bracket: 'ml-[0.1em] border-l-[0.18em] pl-[0.5em]',
+    card: 'mb-[0.25em] rounded-[0.5em] px-[0.45em] py-[0.15em]',
+    blockText: 'line-clamp-3 text-[1.25em] leading-snug',
+    note: 'mt-[0.15em] gap-[0.4em] rounded-[0.45em] px-[0.5em] py-[0.1em] text-[1.25em] leading-snug',
+    exerciseList: '',
+    bracket: 'border-l-[0.18em] pl-[0.4em]',
+    row: 'gap-x-[0.35em] py-[0.08em]',
+    label: 'min-w-[1.7em] rounded-[0.35em] px-[0.25em] text-[1.15em]',
+    main: 'text-[1.5em] leading-[1.15]',
+    secondary: 'text-[1.25em] leading-snug',
     flashTag: 'ml-auto self-center',
   },
   comfortable: {
-    content: 'gap-[1.1em] px-[1.3em] pt-[1.2em] pb-[0.4em]',
+    content: 'gap-[1em] px-[1.2em] pt-[1em] pb-[0.3em]',
     columnGap: '[column-gap:1.4em]',
-    card: 'mb-[0.9em] rounded-[0.9em] px-[1em] py-[0.85em]',
-    blockText: 'mt-[0.5em] text-[1.4em] leading-snug whitespace-pre-line',
-    note: 'mt-[0.5em] gap-[0.5em] rounded-[0.6em] px-[0.7em] py-[0.45em] text-[1.3em] leading-snug',
-    exerciseList: 'mt-[0.45em]',
+    card: 'mb-[0.8em] rounded-[0.9em] px-[1em] py-[0.7em]',
+    blockText: 'mt-[0.4em] text-[1.4em] leading-snug whitespace-pre-line',
+    note: 'mt-[0.5em] gap-[0.5em] rounded-[0.6em] px-[0.7em] py-[0.4em] text-[1.35em] leading-snug',
+    exerciseList: 'mt-[0.3em]',
     bracket: 'ml-[0.2em] border-l-[0.22em] pl-[0.7em]',
+    row: 'gap-x-[0.6em] py-[0.35em]',
+    label: 'min-w-[2.1em] rounded-[0.4em] px-[0.35em] text-[1.25em]',
+    main: 'text-[1.9em] leading-[1.15]',
+    secondary: 'text-[1.35em] leading-snug',
     flashTag: 'absolute -top-[1.3em] right-0',
   },
 }

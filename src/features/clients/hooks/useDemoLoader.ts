@@ -13,13 +13,13 @@ export interface DemoLoaderApi {
 export function useDemoLoader(): DemoLoaderApi {
   const isEmptyDatabase = useAppData((data) => data.clients.length === 0 && data.programs.length === 0)
   const isAdmin = useIsAdmin()
-  const { resetDemoData } = useAppActions()
+  const { loadDemoData } = useAppActions()
   const { toast } = useToast()
 
   const loadDemo = useCallback(() => {
-    resetDemoData()
+    loadDemoData()
     toast({ message: 'Datos de demostración cargados', tone: 'success' })
-  }, [resetDemoData, toast])
+  }, [loadDemoData, toast])
 
   return { isEmptyDatabase, canLoadDemo: isEmptyDatabase && isAdmin, loadDemo }
 }

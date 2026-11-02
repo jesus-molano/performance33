@@ -46,6 +46,8 @@ export interface ProgramActions {
 export interface DayActions {
   addDay: (programId: string, init?: DayPatch) => string
   updateDay: (dayId: string, patch: DayPatch) => void
+  /** After renaming: an empty or automatic name goes back to 'Día N' for its position. Not while typing. */
+  settleDayNames: (dayId: string) => void
   /** Inserts a deep copy right after the original. */
   duplicateDay: (dayId: string) => string
   deleteDay: (dayId: string) => void
@@ -111,8 +113,10 @@ export interface SettingsActions {
   deleteCustomExercise: (id: string) => void
   /** Replaces everything with a validated backup (see normalizeAppData). Clears undo history. */
   importData: (data: AppData) => void
-  /** Fresh demo data relative to today. Clears undo history. */
+  /** Fresh demo data relative to today, replacing everything. Clears undo history. */
   resetDemoData: () => void
+  /** Adds the demo clients, routines and notes to an empty database; branding and library stay. Clears undo history. */
+  loadDemoData: () => void
 }
 
 export type AppActions = ClientActions &

@@ -15,6 +15,8 @@ export interface SegmentedControlProps<T extends string> {
   ariaLabel: string
   size?: 'sm' | 'md'
   fullWidth?: boolean
+  /** Phones show only the icons; the label stays for screen readers. */
+  iconsOnMobile?: boolean
   className?: string
 }
 
@@ -26,6 +28,7 @@ export function SegmentedControl<T extends string>({
   ariaLabel,
   size = 'md',
   fullWidth = false,
+  iconsOnMobile = false,
   className,
 }: SegmentedControlProps<T>) {
   return (
@@ -50,7 +53,7 @@ export function SegmentedControl<T extends string>({
             )}
           >
             {Icon && <Icon size={16} aria-hidden />}
-            {label}
+            <span className={cn(iconsOnMobile && 'sr-only sm:not-sr-only')}>{label}</span>
           </button>
         )
       })}

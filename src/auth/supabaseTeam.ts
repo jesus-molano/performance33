@@ -15,13 +15,13 @@ export function createSupabaseTeam(client: SupabaseClient): TeamService {
   return {
     async claimProfile() {
       const { data, error } = await client.rpc('claim_staff_profile')
-      if (error) throw new Error(error.message)
+      failIf(error)
       return ((data as StaffMember[])[0] as StaffMember | undefined) ?? null
     },
 
     async list() {
       const { data, error } = await client.from(TABLE).select(COLUMNS).order('name')
-      if (error) throw new Error(error.message)
+      failIf(error)
       return data as StaffMember[]
     },
 

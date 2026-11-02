@@ -38,8 +38,5 @@ export const MEASURE_OPTIONS: ReadonlyArray<{ value: MeasureType; label: string 
   label: MEASURE_META[m].label,
 }))
 
-/** Max rows rendered in the library list at once (the search narrows it down). */
-export const LIBRARY_VISIBLE_LIMIT = 60
-
 /** Accepted image types for logo / icon uploads. */
 export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/svg+xml,image/webp'

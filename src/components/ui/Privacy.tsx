@@ -26,7 +26,7 @@ export function PrivacyLabel({ kind, className }: { kind: PrivacyKind; className
   )
 }
 
-/** Amber container for anything private (internal notes, health alerts). */
+/** Amber container for anything private (internal notes, important notifications). */
 export function PrivateSurface({ className, ...props }: ComponentProps<'div'>) {
   return <div className={cn('rounded-xl border border-private-line bg-private-bg text-private', className)} {...props} />
 }

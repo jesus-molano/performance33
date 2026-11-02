@@ -1,10 +1,11 @@
-import { Plus } from 'lucide-react'
 import { blockShowsSets } from '@/lib/blocks'
+import { getAddExerciseRefusal } from '@/lib/capacity'
 import { cn } from '@/lib/cn'
 import { getExerciseLabels } from '@/lib/format'
 import type { Block } from '@/types'
 import { useAddExercise, useSortActions } from '@/features/editor/hooks/useAddExercise'
 import { useFirstRowFocus } from '@/features/editor/hooks/useFirstRowFocus'
+import { AddExerciseButton } from '@/features/editor/components/capacity/AddExerciseButton'
 import { SortableList } from '@/features/editor/components/dnd/SortableList'
 import { ExerciseRow } from './ExerciseRow'
 
@@ -46,14 +47,7 @@ export function ExerciseList({ block, blockIndex, dayBlocks }: ExerciseListProps
           </SortableList>
         </ul>
       )}
-      <button
-        type="button"
-        onClick={() => addExercise(block.id)}
-        className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong text-md font-medium text-fg-muted transition-colors hover:border-brand-strong hover:bg-brand-soft hover:text-brand-strong"
-      >
-        <Plus size={18} aria-hidden />
-        Añadir ejercicio
-      </button>
+      <AddExerciseButton onClick={() => addExercise(block.id)} refusal={getAddExerciseRefusal({ blocks: dayBlocks }, block.id)} />
     </div>
   )
 }

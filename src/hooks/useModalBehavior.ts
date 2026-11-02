@@ -7,7 +7,7 @@ const openModals: symbol[] = []
 const isTopModal = (token: symbol): boolean => openModals[openModals.length - 1] === token
 
 /** Escape to close, body scroll lock, focus the first field on open and restore focus on close. */
-export function useModalBehavior(open: boolean, onClose: () => void, panelRef: RefObject<HTMLElement | null>): void {
+export function useModalBehavior(open: boolean, onClose: () => void, panelRef: RefObject<HTMLElement | null>, focusFirstField = true): void {
   const closeRef = useRef(onClose)
   useEffect(() => {
     closeRef.current = onClose
@@ -20,7 +20,8 @@ export function useModalBehavior(open: boolean, onClose: () => void, panelRef: R
     const previouslyFocused = document.activeElement as HTMLElement | null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+    const initialFocus = focusFirstField ? panelRef.current?.querySelector<HTMLElement>(FOCUSABLE) : panelRef.current
+    initialFocus?.focus()
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || !isTopModal(token)) return
@@ -35,5 +36,5 @@ export function useModalBehavior(open: boolean, onClose: () => void, panelRef: R
       document.body.style.overflow = previousOverflow
       if (wasTop) previouslyFocused?.focus()
     }
-  }, [open, panelRef])
+  }, [open, panelRef, focusFirstField])
 }

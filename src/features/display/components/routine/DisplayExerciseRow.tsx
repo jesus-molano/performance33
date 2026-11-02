@@ -1,44 +1,42 @@
 import { cn } from '@/lib/cn'
 import type { DisplayExerciseLine } from '@/lib/display'
+import type { DisplayDensity } from '@/features/display/utils/autoFit'
 import type { DisplayThemeClasses } from '@/features/display/utils/theme'
+import { DENSITY_STYLES } from './densityStyles'
 
 interface DisplayExerciseRowProps {
   line: DisplayExerciseLine
-  week: number | null
-  /** Warm-up/mobility rows: smaller so the main work stands out. */
+  density: DisplayDensity
+  /** Warm-up/mobility rows: same size, quieter colour, so the main work stands out. */
   muted: boolean
   theme: DisplayThemeClasses
 }
 
-/** 'A1  Press banca ........ 4 × 8-10 / 60 kg' with cue and tempo/rest underneath. */
-export function DisplayExerciseRow({ line, week, muted, theme }: DisplayExerciseRowProps) {
-  const mainSize = muted ? 'text-[1.6em]' : 'text-[2.05em]'
+/**
+ * 'A1  Press banca ........ 4 × 8-10  60 kg': name and prescription at the same size, the prescription
+ * right-aligned on the same edge in every row. Cue and tempo/rest go underneath and hide when the day
+ * needs the room (see DETAIL_LEVELS).
+ */
+export function DisplayExerciseRow({ line, density, muted, theme }: DisplayExerciseRowProps) {
+  const styles = DENSITY_STYLES[density]
   return (
-    <li className="flex items-start gap-[0.6em] py-[0.45em]">
-      {line.label && (
-        <span
-          className={cn(
-            'tabular mt-[0.25em] min-w-[2.1em] shrink-0 rounded-[0.4em] px-[0.35em] py-[0.05em] text-center text-[1.2em] font-bold whitespace-nowrap',
-            theme.badge,
-          )}
-        >
-          {line.label}
-        </span>
+    <li className={cn('grid grid-cols-[auto_minmax(0,1fr)_fit-content(58%)] items-baseline', styles.row)}>
+      <span className={cn(line.label && cn('tabular text-center font-bold whitespace-nowrap', styles.label, theme.badge))}>{line.label}</span>
+      <p className={cn('line-clamp-2 font-bold text-balance [overflow-wrap:anywhere]', styles.main, muted && theme.secondaryText)}>
+        {line.name}
+      </p>
+      <p className={cn('tabular flex flex-wrap justify-end gap-x-[0.45em] text-right font-bold [overflow-wrap:anywhere]', styles.main)}>
+        {line.volume && <span className="min-w-0">{line.volume}</span>}
+        {line.load && <span className={cn('min-w-0', theme.accentText)}>{line.load}</span>}
+      </p>
+      {line.detail && (
+        <p className={cn('tabular col-span-2 col-start-2 truncate font-medium [display:var(--display-detail,block)]', styles.secondary, theme.subtleText)}>
+          {line.detail}
+        </p>
       )}
-      <div className="min-w-0 flex-1">
-        <p className={cn('leading-tight font-semibold [overflow-wrap:anywhere]', mainSize)}>{line.name}</p>
-        {line.cue && <p className={cn('text-[1.3em] leading-snug [overflow-wrap:anywhere]', theme.secondaryText)}>{line.cue}</p>}
-        {line.detail && <p className={cn('tabular text-[1.15em] leading-snug [overflow-wrap:anywhere]', theme.subtleText)}>{line.detail}</p>}
-      </div>
-      {(line.volume || line.load) && (
-        <div className="max-w-[48%] shrink-0 text-right">
-          {line.volume && <p className={cn('tabular leading-tight font-bold [overflow-wrap:anywhere]', mainSize)}>{line.volume}</p>}
-          {line.load && (
-            <p className={cn('tabular text-[1.45em] leading-tight font-semibold [overflow-wrap:anywhere]', theme.accentText)}>
-              {line.load}
-              {line.progressed && <span className="ml-[0.3em] align-top text-[0.6em] opacity-80">S{week}</span>}
-            </p>
-          )}
+      {line.cue && (
+        <div className="col-span-2 col-start-2 [display:var(--display-cue,block)]">
+          <p className={cn('line-clamp-2 font-medium [overflow-wrap:anywhere]', styles.secondary, theme.secondaryText)}>{line.cue}</p>
         </div>
       )}
     </li>
