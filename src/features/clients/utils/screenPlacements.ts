@@ -52,6 +52,9 @@ export const placementLabel = (p: ClientPlacement): string => `${p.screenName} �
 /** Just the screen ('Pantalla 1', or its new name) for narrow places: section and day are in the title and on their page. */
 export const placementShort = (p: ClientPlacement): string => p.screenName
 
+/** Section and day in short ('S2 · Día 3'): kept whole on phones while a long screen name is cut. */
+export const placementSpot = (p: ClientPlacement): string => `S${p.section} · Día ${p.day}`
+
 /** Every place, for a title or an aria-label: 'Pantalla 1 · Sección 2 · Día 3 y Pantalla 2 · Sección 1 · Día 1'. */
 export const placementsLabel = (list: readonly ClientPlacement[]): string => list.map(placementLabel).join(' y ')
 

@@ -34,7 +34,7 @@ export function Badge({ tone = 'neutral', icon: Icon, size = 'md', className, ch
         className,
       )}
     >
-      {Icon && <Icon size={size === 'sm' ? 12 : 14} aria-hidden />}
+      {Icon && <Icon size={size === 'sm' ? 12 : 14} aria-hidden className="shrink-0" />}
       {children}
     </span>
   )

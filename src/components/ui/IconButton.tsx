@@ -3,9 +3,11 @@ import type { ComponentProps } from 'react'
 import { cn } from '@/lib/cn'
 import { BUTTON_VARIANTS, type ButtonVariant } from './styles'
 
-export type IconButtonSize = 'sm' | 'md'
+/** xs: a 32 px circle whose touch area still reaches 44 px, border included (an inline action next to a pill). */
+export type IconButtonSize = 'xs' | 'sm' | 'md'
 
 const SIZES: Record<IconButtonSize, { box: string; icon: number }> = {
+  xs: { box: "relative size-8 rounded-full after:absolute after:-inset-2 after:content-['']", icon: 16 },
   sm: { box: 'size-11 rounded-lg md:size-9', icon: 16 },
   md: { box: 'size-11 rounded-xl', icon: 20 },
 }

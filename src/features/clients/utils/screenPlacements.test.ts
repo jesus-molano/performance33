@@ -5,6 +5,7 @@ import {
   placementLabel,
   placementsByClient,
   placementShort,
+  placementSpot,
   placementsLabel,
   placementsOf,
 } from './screenPlacements'
@@ -65,6 +66,8 @@ describe('placement labels', () => {
     expect(placementShort(luis)).toBe('Pantalla 1')
     expect(placementLabel(marta)).toBe('Sala grande · Sección 2 · Día 2')
     expect(placementShort(marta)).toBe('Sala grande')
+    expect(placementSpot(luis)).toBe('S3 · Día 3')
+    expect(placementSpot(marta)).toBe('S2 · Día 2')
   })
 
   it('joins several places and counts the extra ones', () => {

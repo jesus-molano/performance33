@@ -60,3 +60,22 @@ export const CLIENT_TEXT = {
   goalPlaceholder: 'Ej.: Perder grasa y ganar fuerza en el tren inferior.',
   pinHelp: 'Se verá arriba en su ficha y en la lista de usuarios.',
 } as const
+
+/** The '⋯' of a user (card, list row and their page). */
+export const CLIENT_MENU_COPY = {
+  label: 'Más acciones del usuario',
+  edit: 'Editar datos',
+  archive: 'Archivar usuario',
+  restore: 'Restaurar usuario',
+  remove: 'Eliminar usuario…',
+} as const
+
+/** The header of a user's page. */
+export const CLIENT_PROFILE_COPY = {
+  memberSince: (date: string) => `Usuario desde el ${date}`,
+  goal: 'Objetivo:',
+  goalPrivate: 'Solo monitores',
+  archived: 'Archivado',
+  showMore: 'Ver objetivo completo y fecha de alta',
+  showLess: 'Ver menos',
+} as const

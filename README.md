@@ -298,7 +298,8 @@ abre también `tools/teles/quitar-pantalla-completa-local.reg`.
   tiene en pantalla, o el Día 1 si no está en ninguna) y luego la sección. Si no tiene rutina, el botón sale gris («Sin rutina»).
 - En la lista, quien sale ahora en una pantalla lleva la etiqueta **Pantalla 1 · Sección 2 · Día 3** (en el móvil, solo «Pantalla 1»),
   y el botón **En pantalla** de arriba deja ver solo a esas personas. Se actualiza solo, mande quien mande y desde donde sea.
-- En la ficha de la persona sale lo mismo junto a su nombre, con **Quitar de la pantalla** (con **Deshacer**).
+- En la ficha de la persona sale lo mismo bajo su nombre, con un botón redondo al lado para **Quitar de la pantalla** (con **Deshacer**).
+  **Editar datos** está en los tres puntos (⋯) junto al nombre.
 - **Ctrl+clic** en **Pantalla** (o mantenerlo pulsado en el móvil) la manda directamente a la última sección que usaste
   (desde la lista, con el día que ya tiene en pantalla, o el Día 1).
 - Funciona igual desde el móvil, en cualquier red: solo hace falta que la ventana de la pantalla esté abierta en el portátil.
