@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { MEMBERS_TABLE } from '@shared/booking'
 import { uniqueChannelTopic } from '@/persistence/tabId'
 import type { Profile, TeamMember } from '@/types'
 import { invokeFunction } from './edgeFunctions'
@@ -56,6 +57,12 @@ export function createSupabaseTeam(client: SupabaseClient): TeamService {
     async finishPasswordChange() {
       const { error } = await client.rpc('finish_password_change')
       failIf(error)
+    },
+
+    async isMemberLogin() {
+      // A member reads only their own row (schema.sql, members_select); anyone else without a profile reads none.
+      const { data, error } = await client.from(MEMBERS_TABLE).select('id').limit(1)
+      return !error && (data?.length ?? 0) > 0
     },
 
     subscribe(listener) {

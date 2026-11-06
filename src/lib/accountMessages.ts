@@ -16,6 +16,8 @@ const MESSAGES: Record<AccountErrorCode, string> = {
   username_taken: 'Ya hay alguien en el equipo con ese nombre de usuario.',
   email_taken: 'Ya hay alguien en el equipo con ese email.',
   name_taken: 'Ya hay alguien en el equipo con ese nombre.',
+  has_access: 'Este usuario ya tiene acceso a la app.',
+  archived: 'Este usuario está archivado: restáuralo antes.',
   invalid_credentials: 'Email, nombre de usuario o contraseña incorrectos.',
   locked: 'Demasiados intentos con este nombre de usuario. Espera 15 minutos y vuelve a probar.',
   failed: CONNECTION_MESSAGE,

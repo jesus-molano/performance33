@@ -425,9 +425,12 @@ enabled = true
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
 
-# Las dos funciones comprueban el acceso por sí mismas (login-username se llama sin sesión).
+# Las funciones comprueban el acceso por sí mismas (login-username se llama sin sesión).
 [functions.admin-users]
 verify_jwt = false
 
 [functions.login-username]
+verify_jwt = false
+
+[functions.member-accounts]
 verify_jwt = false

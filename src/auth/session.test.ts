@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSessionStore } from '@/store/sessionStore'
 import type { Profile } from '@/types'
 import { auth, teamService } from './instance'
+import { MEMBER_LOGIN_MESSAGE } from './messages'
 import { retrySession } from './session'
 
 vi.mock('./instance', () => ({
-  auth: { getUser: vi.fn() },
-  teamService: { getOwnProfile: vi.fn() },
+  auth: { getUser: vi.fn(), signOut: vi.fn() },
+  teamService: { getOwnProfile: vi.fn(), isMemberLogin: vi.fn() },
 }))
 
 const PROFILE: Profile = { id: 's1', username: 'ana', email: 'ana@p33.test', name: 'Ana', color: '#000000', role: 'monitor', active: true, mustChangePassword: false, hasOwnPassword: true, temporaryPasswordExpired: false, googleConnected: false }
@@ -16,7 +17,9 @@ describe('retrySession', () => {
   beforeEach(() => {
     vi.mocked(auth.getUser).mockReset()
     vi.mocked(teamService.getOwnProfile).mockReset()
-    useSessionStore.setState({ status: 'loading', userId: null, email: null, profile: null, team: [] })
+    vi.mocked(teamService.isMemberLogin).mockReset()
+    vi.mocked(auth.signOut).mockReset().mockResolvedValue(undefined)
+    useSessionStore.setState({ status: 'loading', userId: null, email: null, profile: null, team: [], notice: null })
   })
 
   it('does not sign out a working session when the check fails without connection', async () => {
@@ -44,6 +47,15 @@ describe('retrySession', () => {
     vi.mocked(teamService.getOwnProfile).mockResolvedValue(null)
     await retrySession()
     expect(useSessionStore.getState()).toMatchObject({ status: 'no-access', email: USER.email })
+  })
+
+  it('signs a member of the app out of this web, and says why on the login page', async () => {
+    vi.mocked(auth.getUser).mockResolvedValue(USER)
+    vi.mocked(teamService.getOwnProfile).mockResolvedValue(null)
+    vi.mocked(teamService.isMemberLogin).mockResolvedValue(true)
+    await retrySession()
+    expect(auth.signOut).toHaveBeenCalled()
+    expect(useSessionStore.getState()).toMatchObject({ status: 'signed-out', userId: null, notice: MEMBER_LOGIN_MESSAGE })
   })
 
   it('stops at the password screen while it has to be changed', async () => {

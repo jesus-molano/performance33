@@ -8,6 +8,8 @@ export const STORAGE_KEYS = {
   /** Local test mode only: session and test accounts. */
   localSession: 'p33:local:session',
   localTeam: 'p33:local:accounts',
+  /** Local test mode only: the members' app accounts given from the users' pages. */
+  localMembers: 'p33:local:members',
   /** Session of the cloud login, shared by every window of this browser (popups included). */
   cloudSession: 'p33:session',
   /** Local test mode only: TV screens and what each section shows. */

@@ -4,6 +4,7 @@ import { useDisclosure } from '@/hooks'
 import { navigate, paths } from '@/lib/routes'
 import { useClient, useCurrentProgram } from '@/store'
 import { ClientClassesCard } from '@/features/classes'
+import { MemberAccessCard } from '@/features/members'
 import { BackLink, PageContainer } from '@/features/shell'
 import { ClientFormModal } from '@/features/clients/components/ClientFormModal'
 import { ClientProfileHeader } from '@/features/clients/components/ClientProfileHeader'
@@ -49,6 +50,7 @@ export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
         </div>
         <div className="flex min-w-0 flex-col gap-6">
           <ClientClassesCard clientId={client.id} />
+          <MemberAccessCard client={client} />
           <NotesPanel clientId={client.id} />
         </div>
       </div>

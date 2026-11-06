@@ -130,8 +130,9 @@ export interface ClassSlotListRow
   /** People with a place, forced ones included. */
   booked_count: number
   waitlist_count: number
-  /** The member's own booking (phase 3); always null for staff. */
-  my_status: BookingStatus | null
+  /** The member's own booking, with a place or waitlisted; always null for staff. */
+  my_status: Extract<BookingStatus, 'booked' | 'waitlisted'> | null
+  my_booking_id: string | null
 }
 
 export interface StaffAddBookingArgs {

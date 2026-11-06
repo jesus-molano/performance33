@@ -6,9 +6,16 @@ import { newId } from '@/lib/ids'
 import { accessChangeError, isActiveAdmin } from '@/lib/ownership'
 import type { TeamMember } from '@/types'
 import { findSessionAccount, readAccounts, readSessionId, toProfile, writeAccounts, type LocalAccount } from './localAccounts'
+import { readMemberAccounts } from './localMemberAccounts'
 import { NOT_CHANGED_MESSAGE } from './messages'
 import type { TeamService } from './types'
 
+/** A coach cannot take the username or email of a member's app account (schema.sql: accounts_keep_apart). */
+const memberLoginConflict = (username: string, email: string | null) => {
+  const members = readMemberAccounts()
+  if (members.some((member) => member.username === username)) return 'username_taken' as const
+  return email && members.some((member) => member.email === email) ? ('email_taken' as const) : null
+}
 const newTemporaryPassword = (): string => generateTemporaryPassword((length) => crypto.getRandomValues(new Uint8Array(length)))
 const sortByName = <T extends TeamMember>(team: T[]): T[] => team.sort((a, b) => a.name.localeCompare(b.name, 'es'))
 
@@ -42,6 +49,8 @@ export function createLocalTeam(notify: () => void, subscribe: TeamService['subs
       if (!account || account.password === account.temporaryPassword) throw new Error(NOT_CHANGED_MESSAGE)
       patch(account.id, { mustChangePassword: false, temporaryPassword: null })
     },
+    // The demo login refuses members' accounts before there is a session (localBackend.signIn).
+    isMemberLogin: async () => false,
     subscribe,
 
     listAccounts: async () => {
@@ -53,7 +62,7 @@ export function createLocalTeam(notify: () => void, subscribe: TeamService['subs
       const account = parseNewAccount(input)
       if (!account) throw new Error(accountErrorMessage('invalid_input'))
       const accounts = readAccounts()
-      const conflict = findAccountConflict(accounts, account)
+      const conflict = findAccountConflict(accounts, account) ?? memberLoginConflict(account.username, account.email)
       if (conflict) throw new Error(accountErrorMessage(conflict))
       const password = newTemporaryPassword()
       save([

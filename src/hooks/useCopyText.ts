@@ -1,15 +1,14 @@
 import { useCallback, useState } from 'react'
 import { COPIED_FLAG_MS } from '@/config/app'
-import { useToast } from '@/hooks'
-import { TEAM_COPY } from '@/features/team/config'
+import { useToast } from './useToast'
 
 export interface CopyTextApi {
   copied: boolean
   copy: () => Promise<void>
 }
 
-/** Copy to the clipboard, with a brief 'copied' state. */
-export function useCopyText(text: string): CopyTextApi {
+/** Copy to the clipboard, with a brief 'copied' state; `failedMessage` says what to do when the browser refuses. */
+export function useCopyText(text: string, failedMessage: string): CopyTextApi {
   const { toast } = useToast()
   const [copied, setCopied] = useState(false)
 
@@ -19,9 +18,9 @@ export function useCopyText(text: string): CopyTextApi {
       setCopied(true)
       setTimeout(() => setCopied(false), COPIED_FLAG_MS)
     } catch {
-      toast({ message: TEAM_COPY.copyFailed, tone: 'error' })
+      toast({ message: failedMessage, tone: 'error' })
     }
-  }, [text, toast])
+  }, [failedMessage, text, toast])
 
   return { copied, copy }
 }

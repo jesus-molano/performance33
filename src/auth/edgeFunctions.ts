@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { accountErrorMessage, errorCodeFromBody } from '@/lib/accountMessages'
+import type { AccountErrorCode } from '@/lib/accountRules'
 
 async function readErrorBody(error: unknown): Promise<unknown> {
   const context = (error as { context?: unknown } | null)?.context
@@ -11,9 +12,14 @@ async function readErrorBody(error: unknown): Promise<unknown> {
   }
 }
 
-/** Calls an edge function. Rejects with a Spanish message. */
-export async function invokeFunction<T>(client: SupabaseClient, name: string, body: object): Promise<T> {
+/** Calls an edge function. Rejects with a Spanish message (`describe` words the error code). */
+export async function invokeFunction<T>(
+  client: SupabaseClient,
+  name: string,
+  body: object,
+  describe: (code: AccountErrorCode) => string = accountErrorMessage,
+): Promise<T> {
   const { data, error } = await client.functions.invoke<T>(name, { body })
-  if (error || data === null) throw new Error(accountErrorMessage(errorCodeFromBody(await readErrorBody(error))))
+  if (error || data === null) throw new Error(describe(errorCodeFromBody(await readErrorBody(error))))
   return data
 }

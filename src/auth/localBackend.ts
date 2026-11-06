@@ -6,7 +6,8 @@ import { accountErrorMessage } from '@/lib/accountMessages'
 import { isEmailIdentifier, normalizeUsername } from '@/lib/accountRules'
 import { clearSessionId, findSessionAccount, readAccounts, writeAccounts, writeSessionId } from './localAccounts'
 import { createLocalTeam } from './localTeam'
-import { SamePasswordError } from './messages'
+import { findMemberLogin } from './localMemberAccounts'
+import { MEMBER_LOGIN_MESSAGE, SamePasswordError } from './messages'
 import { signInMethodsFrom } from './signInMethods'
 import type { AuthEvent, AuthService, AuthUser, TeamService } from './types'
 
@@ -48,7 +49,9 @@ export function createLocalBackend(): { auth: AuthService; team: TeamService } {
       const clean = normalizeUsername(identifier)
       const byEmail = isEmailIdentifier(clean)
       const account = readAccounts().find((candidate) => candidate.active && (byEmail ? candidate.email === clean : candidate.username === clean))
-      if (account?.password !== password) throw new Error(accountErrorMessage('invalid_credentials'))
+      if (account?.password !== password) {
+        throw new Error(findMemberLogin(clean, password) ? MEMBER_LOGIN_MESSAGE : accountErrorMessage('invalid_credentials'))
+      }
       writeSessionId(account.id)
       emitAuth()
     },

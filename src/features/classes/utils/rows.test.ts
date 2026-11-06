@@ -26,7 +26,7 @@ describe('booking rows', () => {
   it('reads a listed class with its counts and the start as epoch ms', () => {
     const slot = slotSummaryFromRow({
       id: 's1', template_id: null, starts_at: '2026-11-06T18:00:00+00:00', gym_date: '2026-11-06', duration_minutes: 60,
-      capacity: 10, name: 'Entrenamiento', status: 'open', edited: true, booked_count: 8, waitlist_count: 2, my_status: null,
+      capacity: 10, name: 'Entrenamiento', status: 'open', edited: true, booked_count: 8, waitlist_count: 2, my_status: null, my_booking_id: null,
     })
     expect(slot.startsAt).toBe(Date.UTC(2026, 10, 6, 18))
     expect(slot).toMatchObject({ bookedCount: 8, waitlistCount: 2, templateId: null, edited: true })

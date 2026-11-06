@@ -19,6 +19,8 @@ export class SamePasswordError extends Error {
 export const NOT_CHANGED_MESSAGE = 'Elige una contraseña distinta a la que te han dado.'
 export const GOOGLE_FAILED_MESSAGE = 'No se ha podido continuar con Google. Inténtalo de nuevo.'
 export const GOOGLE_NO_ACCOUNT_MESSAGE = 'Tu cuenta no tiene acceso. Esa cuenta de Google no está en el equipo del gimnasio: pídele al administrador que te cree una con ese email.'
+/** A member's app account signed in here (password or Google): the coaches' web is not for them. */
+export const MEMBER_LOGIN_MESSAGE = 'Esta cuenta es de la app del gimnasio. Aquí solo entran los monitores: entra desde la app.'
 export const GOOGLE_IN_USE_MESSAGE = 'Esa cuenta de Google ya está conectada a otra persona del equipo.'
 
 const errorText = (error: ServerError): string => `${error.code ?? ''} ${error.message ?? ''}`.toLowerCase()

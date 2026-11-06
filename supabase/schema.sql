@@ -350,7 +350,8 @@ end;
 $$;
 
 -- Una cuenta de Google conectada a mano no sobrevive a una contraseña nueva: quizá la puso quien tenía acceso a la
--- sesión. La del email de su ficha se queda, porque ese email lo escribió un administrador. Solo la función admin-users.
+-- sesión. La del email de su ficha se queda, porque ese email lo escribió un administrador. Solo las funciones
+-- admin-users y member-accounts; un usuario de la app no tiene ficha en profiles, así que se le quitan todas.
 create or replace function public.remove_other_google_identities(target uuid)
 returns void
 language plpgsql
@@ -1151,33 +1152,45 @@ create trigger class_templates_sync after insert or update on public.class_templ
 
 -- Las clases de esos días (como mucho SLOT_LIST_MAX_DAYS = 42) con sus plazas ocupadas y la espera.
 -- Antes crea las del horario que falten, desde hoy y hasta 60 días (el máximo de horizon_days).
+-- Un usuario con acceso a la app ve solo desde hoy hasta horizon_days, y en my_status / my_booking_id su propia reserva
+-- (con plaza o en espera). El equipo, cualquier día y nunca reservas de nadie aquí.
 drop function if exists public.class_slots_for(date, date);
 create function public.class_slots_for(p_from date, p_to date)
 returns table (
   id uuid, template_id uuid, starts_at timestamptz, gym_date date, duration_minutes integer, capacity integer,
-  name text, status text, edited boolean, booked_count integer, waitlist_count integer, my_status text
+  name text, status text, edited boolean, booked_count integer, waitlist_count integer, my_status text, my_booking_id uuid
 )
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
+  v_from date := p_from;
   v_to date := least(p_to, p_from + 41);
+  v_client text;
 begin
   if not public.is_active_staff() then
-    -- Fase 3: aquí irá la vista del usuario (sus propias reservas en my_status, dentro de horizon_days).
-    raise exception 'not_allowed' using errcode = 'P0001';
+    v_client := public.current_member_client_id();
+    if v_client is null then
+      raise exception 'not_allowed' using errcode = 'P0001';
+    end if;
+    v_from := greatest(p_from, public.gym_today());
+    v_to := least(v_to, public.gym_today() + (public.booking_rules()).horizon_days);
   end if;
-  if v_to >= public.gym_today() then
-    perform public.ensure_class_slots(greatest(p_from, public.gym_today()), least(v_to, public.gym_today() + 60));
+  if v_to >= public.gym_today() and v_from <= v_to then
+    perform public.ensure_class_slots(greatest(v_from, public.gym_today()), least(v_to, public.gym_today() + 60));
   end if;
   return query
   select s.id, s.template_id, s.starts_at, s.gym_date, s.duration_minutes, s.capacity, s.name, s.status, s.edited,
     (select count(*)::integer from public.bookings b where b.slot_id = s.id and b.status = 'booked'),
     (select count(*)::integer from public.bookings b where b.slot_id = s.id and b.status = 'waitlisted'),
-    null::text
+    mine.status, mine.id
   from public.class_slots s
-  where s.gym_date between p_from and v_to
+  left join lateral (
+    select b.status, b.id from public.bookings b
+    where v_client is not null and b.slot_id = s.id and b.client_id = v_client and b.status in ('booked', 'waitlisted')
+  ) mine on true
+  where s.gym_date between v_from and v_to
   order by s.starts_at, s.id;
 end;
 $$;
@@ -1409,8 +1422,7 @@ begin
 end;
 $$;
 
--- Fase 3 (usuarios): my_member, my_bookings, my_week_usage, book_class y cancel_booking irán aquí, con el mismo orden de
--- bloqueos, y la rama del usuario de class_slots_for.
+-- Lo que hace el usuario desde la app (book_class, cancel_booking…) está más abajo, con su cuenta (members).
 
 revoke all on function public.gym_time_to_instant(date, time) from public, anon, authenticated;
 revoke all on function public.gym_today() from public, anon, authenticated;
@@ -1442,7 +1454,7 @@ grant execute on function public.staff_create_slot(timestamptz, integer, integer
 grant execute on function public.staff_week_usage(text, date) to authenticated;
 
 -- Permisos: el equipo activo lo lee todo; el horario y las reglas los cambia el admin; clases y reservas, solo las
--- funciones de arriba. Los avisos no los lee nadie desde la app.
+-- funciones de arriba. Los avisos no los lee nadie desde la app. Lo que ve un usuario de la app, más abajo (members).
 alter table public.booking_settings enable row level security;
 alter table public.class_templates enable row level security;
 alter table public.class_slots enable row level security;
@@ -1588,6 +1600,531 @@ grant select on public.training_sessions to authenticated;
 drop policy if exists training_sessions_select on public.training_sessions;
 create policy training_sessions_select on public.training_sessions for select to authenticated using (public.is_active_staff());
 
+-- ── Cuentas de usuarios (la app) ────────────────────────────────────────────
+-- Un usuario del gimnasio (clients) que puede entrar en la app tiene aquí su cuenta: une su login (auth.users) con su
+-- ficha. La da cualquier monitor con la función member-accounts (contraseña temporal, como al equipo). Un login es de
+-- monitor (profiles) o de usuario (members), nunca de los dos; un nombre de usuario o un email tampoco se repiten entre
+-- las dos tablas, porque login-username busca en ambas. Mientras tenga que cambiar la contraseña temporal, o si su
+-- ficha está archivada, no lee nada. Un usuario solo ve lo suyo y siempre a través de las funciones de aquí: nunca
+-- clients, programs, notes, pantallas, ajustes ni a otras personas.
+create table if not exists public.members (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique references auth.users (id) on delete cascade,
+  client_id text not null unique references public.clients (id) on delete cascade,
+  username text not null unique,
+  -- Vacío sin email: como en profiles, su dirección interna (.invalid) solo existe en auth.users.
+  email text unique,
+  active boolean not null default true,
+  must_change_password boolean not null default false,
+  -- La contraseña temporal vigente (su hash) y hasta cuándo sirve. Nadie la lee desde la app.
+  temp_password_hash text,
+  temp_password_expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  created_by uuid references public.profiles (id) on delete set null
+);
+
+alter table public.members drop constraint if exists members_username_check;
+alter table public.members add constraint members_username_check check (username ~ '^[a-z0-9][a-z0-9._-]{2,29}$') not valid;
+alter table public.members drop constraint if exists members_email_check;
+alter table public.members add constraint members_email_check check (email = lower(email)) not valid;
+do $$
+declare
+  c record;
+begin
+  for c in select conname from pg_constraint where conrelid = 'public.members'::regclass and contype = 'c' and not convalidated loop
+    begin
+      execute format('alter table public.members validate constraint %I', c.conname);
+    exception when check_violation then
+      raise notice 'Hay filas antiguas en members que no cumplen %: se quedan, pero las nuevas sí la cumplirán.', c.conname;
+    end;
+  end loop;
+end;
+$$;
+
+-- Un login, un nombre de usuario y un email son de una sola cuenta, de monitor o de usuario. El bloqueo evita que dos
+-- altas a la vez, una en cada tabla, se cuelen. Va después de normalizar (los triggers van por orden alfabético).
+create or replace function public.accounts_keep_apart()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform pg_advisory_xact_lock(hashtext('public.accounts.logins'));
+  if tg_table_name = 'members' then
+    if exists (select 1 from public.profiles p where p.user_id = new.user_id or p.email = new.email) then
+      raise exception 'email_taken' using errcode = 'P0001';
+    end if;
+    if exists (select 1 from public.profiles p where p.username = new.username) then
+      raise exception 'username_taken' using errcode = 'P0001';
+    end if;
+  else
+    if exists (select 1 from public.members m where m.user_id = new.user_id or m.email = new.email) then
+      raise exception 'email_taken' using errcode = 'P0001';
+    end if;
+    if exists (select 1 from public.members m where m.username = new.username) then
+      raise exception 'username_taken' using errcode = 'P0001';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+-- Al borrar la cuenta de la app (o la ficha del usuario, que se la lleva) se borra también su login: así su email
+-- puede volver a usarse y no queda nada suyo. Si el servidor no deja borrarlo, la cuenta se va igual y se avisa.
+create or replace function public.members_drop_login()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from public.profiles p where p.user_id = old.user_id) then
+    delete from auth.users u where u.id = old.user_id;
+  end if;
+  return null;
+exception when insufficient_privilege then
+  raise notice 'No se ha podido borrar el login de una cuenta de usuario: bórralo en Authentication → Users.';
+  return null;
+end;
+$$;
+
+drop trigger if exists members_normalize on public.members;
+create trigger members_normalize before insert or update of email, username on public.members
+  for each row execute function public.profiles_normalize();
+drop trigger if exists members_remember_temp_password on public.members;
+create trigger members_remember_temp_password before insert or update of must_change_password on public.members
+  for each row execute function public.profiles_remember_temp_password();
+drop trigger if exists members_unique_login on public.members;
+create trigger members_unique_login before insert or update of user_id, username, email on public.members
+  for each row execute function public.accounts_keep_apart();
+drop trigger if exists profiles_unique_login on public.profiles;
+create trigger profiles_unique_login before insert or update of user_id, username, email on public.profiles
+  for each row execute function public.accounts_keep_apart();
+drop trigger if exists members_drop_login on public.members;
+create trigger members_drop_login after delete on public.members
+  for each row execute function public.members_drop_login();
+
+-- La ficha de quien ha entrado en la app, si de verdad tiene acceso: activo, con su propia contraseña y sin archivar.
+create or replace function public.current_member_client_id()
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.client_id
+  from public.members m
+  join public.clients c on c.id = m.client_id
+  where m.user_id = auth.uid() and m.active and not m.must_change_password and (c.data ->> 'archived') is distinct from 'true'
+$$;
+
+-- La rutina como la ve el usuario: los mismos campos, uno a uno, que toPublicProgram (src/lib/display/sanitize.ts).
+-- Nunca internalNote, createdBy ni nada que se añada más adelante; los ejercicios sin nombre no salen.
+-- schema.test.ts comprueba que el resultado es idéntico al de toPublicProgram.
+create or replace function public.public_program(p_id text, p_data jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'id', p_id,
+    'clientId', p_data -> 'clientId',
+    'name', p_data -> 'name',
+    'startDate', p_data -> 'startDate',
+    'endDate', p_data -> 'endDate',
+    'weeks', p_data -> 'weeks',
+    'createdAt', p_data -> 'createdAt',
+    'days', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', d -> 'id',
+        'name', d -> 'name',
+        'label', d -> 'label',
+        'blocks', coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'id', b -> 'id',
+            'type', b -> 'type',
+            'title', b -> 'title',
+            'params', case when jsonb_typeof(b -> 'params') = 'object' then b -> 'params' else '{}'::jsonb end,
+            'note', b -> 'note',
+            'text', b -> 'text',
+            'exercises', coalesce((
+              select jsonb_agg(jsonb_build_object(
+                'id', e -> 'id',
+                'libraryId', e -> 'libraryId',
+                'name', e -> 'name',
+                'measure', e -> 'measure',
+                'sets', e -> 'sets',
+                'reps', e -> 'reps',
+                'durationSec', e -> 'durationSec',
+                'distanceM', e -> 'distanceM',
+                'calories', e -> 'calories',
+                'load', e -> 'load',
+                'loadUnit', e -> 'loadUnit',
+                'rmKg', e -> 'rmKg',
+                'tempo', e -> 'tempo',
+                'restSec', e -> 'restSec',
+                'perSide', e -> 'perSide',
+                'cue', e -> 'cue',
+                'progression', case when jsonb_typeof(e -> 'progression') = 'object' then jsonb_build_object(
+                  'target', e -> 'progression' -> 'target',
+                  'values', case when jsonb_typeof(e -> 'progression' -> 'values') = 'array' then e -> 'progression' -> 'values' else '[]'::jsonb end
+                ) else 'null'::jsonb end
+              ) order by e_at)
+              from jsonb_array_elements(case when jsonb_typeof(b -> 'exercises') = 'array' then b -> 'exercises' else '[]'::jsonb end)
+                with ordinality as x (e, e_at)
+              where regexp_replace(coalesce(e ->> 'name', ''), '^\s+|\s+$', '', 'g') <> ''
+            ), '[]'::jsonb)
+          ) order by b_at)
+          from jsonb_array_elements(case when jsonb_typeof(d -> 'blocks') = 'array' then d -> 'blocks' else '[]'::jsonb end)
+            with ordinality as y (b, b_at)
+        ), '[]'::jsonb)
+      ) order by d_at)
+      from jsonb_array_elements(case when jsonb_typeof(p_data -> 'days') = 'array' then p_data -> 'days' else '[]'::jsonb end)
+        with ordinality as z (d, d_at)
+    ), '[]'::jsonb)
+  )
+$$;
+
+-- La cuenta de quien ha entrado en la app, aunque aún tenga que cambiar la contraseña: nada si no tiene acceso
+-- (pausada, archivada o sin cuenta). Solo su nombre, no los apellidos.
+drop function if exists public.my_member();
+create function public.my_member()
+returns table (
+  client_id text, username text, email text, first_name text, color text, plan text,
+  must_change_password boolean, temporary_password_expired boolean
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.client_id, m.username, m.email, coalesce(c.data ->> 'firstName', ''), c.data ->> 'color',
+    coalesce(c.data ->> 'plan', 'standard'), m.must_change_password,
+    m.must_change_password and m.temp_password_expires_at <= now()
+  from public.members m
+  join public.clients c on c.id = m.client_id
+  where m.user_id = auth.uid() and m.active and (c.data ->> 'archived') is distinct from 'true'
+$$;
+
+-- Termina el primer acceso del usuario, como finish_password_change para el equipo: solo si la contraseña ya no es la
+-- temporal, y antes de que caduque.
+create or replace function public.finish_member_password_change()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.members m
+  set must_change_password = false
+  where m.user_id = auth.uid()
+    and m.active
+    and m.must_change_password
+    and m.temp_password_hash is distinct from (select u.encrypted_password from auth.users u where u.id = auth.uid())
+    and m.temp_password_expires_at > now();
+  if not found then
+    raise exception 'password_not_changed' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+create or replace function public.require_member()
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text := public.current_member_client_id();
+begin
+  if v_client is null then
+    raise exception 'not_member' using errcode = 'P0001';
+  end if;
+  return v_client;
+end;
+$$;
+
+-- El sitio en la lista de espera de esa reserva (1 = la siguiente en entrar).
+create or replace function public.waitlist_position(p_booking_id uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer
+  from public.bookings w
+  join public.bookings b on b.id = p_booking_id
+  where w.slot_id = b.slot_id and w.status = 'waitlisted' and w.queue_order <= b.queue_order
+$$;
+
+-- Sus reservas de clases que aún no han terminado: con plaza, en espera, o la clase cancelada por el gimnasio.
+drop function if exists public.my_bookings();
+create function public.my_bookings()
+returns table (
+  booking_id uuid, slot_id uuid, starts_at timestamptz, gym_date date, duration_minutes integer, name text,
+  slot_status text, status text, waitlist_position integer
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text := public.require_member();
+begin
+  return query
+  select b.id, s.id, s.starts_at, s.gym_date, s.duration_minutes, s.name, s.status, b.status,
+    case when b.status = 'waitlisted' then public.waitlist_position(b.id) end
+  from public.bookings b
+  join public.class_slots s on s.id = b.slot_id
+  where b.client_id = v_client
+    and b.status in ('booked', 'waitlisted', 'slot_cancelled')
+    and s.starts_at + make_interval(mins => s.duration_minutes) > now()
+  order by s.starts_at, b.queue_order;
+end;
+$$;
+
+-- "Esta semana 1 de 2" (quota null = sin límite), para la semana de ese día (hoy si no se dice).
+drop function if exists public.my_week_usage(date);
+create function public.my_week_usage(p_week date default null)
+returns table (week_start date, used integer, quota integer)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text := public.require_member();
+  v_day date := coalesce(p_week, public.gym_today());
+begin
+  return query select public.gym_week_start(v_day), public.week_usage(v_client, v_day), public.weekly_quota(v_client);
+end;
+$$;
+
+-- El usuario reserva. Bloquea su ficha y después la clase (el orden de siempre). Con sitio entra; llena, a la lista
+-- de espera mientras esté abierta (hasta promote_until_minutes antes). La espera también gasta cuota: si no le quedan
+-- clases esa semana no entra en ninguna de las dos.
+drop function if exists public.book_class(uuid);
+create function public.book_class(p_slot_id uuid)
+returns table (booking_id uuid, status text, waitlist_position integer)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text := public.require_member();
+  r public.booking_settings := public.booking_rules();
+  s public.class_slots;
+  v_quota integer;
+  v_status text;
+  v_id uuid;
+begin
+  perform 1 from public.clients c where c.id = v_client for update;
+  select * into s from public.class_slots cs where cs.id = p_slot_id for update;
+  if not found then
+    raise exception 'slot_not_found' using errcode = 'P0001';
+  end if;
+  if s.status = 'cancelled' then
+    raise exception 'slot_cancelled' using errcode = 'P0001';
+  end if;
+  if s.starts_at + make_interval(mins => s.duration_minutes) <= now() then
+    raise exception 'slot_finished' using errcode = 'P0001';
+  end if;
+  if s.starts_at <= now() then
+    raise exception 'slot_started' using errcode = 'P0001';
+  end if;
+  if s.status = 'closed' then
+    raise exception 'slot_closed' using errcode = 'P0001';
+  end if;
+  if s.starts_at > now() + r.horizon_days * interval '24 hours' then
+    raise exception 'too_far' using errcode = 'P0001';
+  end if;
+  if exists (
+    select 1 from public.bookings b
+    where b.slot_id = s.id and b.client_id = v_client and b.status in ('booked', 'waitlisted')
+  ) then
+    raise exception 'already_booked' using errcode = 'P0001';
+  end if;
+  v_quota := public.weekly_quota(v_client);
+  if v_quota is not null and public.week_usage(v_client, s.gym_date) >= v_quota then
+    raise exception 'quota_reached' using errcode = 'P0001';
+  end if;
+  if public.slot_booked_count(s.id) < s.capacity then
+    v_status := 'booked';
+  elsif r.waitlist_enabled and now() < s.starts_at - make_interval(mins => r.promote_until_minutes) then
+    v_status := 'waitlisted';
+  elsif r.waitlist_enabled then
+    raise exception 'waitlist_closed' using errcode = 'P0001';
+  else
+    raise exception 'slot_full' using errcode = 'P0001';
+  end if;
+  insert into public.bookings (slot_id, client_id, status) values (s.id, v_client, v_status)
+  returning bookings.id into v_id;
+  return query select v_id, v_status, case when v_status = 'waitlisted' then public.waitlist_position(v_id) end;
+end;
+$$;
+
+-- El usuario cancela, hasta que empieza la clase. Con plaza y a menos de cancel_until_minutes, es tarde: queda
+-- 'late_cancelled' y cuenta en la semana si las reglas lo dicen (counts). Salir de la espera nunca cuenta.
+-- Si deja una plaza, entra el primero de la espera.
+drop function if exists public.cancel_booking(uuid);
+create function public.cancel_booking(p_booking_id uuid)
+returns table (booking_id uuid, status text, counts boolean, promoted integer)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text := public.require_member();
+  r public.booking_settings := public.booking_rules();
+  v_slot uuid;
+  v_previous text;
+  v_status text;
+  s public.class_slots;
+begin
+  select b.slot_id into v_slot from public.bookings b where b.id = p_booking_id and b.client_id = v_client;
+  if not found then
+    raise exception 'booking_not_found' using errcode = 'P0001';
+  end if;
+  perform 1 from public.clients c where c.id = v_client for update;
+  select * into s from public.class_slots cs where cs.id = v_slot for update;
+  select b.status into v_previous from public.bookings b where b.id = p_booking_id for update;
+  if v_previous not in ('booked', 'waitlisted') then
+    raise exception 'booking_not_found' using errcode = 'P0001';
+  end if;
+  if s.status = 'cancelled' then
+    raise exception 'slot_cancelled' using errcode = 'P0001';
+  end if;
+  if s.starts_at <= now() then
+    raise exception 'slot_started' using errcode = 'P0001';
+  end if;
+  v_status := case
+    when v_previous = 'booked' and now() >= s.starts_at - make_interval(mins => r.cancel_until_minutes) then 'late_cancelled'
+    else 'cancelled'
+  end;
+  update public.bookings b set status = v_status, status_changed_at = now() where b.id = p_booking_id;
+  return query select p_booking_id, v_status, v_status = 'late_cancelled' and r.late_cancel_counts,
+    case when v_previous = 'booked' then public.promote_waitlist(s.id) else 0 end;
+end;
+$$;
+
+-- Al borrar su cuenta, el usuario deja libres sus plazas futuras (y su sitio en las esperas): entra la espera.
+-- Vale aunque aún tenga la contraseña temporal. Devuelve cuántas ha cancelado.
+drop function if exists public.delete_my_bookings();
+create function public.delete_my_bookings()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text;
+  s record;
+  v_previous text;
+  v_count integer := 0;
+begin
+  select m.client_id into v_client from public.members m where m.user_id = auth.uid() and m.active;
+  if v_client is null then
+    raise exception 'not_member' using errcode = 'P0001';
+  end if;
+  perform 1 from public.clients c where c.id = v_client for update;
+  for s in
+    select cs.id from public.class_slots cs
+    where cs.starts_at > now()
+      and exists (select 1 from public.bookings b where b.slot_id = cs.id and b.client_id = v_client and b.status in ('booked', 'waitlisted'))
+    order by cs.id
+    for update
+  loop
+    select b.status into v_previous from public.bookings b
+    where b.slot_id = s.id and b.client_id = v_client and b.status in ('booked', 'waitlisted')
+    for update;
+    update public.bookings b set status = 'cancelled', status_changed_at = now()
+    where b.slot_id = s.id and b.client_id = v_client and b.status in ('booked', 'waitlisted');
+    if v_previous = 'booked' then
+      perform public.promote_waitlist(s.id);
+    end if;
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+
+-- Mi rutina: la actual, filtrada (public_program), y sus sesiones de los últimos SESSION_READ_DAYS = 60 días, con las
+-- columnas de training_sessions (sessionFromRow en shared/routine/sessions.ts), para saber qué día le toca.
+-- Sin rutina actual (o si la de la ficha es de otra persona), program es null.
+create or replace function public.my_routine()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text := public.require_member();
+  v_program jsonb;
+  v_sessions jsonb;
+begin
+  select public.public_program(p.id, p.data) into v_program
+  from public.clients c
+  join public.programs p on p.id = c.data ->> 'currentProgramId' and p.data ->> 'clientId' = c.id
+  where c.id = v_client;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'client_id', t.client_id, 'gym_date', t.gym_date, 'program_id', t.program_id, 'day_id', t.day_id,
+    'day_number', t.day_number, 'slot_id', t.slot_id, 'created_at', t.created_at
+  ) order by t.gym_date desc), '[]'::jsonb) into v_sessions
+  from public.training_sessions t
+  where t.client_id = v_client and t.gym_date >= public.gym_today() - 60;
+  return jsonb_build_object('program', v_program, 'sessions', v_sessions);
+end;
+$$;
+
+revoke all on function public.accounts_keep_apart() from public, anon, authenticated;
+revoke all on function public.members_drop_login() from public, anon, authenticated;
+revoke all on function public.current_member_client_id() from public, anon;
+revoke all on function public.public_program(text, jsonb) from public, anon, authenticated;
+revoke all on function public.require_member() from public, anon, authenticated;
+revoke all on function public.waitlist_position(uuid) from public, anon, authenticated;
+revoke all on function public.my_member() from public, anon;
+revoke all on function public.finish_member_password_change() from public, anon;
+revoke all on function public.my_bookings() from public, anon;
+revoke all on function public.my_week_usage(date) from public, anon;
+revoke all on function public.book_class(uuid) from public, anon;
+revoke all on function public.cancel_booking(uuid) from public, anon;
+revoke all on function public.delete_my_bookings() from public, anon;
+revoke all on function public.my_routine() from public, anon;
+
+grant execute on function public.current_member_client_id() to authenticated;
+grant execute on function public.my_member() to authenticated;
+grant execute on function public.finish_member_password_change() to authenticated;
+grant execute on function public.my_bookings() to authenticated;
+grant execute on function public.my_week_usage(date) to authenticated;
+grant execute on function public.book_class(uuid) to authenticated;
+grant execute on function public.cancel_booking(uuid) to authenticated;
+grant execute on function public.delete_my_bookings() to authenticated;
+grant execute on function public.my_routine() to authenticated;
+
+-- Permisos: el equipo activo ve las cuentas de la app (para la tarjeta "Acceso a la app"), sin el hash; cada usuario,
+-- la suya. Nadie las escribe desde la app: solo la función member-accounts. Un usuario lee además sus propias reservas
+-- (para seguirlas en directo) y las reglas de reserva; nada más.
+alter table public.members enable row level security;
+revoke all on public.members from public, anon, authenticated;
+grant select (id, client_id, username, email, active, must_change_password, temp_password_expires_at, created_at)
+  on public.members to authenticated;
+grant all on public.members to service_role;
+
+drop policy if exists members_select on public.members;
+create policy members_select on public.members for select to authenticated
+  using (public.is_active_staff() or user_id = auth.uid());
+drop policy if exists bookings_select_own on public.bookings;
+create policy bookings_select_own on public.bookings for select to authenticated
+  using (client_id = public.current_member_client_id());
+drop policy if exists booking_settings_select_member on public.booking_settings;
+create policy booking_settings_select_member on public.booking_settings for select to authenticated
+  using (public.current_member_client_id() is not null);
+
 -- ── Tiempo real ─────────────────────────────────────────────────────────────
 
 do $$
@@ -1596,7 +2133,7 @@ declare
 begin
   foreach t in array array[
     'profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections',
-    'booking_settings', 'class_templates', 'class_slots', 'bookings', 'training_sessions'
+    'booking_settings', 'class_templates', 'class_slots', 'bookings', 'training_sessions', 'members'
   ] loop
     if not exists (
       select 1 from pg_publication_tables

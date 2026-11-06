@@ -2,6 +2,7 @@ export { useAutoFullscreenPermission, type AutoFullscreenStatus } from './useAut
 export { useBrandingStyles } from './useBrandingStyles'
 export { useClickOutside } from './useClickOutside'
 export { useConfirm } from './useConfirm'
+export { useCopyText, type CopyTextApi } from './useCopyText'
 export { useDashboardBootstrap, type DashboardBootStatus, type DashboardBootstrap } from './useDashboardBootstrap'
 export { useDebouncedValue } from './useDebouncedValue'
 export { useDisclosure, type Disclosure } from './useDisclosure'

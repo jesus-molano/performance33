@@ -103,9 +103,9 @@ En [Google Cloud Console](https://console.cloud.google.com):
 
 En Supabase, ve a **Authentication → Sign In / Providers → Google**, actívalo y pega los dos datos.
 
-### 5. Publicar las dos funciones del servidor
+### 5. Publicar las funciones del servidor
 
-Crean las cuentas y permiten entrar con nombre de usuario. Con la [CLI de Supabase](https://supabase.com/docs/guides/cli):
+Crean las cuentas del equipo y las de la app de usuarios, y permiten entrar con nombre de usuario. Con la [CLI de Supabase](https://supabase.com/docs/guides/cli):
 
 ```bash
 supabase login
@@ -113,9 +113,12 @@ supabase link --project-ref TU_REFERENCIA
 supabase secrets set ALLOWED_ORIGINS="https://performance33.vercel.app"
 supabase functions deploy admin-users
 supabase functions deploy login-username
+supabase functions deploy member-accounts
 ```
 
-`ALLOWED_ORIGINS` son las direcciones desde las que se puede llamar a las funciones. `SUPABASE_URL`,
+`ALLOWED_ORIGINS` son las direcciones desde las que se puede llamar a las funciones: la web de monitores y, cuando
+exista, la de la app de usuarios (separadas por comas, por ejemplo
+`"https://performance33.vercel.app,https://performance33-socios.vercel.app"`). `SUPABASE_URL`,
 `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` ya las pone Supabase dentro de cada función: la clave
 `service_role` nunca llega a la web. Si cambias de dominio, vuelve a ejecutar la línea de `ALLOWED_ORIGINS`.
 
@@ -142,6 +145,9 @@ Tu email no se guarda en el repositorio: solo en la base de datos. Todas las dem
    |---|---|
    | `VITE_SUPABASE_URL` | Supabase → **Project Settings → API** → Project URL |
    | `VITE_SUPABASE_ANON_KEY` | Supabase → **Project Settings → API** → clave `anon` `public` |
+
+   Opcional: `VITE_MEMBER_APP_URL`, la dirección de la app de usuarios (por defecto
+   `https://performance33-socios.vercel.app`). De ahí sale el enlace «Imprime o enseña el QR» (su página `/descargar`).
 
 3. Pulsa **Deploy**. Si cambias estas variables más tarde, vuelve a desplegar para que surtan efecto.
 
@@ -189,6 +195,36 @@ desbloquea a esa persona. Entrar con email va directo al servidor de acceso, con
 Cada uno puede cambiar en **Mi perfil** su nombre, su color y su contraseña (le pide la actual), y conectar o desconectar
 Google (nunca su única forma de entrar: sin contraseña propia, primero tiene que crearla).
 
+## Acceso a la app de usuarios
+
+En la ficha de cada usuario, la tarjeta **Acceso a la app**. **Cualquier monitor** puede usarla:
+
+1. **Dar acceso a la app.** El nombre de usuario ya viene puesto (sale de su nombre: «laura.martin»; si ya existe,
+   se numera solo). Se puede cambiar, y añadir un email si quiere entrar también con él.
+2. Sale **una sola vez** su usuario y una **contraseña temporal**, con **Copiar** y el enlace **Imprime o enseña el QR**
+   (la página para descargar la app). Dáselos en persona. La primera vez que entre elegirá su propia contraseña; la
+   temporal solo vale **3 días**.
+3. La tarjeta dice luego cómo está: «Aún no ha entrado», «Con acceso», «Pausado» o «Su contraseña caducó: dale otra».
+   En **⋯**: **Dar una contraseña nueva** (cierra su sesión en la app), **Pausar acceso** / **Reactivar acceso**
+   (sus reservas se quedan) y **Quitar acceso** (borra su cuenta de la app; su ficha y sus reservas se quedan).
+
+Un usuario archivado no puede entrar en la app. Borrar un usuario borra también su cuenta de la app. Las cuentas de la
+app **no entran en la web de monitores**: si alguien lo intenta, se le cierra la sesión con «Esta cuenta es de la app del
+gimnasio». Un usuario de la app solo ve lo suyo: sus reservas, las clases para reservar, su semana y su rutina actual
+(sin notas internas, objetivo ni nada privado). Nunca ve otras personas, notas, pantallas ni ajustes. Un nombre de
+usuario o un email no pueden ser a la vez de un monitor y de un usuario.
+
+Si el usuario borra su cuenta desde la app, sus plazas futuras se liberan (entra la lista de espera) y se borra su login.
+El código por email en lugar de contraseña llegará cuando el gimnasio tenga dominio y correo propio.
+
+## La app de usuarios (`member-app/`)
+
+Es un proyecto aparte (Expo, para Android, iPhone y web) dentro del mismo repositorio. Tres pestañas: **Mis clases**,
+**Reservar** y **Mi rutina**, y el **Perfil** (cerrar sesión, privacidad, eliminar mi cuenta). Cómo probarla, publicarla
+en Vercel y qué variables necesita está en [`member-app/README.md`](member-app/README.md).
+
+Sin conexión configurada arranca como **Demo sin conexión** con datos inventados, para enseñarla sin tocar Supabase.
+
 ## Roles
 
 | | Monitor | Administrador |
@@ -200,6 +236,7 @@ Google (nunca su única forma de entrar: sin contraseña propia, primero tiene q
 | Escribir notas firmadas por uno mismo | Sí | Sí |
 | Editar o borrar notas | Solo las suyas | Todas |
 | Su propio nombre, color y contraseña (Mi perfil), sin repetir el nombre de otro | Sí | Sí |
+| Dar, pausar y quitar el acceso a la app de usuarios | Sí | Sí |
 | Clases: apuntar, quitar y mover gente, abrir, cerrar, editar, cancelar y añadir clases | Sí | Sí |
 | Horario semanal, reglas de reserva y clases por plan (Ajustes → Clases) | Solo verlos | Sí |
 | Marca, equipo, copias de seguridad, restablecer datos | No | Sí |
@@ -253,8 +290,8 @@ de Canarias, aunque el móvil o el portátil estén en otra zona.
 
 En la ficha de cada usuario, la tarjeta **Clases** dice «Esta semana: 1 de 2» y sus próximas clases («En espera · nº 2»
 si está en la lista de espera). En el modo local de pruebas hay un horario de demostración (lunes a viernes, de 7:00 a
-21:00, 8 plazas) con gente en las próximas clases y una clase pequeña llena con lista de espera. Los usuarios todavía
-no reservan solos: eso llega con la app de usuarios.
+21:00, 8 plazas) con gente en las próximas clases y una clase pequeña llena con lista de espera. Los usuarios reservan
+solos desde la app de usuarios (ver «Acceso a la app de usuarios»).
 
 ## La biblioteca de ejercicios
 

@@ -15,6 +15,8 @@ const ERROR_STATUS: Record<AccountErrorCode, number> = {
   username_taken: 409,
   email_taken: 409,
   name_taken: 409,
+  has_access: 409,
+  archived: 409,
   locked: 429,
   failed: 500,
 }

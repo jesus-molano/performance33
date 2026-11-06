@@ -28,6 +28,9 @@ export type AccountErrorCode =
   | 'username_taken'
   | 'email_taken'
   | 'name_taken'
+  /** Member accounts (member-accounts): that user already has the app, or is archived. */
+  | 'has_access'
+  | 'archived'
   | 'invalid_credentials'
   | 'locked'
   | 'failed'

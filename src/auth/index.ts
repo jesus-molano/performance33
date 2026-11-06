@@ -1,3 +1,6 @@
 export { auth, teamService } from './instance'
 export { finishPasswordChange, refreshTeam, refreshTeamQuietly, retrySession, signOut, startSession, watchTeam } from './session'
+export { invokeFunction } from './edgeFunctions'
+export { emailInUse, readMemberAccounts, usernameInUse, writeMemberAccounts, type LocalMemberAccount } from './localMemberAccounts'
+export { MEMBER_LOGIN_MESSAGE } from './messages'
 export type { AuthService, NewAccountInput, SignInMethods, TeamService } from './types'

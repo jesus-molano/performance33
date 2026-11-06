@@ -1,7 +1,7 @@
 import { Check, Copy, KeyRound } from 'lucide-react'
 import { Button, Callout, Modal } from '@/components/ui'
+import { useCopyText } from '@/hooks'
 import { TEAM_COPY } from '@/features/team/config'
-import { useCopyText } from '@/features/team/hooks/useCopyText'
 import type { TemporaryPassword } from '@/features/team/hooks/useTeamPanel'
 
 export interface TemporaryPasswordModalProps {
@@ -11,7 +11,7 @@ export interface TemporaryPasswordModalProps {
 
 /** The only time this password can be seen. Render only while there is one. */
 export function TemporaryPasswordModal({ temporary, onClose }: TemporaryPasswordModalProps) {
-  const { copied, copy } = useCopyText(temporary.password)
+  const { copied, copy } = useCopyText(temporary.password, TEAM_COPY.copyFailed)
   return (
     <Modal
       open

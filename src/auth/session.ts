@@ -9,7 +9,7 @@ import { useSessionStore } from '@/store/sessionStore'
 import { useToastStore } from '@/store/toastStore'
 import type { Profile } from '@/types'
 import { auth, teamService } from './instance'
-import { readRedirectError } from './messages'
+import { MEMBER_LOGIN_MESSAGE, readRedirectError } from './messages'
 import type { AuthEvent, AuthUser } from './types'
 
 const getState = () => useSessionStore.getState()
@@ -33,6 +33,13 @@ function enter(user: AuthUser, profile: Profile): void {
   setState({ status: profile.mustChangePassword ? 'must-change-password' : 'ready', userId: user.id, email: user.email, profile, notice: null })
 }
 
+/** A member's app account is signed out of this web at once, with a word on the login page. */
+async function turnAwayMember(): Promise<void> {
+  setState({ notice: MEMBER_LOGIN_MESSAGE })
+  await auth.signOut().catch(() => undefined)
+  leave('signed-out', null)
+}
+
 async function checkAccess(user: AuthUser): Promise<void> {
   const run = ++checkRun
   lastCheckAt = Date.now()
@@ -40,6 +47,7 @@ async function checkAccess(user: AuthUser): Promise<void> {
     const profile = await teamService.getOwnProfile()
     if (run !== checkRun) return
     if (profile) enter(user, profile)
+    else if (await teamService.isMemberLogin()) await turnAwayMember()
     else leave('no-access', user)
   } catch {
     // Already working: keep going, the next check will tell. On a cold start there is nothing to show.
@@ -81,7 +89,7 @@ function onWindowBack(): void {
 function removeLeftovers(): void {
   for (const key of LEGACY_STORAGE_KEYS) removeStorage(key)
   // A browser that used the demo before the cloud was configured must not keep that dataset.
-  if (!auth.isLocal) for (const key of [STORAGE_KEYS.data, STORAGE_KEYS.localSession, STORAGE_KEYS.localTeam]) removeStorage(key)
+  if (!auth.isLocal) for (const key of [STORAGE_KEYS.data, STORAGE_KEYS.localSession, STORAGE_KEYS.localTeam, STORAGE_KEYS.localMembers]) removeStorage(key)
   // And the other way round: a site moved from the cloud back to the demo must not keep the login or the TV copy.
   else if (readStorage(STORAGE_KEYS.cloudSession)) for (const key of [STORAGE_KEYS.cloudSession, STORAGE_KEYS.display]) removeStorage(key)
 }

@@ -9,6 +9,8 @@ import { allowedOrigins, publicClient, serviceClient, serviceKey } from '../_run
 const MIN_RESPONSE_MS = 700
 /** What the auth server answers for bad credentials, a blocked account or an unconfirmed one: all the same to the caller. */
 const REFUSED_SIGN_IN = new Set(['invalid_credentials', 'user_banned', 'email_not_confirmed'])
+/** Where a username can be: the team, then the members' app accounts. */
+const LOGIN_TABLES = ['profiles', 'members'] as const
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -29,11 +31,17 @@ function createBackend(admin: SupabaseClient): LoginBackend {
     reserveAttempt: async (username, client) => (await call('login_reserve_attempt', username, client)) === true,
     releaseAttempt: async (username, client) => void (await call('login_release_attempt', username, client)),
     clearFailures: async (username, client) => void (await call('login_clear_failures', username, client)),
+    // Coaches and members' app accounts share the usernames (schema.sql keeps them apart): the same limits for both.
     async emailOf(username) {
-      const { data, error } = await admin.from('profiles').select('user_id').eq('username', username).eq('active', true).maybeSingle()
-      if (error) throw error
-      if (!data) return null
-      const { data: found, error: userError } = await admin.auth.admin.getUserById(data.user_id as string)
+      let userId: string | null = null
+      for (const table of LOGIN_TABLES) {
+        const { data, error } = await admin.from(table).select('user_id').eq('username', username).eq('active', true).maybeSingle()
+        if (error) throw error
+        userId = (data?.user_id as string | undefined) ?? null
+        if (userId) break
+      }
+      if (!userId) return null
+      const { data: found, error: userError } = await admin.auth.admin.getUserById(userId)
       if (userError) throw userError
       return found.user?.email ?? null
     },

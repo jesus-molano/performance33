@@ -26,39 +26,13 @@ import {
 } from '../shared/booking/index.ts'
 import { SESSION_CASE_PEOPLE, SESSION_CASES } from '../shared/routine/sessionCases.ts'
 import { SESSION_UNDO_MINUTES } from '../shared/routine/index.ts'
+import { PGLITE_TIMEOUT_MS, SUPABASE_STUBS, sqlSession } from './testHarness.ts'
 
-// Booting Postgres in WASM takes seconds, far more while the whole suite runs in parallel.
-const PGLITE_TIMEOUT_MS = 60_000
 vi.setConfig({ testTimeout: PGLITE_TIMEOUT_MS, hookTimeout: PGLITE_TIMEOUT_MS })
 
 const SCHEMA = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8')
 /** The schema the live project has now (commit b6fe693, with the TV screens): this file is run over it there. */
 const PREVIOUS_SCHEMA = readFileSync(new URL('./fixtures/schema.previous.sql', import.meta.url), 'utf8')
-
-const SUPABASE_STUBS = `
-  create role anon nologin;
-  create role authenticated nologin;
-  create role service_role nologin bypassrls;
-  create schema auth;
-  grant usage on schema auth, public to anon, authenticated, service_role;
-  create table auth.users (id uuid primary key, email text, encrypted_password text);
-  create table auth.sessions (id uuid primary key default gen_random_uuid(), user_id uuid references auth.users (id) on delete cascade);
-  create table auth.refresh_tokens (id bigserial primary key, user_id varchar(255));
-  create table auth.identities (id uuid primary key default gen_random_uuid(), user_id uuid references auth.users (id) on delete cascade, provider text, identity_data jsonb);
-  create function auth.jwt() returns jsonb language sql stable as
-    $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
-  create function auth.uid() returns uuid language sql stable as $$ select (auth.jwt() ->> 'sub')::uuid $$;
-  grant execute on all functions in schema auth to anon, authenticated, service_role;
-  create publication supabase_realtime;
-  create schema realtime;
-  create table realtime.messages (id bigserial primary key, topic text not null, extension text not null, payload jsonb);
-  alter table realtime.messages enable row level security;
-  create function realtime.topic() returns text language sql stable as
-    $$ select nullif(current_setting('realtime.topic', true), '') $$;
-  grant usage on schema realtime to anon, authenticated;
-  grant select, insert on realtime.messages to anon, authenticated;
-  grant usage on sequence realtime.messages_id_seq to anon, authenticated;
-`
 
 const ID = {
   admin: '00000000-0000-4000-8000-000000000001',
@@ -76,40 +50,11 @@ const STRANGER = ID.stranger
 const NEWBIE = ID.newbie
 const FORMER = ID.former
 
-const PASSWORD_AMR = [{ method: 'password', timestamp: 1 }]
 const GOOGLE_AMR = [{ method: 'oauth', timestamp: 1 }]
 
 let db: PGlite
 
-async function asSuperuser(): Promise<void> {
-  await db.exec(`reset role; select set_config('request.jwt.claims', '', false);`)
-}
-
-async function asPerson(id: string, amr: unknown = PASSWORD_AMR): Promise<void> {
-  await db.exec('reset role')
-  await db.query(`select set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ sub: id, amr })])
-  await db.exec('set role authenticated')
-}
-
-async function asAnon(): Promise<void> {
-  await db.exec(`reset role; select set_config('request.jwt.claims', '', false); set role anon;`)
-}
-
-async function asService(): Promise<void> {
-  await db.exec(`reset role; select set_config('request.jwt.claims', '', false); set role service_role;`)
-}
-
-async function rows<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
-  return (await db.query<T>(sql, params)).rows
-}
-
-async function count(table: string): Promise<number> {
-  return (await rows<{ n: number }>(`select count(*)::int as n from public.${table}`))[0].n
-}
-
-async function affected(sql: string, params: unknown[] = []): Promise<number> {
-  return (await db.query(sql, params)).affectedRows ?? 0
-}
+const { asSuperuser, asPerson, asAnon, asService, rows, count, affected } = sqlSession(() => db)
 
 const profileId = async (username: string): Promise<string> => {
   await asSuperuser()
@@ -230,7 +175,7 @@ describe('schema.sql', () => {
       `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by tablename`,
     )
     expect(tables.map((t) => t.tablename)).toEqual([
-      'booking_settings', 'bookings', 'class_slots', 'class_templates', 'clients', 'library_exercises', 'notes', 'profiles', 'programs',
+      'booking_settings', 'bookings', 'class_slots', 'class_templates', 'clients', 'library_exercises', 'members', 'notes', 'profiles', 'programs',
       'screen_sections', 'screens', 'settings', 'training_sessions',
     ])
   })
@@ -1068,7 +1013,7 @@ const LUIS = 'c5'
 const EVA = 'c6'
 
 /** The account error codes schema.sql raised before the bookings; every other code must be a booking code. */
-const ACCOUNT_ERROR_CODES = ['password_not_changed', 'not_admin', 'profile_last_admin']
+const ACCOUNT_ERROR_CODES = ['password_not_changed', 'not_admin', 'profile_last_admin', 'username_taken', 'email_taken']
 
 async function seedBookingClients(): Promise<void> {
   await asSuperuser()

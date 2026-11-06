@@ -1,53 +1,12 @@
-import { BLOCK_TYPE_META } from '@/config/blockTypes'
-import type { DisplayData, ISODate, PublicClient, PublicDay } from '@/types'
-import { blockShowsSets } from '@/lib/blocks'
+import { buildProgramRoutine } from '@shared/routine/displayRoutine.ts'
+import type { DisplayData, ISODate, PublicClient } from '@/types'
 import { todayISO } from '@/lib/dates'
-import { formatDayTitle, getBlockHeader, getBlockLetter, getEntryParts, getExerciseLabels } from '@/lib/format'
-import { formatProgramPeriod, getProgramWeekInfo, getProgressionWeek } from '@/lib/program'
-import type { DisplayBlock, DisplayDay, DisplayRoutine } from './types'
+import type { DisplayRoutine } from './types'
 
 export interface BuildRoutineOptions {
   /** Program to show; default the client's current program. */
   programId?: string | null
   today?: ISODate
-}
-
-function formatBlock(day: PublicDay, blockIndex: number, week: number | null): DisplayBlock {
-  const block = day.blocks[blockIndex]
-  const labels = getExerciseLabels(day.blocks, blockIndex)
-  const showSets = blockShowsSets(block.type)
-  return {
-    id: block.id,
-    type: block.type,
-    letter: getBlockLetter(day.blocks, blockIndex),
-    ...getBlockHeader(block),
-    note: block.note.trim(),
-    text: block.text.trim(),
-    muted: BLOCK_TYPE_META[block.type].muted,
-    exercises: block.exercises.map((entry, i) => {
-      const parts = getEntryParts(entry, { showSets, week })
-      return {
-        id: entry.id,
-        label: labels[i] ?? null,
-        name: entry.name.trim(),
-        volume: parts.volume,
-        load: parts.load,
-        detail: [parts.tempo, parts.rest].filter(Boolean).join(' · '),
-        cue: entry.cue.trim(),
-      }
-    }),
-  }
-}
-
-function formatDay(day: PublicDay, index: number, week: number | null): DisplayDay {
-  return {
-    id: day.id,
-    number: index + 1,
-    name: day.name,
-    label: day.label,
-    title: formatDayTitle(day),
-    blocks: day.blocks.map((_, blockIndex) => formatBlock(day, blockIndex, week)),
-  }
 }
 
 /** Formatted routine for a client (current program by default). null if client/program missing. */
@@ -61,22 +20,12 @@ export function buildDisplayRoutine(
   const programId = opts.programId ?? client.currentProgramId
   const program = data.programs.find((p) => p.id === programId && p.clientId === clientId)
   if (!program) return null
-  const info = getProgramWeekInfo(program, opts.today ?? todayISO())
-  const week = getProgressionWeek(info)
   return {
     branding: data.branding,
     clientId: client.id,
     clientFirstName: client.firstName,
     clientColor: client.color,
-    programId: program.id,
-    programName: program.name,
-    startDate: program.startDate,
-    endDate: program.endDate,
-    phase: info.phase,
-    week,
-    totalWeeks: info.totalWeeks,
-    weekLabel: formatProgramPeriod(info, program.startDate),
-    days: program.days.map((day, index) => formatDay(day, index, week)),
+    ...buildProgramRoutine(program, opts.today ?? todayISO()),
   }
 }
 

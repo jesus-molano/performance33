@@ -53,6 +53,8 @@ export interface TeamService {
   updateOwnProfile(id: string, patch: OwnProfilePatch): Promise<void>
   /** Ends the first-login step; refused while the password is still the temporary one. */
   finishPasswordChange(): Promise<void>
+  /** The signed-in login is a member's app account (members), not a coach. Never rejects: false when unsure. */
+  isMemberLogin(): Promise<boolean>
   /** Someone changed the team. */
   subscribe(listener: () => void): () => void
 
