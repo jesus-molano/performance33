@@ -51,6 +51,11 @@ src/
 supabase/  schema.sql (tables, RLS, triggers, realtime; re-run whole on every update)  schema.test.ts (checks it on real Postgres via PGlite, also over fixtures/schema.previous.sql, the live project's last version)  config.toml
   functions/  admin-users/ login-username/ (thin Deno entry points, outside the Vite and tsc builds)
               _runtime/ (Deno only: env and clients)  _shared/ (pure TS with injected backends: type-checked by tsconfig.node, tested by vitest)
+shared/    pure TS shared by this web and the members' app (member-app/, later; oxlint ignores it): no React, DOM, Node, Intl
+           or dependencies, relative imports with the .ts extension, so it also runs on Hermes and in the supabase/ tests.
+           src imports it as `@shared/...` (alias in vite.config.ts and tsconfig.app paths); tsconfig.shared.json checks it alone
+           with lib ES2023 only; vitest runs shared/**/*.test.ts.
+  booking/  constants errors week quota slots (index barrel, tests next to each file)
 ```
 
 ## 3. Routes (`src/lib/routes.ts`)
@@ -242,6 +247,16 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
   `normalizeText`, progression `buildLinearProgression(base, step, weeks)`, `fitProgression`, `resolveEntryForWeek`,
   `getProgressionValue`, `defaultProgressionTarget`, `getBaseValue`; numbers `parseNumber`, `formatNumber` ('22,5'), `parseOptionalInt`, `clamp`.
 - Plans: `PLANS`, `PLAN_BY_ID`, `TRAINING_DAY_OPTIONS`, `planLabel(plan, days?)`, `formatTrainingDays`.
+- Bookings (`@shared/booking`): `GYM_TIME_ZONE` ('Atlantic/Canary'), `BOOKING_DEFAULTS` {weeklyQuota (standard 2, plus 3, elite 'unlimited',
+  custom 'training_days'), horizonDays 14, cancelUntilMinutes 120, lateCancelCounts, waitlistEnabled, promoteUntilMinutes 30}, `BOOKING_LIMITS`,
+  `FILL_LEAD_MINUTES` (15), `BOOKING_STATUSES`, `ACTIVE_BOOKING_STATUSES`, `SLOT_STATUSES`, `BookingPlanId` (same ids as `PlanId`).
+  Errors: `BookingErrorCode`, `BOOKING_ERROR_MESSAGES`, `toBookingErrorCode(raised)`, `bookingErrorMessage(raised)` (the RPCs raise the bare code).
+  Gym time (EU summer-time rule computed by hand, checked against Intl in the tests): `toGymDate`, `gymMinutesOfDay`, `gymTimeToMs(date, minutes)`
+  (repeated hour → first one, missing hour → one later), `parseGymTime('HH:MM')`, `addGymDays`, `diffGymDays`, `gymWeekday` (1 = Monday), `gymMonday`,
+  `gymWeekDates`, `gymWeekOf(instant) → {monday, startsAt, endsAt}` (Monday 00:00 to next Monday 00:00, gym time), `isSameGymWeek`.
+  Quotas: `weeklyQuotaFor(plan, trainingDays, settings?)` (null = no limit), `countsTowardQuota` (booked, and late_cancelled when it counts), `quotaUsed`, `quotaLeft`, `hasQuotaLeft`.
+  Classes: `spotsLeft`, `slotState(slot, now) → cancelled | finished | started | closed | too_far | open | waitlist | full`, `isLateCancel`,
+  `waitlistOpenAt`, `isTooFar`, `pickFillSlot(slots, now)` (the class under way from 15 min before, else the next one today in the gym).
 - Misc: `cn`, `pickColor`, `readableTextOn`, `AVATAR_COLORS`, `fileToDataUrl` (logo upload ≤ 1,5 MB), `DEFAULT_BRANDING`,
   persistence `downloadBackup(data)`, `readBackupFile(file) → Promise<AppData>`, timings in `config/app.ts`.
 
