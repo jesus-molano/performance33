@@ -3,10 +3,10 @@
 
 import { STORAGE_KEYS } from '@/config/app'
 import type { ScreensSnapshot } from '@/features/screens/types'
-import { sectionId, toSectionMap } from '@/features/screens/utils/sections'
-import { createLocalPresence } from './localPresence'
+import { sectionsAfterResize } from '@/features/screens/utils/sectionLimits'
+import { toSectionMap } from '@/features/screens/utils/sections'
 import { readSnapshot, writeSnapshot } from './snapshotStorage'
-import type { ScreensService } from './types'
+import type { ScreenPresence, ScreensService } from './types'
 
 const KEY = STORAGE_KEYS.screens
 
@@ -16,7 +16,8 @@ function update(change: (snapshot: ScreensSnapshot) => ScreensSnapshot): void {
   writeSnapshot(KEY, change(read()))
 }
 
-export function createLocalScreens(): ScreensService {
+/** `presence`: the TV windows of this browser (the only ones there are in test mode). */
+export function createLocalScreens(presence: ScreenPresence): ScreensService {
   return {
     load: async () => read(),
 
@@ -25,7 +26,8 @@ export function createLocalScreens(): ScreensService {
         const existing = new Set(current.screens.map((s) => s.id))
         const incoming = onlyNew ? screens.filter((s) => !existing.has(s.id)) : screens
         const merged = new Map([...current.screens, ...incoming].map((s) => [s.id, s]))
-        return { ...current, screens: [...merged.values()].sort((a, b) => a.id - b.id) }
+        const next = [...merged.values()].sort((a, b) => a.id - b.id)
+        return { screens: next, sections: sectionsAfterResize(current.sections, current.screens, next) }
       }),
 
     removeScreen: async (id) =>
@@ -37,8 +39,6 @@ export function createLocalScreens(): ScreensService {
       writeSnapshot(KEY, { ...current, sections: Object.values({ ...toSectionMap(current.sections), ...toSectionMap(sections) }) })
     },
 
-    removeSections: async (ids) => update((current) => ({ ...current, sections: current.sections.filter((s) => !ids.includes(sectionId(s))) })),
-
     subscribe(_onEvent, onMissed) {
       const onStorage = (event: StorageEvent) => {
         if (event.key === KEY) onMissed()
@@ -47,6 +47,6 @@ export function createLocalScreens(): ScreensService {
       return () => window.removeEventListener('storage', onStorage)
     },
 
-    presence: createLocalPresence(),
+    presence,
   }
 }

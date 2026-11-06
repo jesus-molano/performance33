@@ -1,8 +1,10 @@
 import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import {
   applyFitToElement,
+  countHiddenRows,
   fitStyle,
   getFitStages,
+  planFit,
   planStage,
   readableMinUnit,
   type DisplayDensity,
@@ -12,7 +14,7 @@ import {
 import { useFitTriggers } from './useFitTriggers'
 
 export interface AutoFitOptions {
-  /** One client on a landscape screen: may split in two parts when one column does not fit at a good size. */
+  /** May split in two parts when one column does not fit at a good size (a landscape slot only). */
   canSplit: boolean
   /** Manual A-/A+ multiplier of the largest allowed size. */
   fontScale: number
@@ -20,11 +22,15 @@ export interface AutoFitOptions {
   fitKey: unknown
   /** Largest unit to show, so the columns of a TV share one text size. The fit still finds and reports its own. */
   unitCap?: number
+  /** Height of the whole TV, for a section of a 2-row grid (see FitPlanInput.referenceHeight). */
+  referenceHeight?: number
 }
 
 export interface AutoFit extends FitStatus {
   /** What this content could show by itself, before unitCap. */
   fittedUnit: number
+  /** Exercise lines left out at the bottom when even the smallest size does not hold the day. */
+  hiddenRows: number
   containerRef: RefObject<HTMLDivElement | null>
   contentRef: RefObject<HTMLDivElement | null>
   style: CSSProperties
@@ -33,34 +39,34 @@ export interface AutoFit extends FitStatus {
 
 interface FitState extends FitResult, FitStatus {
   density: DisplayDensity
+  fittedUnit: number
+  hiddenRows: number
 }
 
 const INITIAL_FIT: FitState = {
   unit: 16,
+  fittedUnit: 16,
   columns: 1,
   detail: 0,
   density: 'comfortable',
   overflowing: false,
   tooSmall: false,
   detailHidden: false,
+  hiddenRows: 0,
 }
 
-const sameFit = (a: FitState, b: FitState) =>
-  a.unit === b.unit &&
-  a.columns === b.columns &&
-  a.detail === b.detail &&
-  a.density === b.density &&
-  a.overflowing === b.overflowing &&
-  a.tooSmall === b.tooSmall
+const FIT_KEYS = ['unit', 'fittedUnit', 'columns', 'detail', 'density', 'overflowing', 'tooSmall', 'detailHidden', 'hiddenRows'] as const
+const sameFit = (a: FitState, b: FitState) => FIT_KEYS.every((key) => a[key] === b[key])
 
 /**
  * Scales a routine view to fill its container without scrolling: binary-searches the root
  * font-size (all inner sizes are em), hiding secondary content before going below the target
  * size (see planFit), and picks the compact or comfortable density from the container's shape, or tries them in turn
- * for one client on a landscape screen (see getFitStages). Re-fits on container resize, content resize
- * (late web fonts, live edits), content change, density change and font loading.
+ * on a landscape slot that may split (see getFitStages). With a shared size (unitCap) below its own, the detail level
+ * is chosen again at that size, so every section hides the same things at the same size. Re-fits on container resize,
+ * content resize (late web fonts, live edits), content change, density change, shared size change and font loading.
  */
-export function useAutoFit({ canSplit, fontScale, fitKey, unitCap = Infinity }: AutoFitOptions): AutoFit {
+export function useAutoFit({ canSplit, fontScale, fitKey, unitCap = Infinity, referenceHeight }: AutoFitOptions): AutoFit {
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const fittedHeight = useRef(0)
@@ -101,27 +107,32 @@ export function useAutoFit({ canSplit, fontScale, fitKey, unitCap = Infinity }: 
         setFit((prev) => ({ ...prev, density: nextDensity }))
         return
       }
-      best = planStage({ width, height, density, fontScale, canSplit, measure }, stage)
+      best = planStage({ width, height, referenceHeight, density, fontScale, canSplit, measure }, stage)
       if (!best) stageIndex.current++
     } while (!best)
-    applyFitToElement(content, { ...best, unit: Math.min(best.unit, unitCapRef.current) })
+    const cap = unitCapRef.current
+    const shown = cap < best.unit ? planFit({ width, height, referenceHeight, density, fontScale, canSplit, measure, maxUnit: cap }) : best
+    applyFitToElement(content, shown)
     fittedHeight.current = content.offsetHeight
+    const overflowing = fittedHeight.current > height || content.scrollWidth > container.clientWidth
     const next: FitState = {
-      ...best,
+      ...shown,
+      fittedUnit: best.unit,
       density,
-      overflowing: fittedHeight.current > height || content.scrollWidth > container.clientWidth,
-      tooSmall: best.unit < readableMinUnit(height, density),
-      detailHidden: best.detail > 0,
+      overflowing,
+      tooSmall: shown.unit < readableMinUnit(referenceHeight ?? height, density),
+      detailHidden: shown.detail > 0,
+      hiddenRows: overflowing ? countHiddenRows(container, content) : 0,
     }
     setFit((prev) => (sameFit(prev, next) ? prev : next))
-  }, [canSplit, fontScale])
+  }, [canSplit, fontScale, referenceHeight])
 
   const runFit = useCallback(() => {
     stageIndex.current = 0
     continueFit()
   }, [continueFit])
 
-  useLayoutEffect(runFit, [runFit, fitKey])
+  useLayoutEffect(runFit, [runFit, fitKey, unitCap])
   // Every commit, not only when the density changes: two requests in one batch can leave it where it started, and
   // waiting for a change that never comes would leave the screen on the last size it measured.
   useLayoutEffect(() => {
@@ -135,8 +146,9 @@ export function useAutoFit({ canSplit, fontScale, fitKey, unitCap = Infinity }: 
   return {
     containerRef,
     contentRef,
-    fittedUnit: fit.unit,
-    style: fitStyle({ ...fit, unit: Math.min(fit.unit, unitCap) }),
+    fittedUnit: fit.fittedUnit,
+    hiddenRows: fit.hiddenRows,
+    style: fitStyle(fit),
     density: fit.density,
     overflowing: fit.overflowing,
     tooSmall: fit.tooSmall,

@@ -7,8 +7,10 @@ export interface PickerTile {
   ref: SectionRef
   /** First name of who it shows, or null when free (also for a client that no longer exists). */
   occupant: string | null
-  /** It already shows the person being sent (any day). */
-  isTarget: boolean
+  /** It already shows the person being sent: that day ('same') or another one ('other-day', see shownDay). */
+  here: 'same' | 'other-day' | null
+  /** Day it shows now. */
+  shownDay: number
   /** The last section this device sent someone to. */
   isLast: boolean
 }
@@ -23,6 +25,9 @@ export interface PickerScreen {
 }
 
 const sameRef = (a: SectionRef | null, b: SectionRef) => a !== null && sectionId(a) === sectionId(b)
+
+const hereState = (content: SectionTarget, target: SectionTarget): PickerTile['here'] =>
+  content.clientId === null || content.clientId !== target.clientId ? null : content.day === target.day ? 'same' : 'other-day'
 
 /** One card per screen, its sections in the order and grid the TV uses. */
 export function buildPickerScreens(
@@ -41,7 +46,8 @@ export function buildPickerScreens(
       return {
         ref,
         occupant: content.clientId ? (names.get(content.clientId) ?? null) : null,
-        isTarget: content.clientId !== null && content.clientId === target.clientId,
+        here: hereState(content, target),
+        shownDay: content.day,
         isLast: sameRef(last, ref),
       }
     }),
@@ -62,6 +68,15 @@ export function replacedOccupant(views: readonly ScreenView[], ref: SectionRef, 
   return current && current !== clientId ? (names.get(current) ?? null) : null
 }
 
+/** The section a send takes the person out of (the first other one showing them), or null. */
+export function movedFromSection(views: readonly ScreenView[], ref: SectionRef, clientId: string): SectionRef | null {
+  for (const view of views) {
+    const index = view.contents.findIndex((content, i) => content.clientId === clientId && sectionId({ screen: view.id, section: i + 1 }) !== sectionId(ref))
+    if (index !== -1) return { screen: view.id, section: index + 1 }
+  }
+  return null
+}
+
 export const screenNameOf = (views: readonly ScreenView[], screen: number): string =>
   views.find((v) => v.id === screen)?.name ?? defaultScreenName(screen)
 
@@ -75,7 +90,7 @@ export interface ScreensSummary {
   closed: string[]
 }
 
-/** 'Pantallas 2/2', '1 sin conexión' or 'Ninguna abierta'; null while the gym has no screens. */
+/** 'Pantallas 2/2', '1 sin abrir' or 'Ninguna abierta'; null while the gym has no screens. */
 export function summarizeScreens(views: readonly ScreenView[]): ScreensSummary | null {
   if (!views.length) return null
   const closed = views.filter((v) => !v.online).map((v) => v.name)

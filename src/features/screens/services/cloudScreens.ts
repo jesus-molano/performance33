@@ -5,6 +5,7 @@ import { STORAGE_KEYS } from '@/config/app'
 import { SCREENS_CHANNEL, SCREENS_COLUMNS, SCREENS_TABLES, type ScreensTable } from '@/features/screens/config/screens'
 import type { ScreensEvent } from '@/features/screens/types'
 import { screenFromRow, screensFromRows, screenToRow, sectionFromRow, sectionsFromRows, sectionToRow, type RawRow } from '@/features/screens/utils/rows'
+import { removeStorage } from '@/lib/safeStorage'
 import { deleteTableRows, fetchTableRows, subscribeTableRows, upsertTableRows, type TableEvent } from '@/persistence/supabaseGateway'
 import { createCloudPresence } from './cloudPresence'
 import { readSnapshot, writeSnapshot } from './snapshotStorage'
@@ -39,10 +40,6 @@ export function createCloudScreens(client: SupabaseClient): ScreensService {
 
     saveSections: (sections) => upsertTableRows(client, SCREENS_TABLES.sections, sections.map(sectionToRow)),
 
-    removeSections: async (ids) => {
-      await deleteTableRows(client, SCREENS_TABLES.sections, ids)
-    },
-
     subscribe: (onEvent, onMissed) =>
       subscribeTableRows<ScreensTable, RawRow>(
         client,
@@ -61,6 +58,7 @@ export function createCloudScreens(client: SupabaseClient): ScreensService {
     cache: {
       read: () => readSnapshot(STORAGE_KEYS.screensCache),
       write: (snapshot) => writeSnapshot(STORAGE_KEYS.screensCache, snapshot),
+      clear: () => removeStorage(STORAGE_KEYS.screensCache),
     },
   }
 }

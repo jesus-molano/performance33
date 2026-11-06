@@ -47,6 +47,13 @@ export type MeasureFit = (fit: FitResult) => number
 export interface FitPlanInput {
   width: number
   height: number
+  /**
+   * Height the sizes are read against: the whole TV for a section of a 2-row grid, so half the height does not mean
+   * half the letter. Default: the container's height. The last-resort size stays relative to the container.
+   */
+  referenceHeight?: number
+  /** Largest unit allowed (the size shared by the sections of a TV). */
+  maxUnit?: number
   density: DisplayDensity
   /** Manual A-/A+ multiplier of the largest allowed size. */
   fontScale: number
@@ -72,19 +79,28 @@ export function getDisplayDensity(width: number, height: number): DisplayDensity
   return width < height * AUTO_FIT.compactMaxAspect ? 'compact' : 'comfortable'
 }
 
-/** Readable floor for a container of this height (scales down for the editor preview). */
-export function readableMinUnit(height: number, density: DisplayDensity): number {
-  return height * AUTO_FIT.readableUnitPerHeight[density]
+/** Readable floor for a screen of this height (scales down for the editor preview). */
+export function readableMinUnit(referenceHeight: number, density: DisplayDensity): number {
+  return referenceHeight * AUTO_FIT.readableUnitPerHeight[density]
+}
+
+export interface UnitLimits {
+  fontScale?: number
+  /** See FitPlanInput.referenceHeight. */
+  referenceHeight?: number
+  maxUnit?: number
 }
 
 /**
  * Unit range for a container: the max keeps a short routine from becoming absurdly huge, the target is
  * what a day should keep and the min is the last resort so it still fits. `fontScale` (A-/A+) scales
- * the max, so A+ only enlarges text while it fits.
+ * the max, so A+ only enlarges text while it fits. Max and target follow the screen's height (referenceHeight), the
+ * last resort the container's: it still fits a long day in a small section rather than cut it.
  */
-export function getUnitBounds(width: number, height: number, density: DisplayDensity, fontScale = 1): UnitBounds {
-  const max = Math.min(width * AUTO_FIT.maxUnitPerWidth, height * AUTO_FIT.maxUnitPerHeight) * fontScale
-  const target = Math.min(width * AUTO_FIT.targetUnitPerWidth, height * AUTO_FIT.targetUnitPerHeight[density], max)
+export function getUnitBounds(width: number, height: number, density: DisplayDensity, limits: UnitLimits = {}): UnitBounds {
+  const { fontScale = 1, referenceHeight = height, maxUnit = Infinity } = limits
+  const max = Math.min(Math.min(width * AUTO_FIT.maxUnitPerWidth, referenceHeight * AUTO_FIT.maxUnitPerHeight) * fontScale, maxUnit)
+  const target = Math.min(width * AUTO_FIT.targetUnitPerWidth, referenceHeight * AUTO_FIT.targetUnitPerHeight[density], max)
   return { min: Math.min(height * AUTO_FIT.lastResortUnitPerHeight[density], target), target, max }
 }
 
@@ -134,8 +150,8 @@ const toFitResult = ({ unit, columns, detail }: PlannedFit): FitResult => ({ uni
  * all of that gone does the text go below the target, down to the last-resort size.
  */
 export function planFit(input: FitPlanInput): FitResult {
-  const { width, height, density, fontScale } = input
-  const { min, target, max } = getUnitBounds(width, height, density, fontScale)
+  const { width, height, density, fontScale, referenceHeight, maxUnit } = input
+  const { min, target, max } = getUnitBounds(width, height, density, { fontScale, referenceHeight, maxUnit })
   const bounds = { min: target, max }
   for (let detail = 0; detail < DETAIL_LEVELS.length; detail++) {
     const oneColumn = planOneColumn(input, bounds, detail)
@@ -161,7 +177,7 @@ export function getFitStages(width: number, height: number, canSplit: boolean): 
 /** The fit of a stage, or null when a strict stage does not hold the whole day at the target size. */
 export function planStage(input: FitPlanInput, stage: FitStage): FitResult | null {
   if (!stage.strict) return planFit(input)
-  const { target, max } = getUnitBounds(input.width, input.height, input.density, input.fontScale)
+  const { target, max } = getUnitBounds(input.width, input.height, input.density, input)
   const oneColumn = planOneColumn(input, { min: target, max }, 0)
   return oneColumn.fits ? toFitResult(oneColumn) : null
 }
@@ -185,4 +201,17 @@ export function fitStyle(fit: FitResult): CSSProperties {
 export function applyFitToElement(el: HTMLElement, fit: FitResult): void {
   el.style.fontSize = `${fit.unit}px`
   for (const [name, value] of Object.entries(fitVars(fit))) el.style.setProperty(name, value)
+}
+
+/** Marks one exercise line of a routine view (counted when the day does not fit). */
+export const FIT_ROW_ATTRIBUTE = 'data-fit-row'
+export const FIT_ROW_PROPS = { [FIT_ROW_ATTRIBUTE]: '' } as const
+
+/** Exercise lines that end outside the container (below it, or right of it when split): what the TV cannot show. */
+export function countHiddenRows(container: HTMLElement, content: HTMLElement): number {
+  const box = container.getBoundingClientRect()
+  return [...content.querySelectorAll(`[${FIT_ROW_ATTRIBUTE}]`)].filter((row) => {
+    const rect = row.getBoundingClientRect()
+    return rect.bottom > box.bottom + 1 || rect.right > box.right + 1
+  }).length
 }

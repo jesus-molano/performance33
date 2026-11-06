@@ -18,13 +18,14 @@ function stubStorage() {
   })
 }
 
+const NO_PRESENCE = { track: () => () => undefined, watch: () => () => undefined }
 const SECTION = { screen: 1, section: 2, clientId: 'c1', day: 2, assignedAt: '2026-11-06T10:00:00.000Z' }
 
 describe('local screens (test mode)', () => {
   beforeEach(stubStorage)
 
   it('keeps screens and sections, with the same rules as the cloud tables', async () => {
-    const service = createLocalScreens()
+    const service = createLocalScreens(NO_PRESENCE)
     expect(await service.load()).toEqual({ screens: [], sections: [] })
     await expect(service.saveSections([SECTION])).rejects.toThrow()
     await service.saveScreens([{ id: 1, name: 'Pantalla 1', sections: 3 }])
@@ -35,7 +36,7 @@ describe('local screens (test mode)', () => {
   })
 
   it('creating the defaults never overwrites a screen that exists', async () => {
-    const service = createLocalScreens()
+    const service = createLocalScreens(NO_PRESENCE)
     await service.saveScreens([{ id: 1, name: 'Sala', sections: 5 }])
     await service.saveScreens(
       [
@@ -50,11 +51,13 @@ describe('local screens (test mode)', () => {
     ])
   })
 
-  it('removes only the sections asked for', async () => {
-    const service = createLocalScreens()
+  it('a new number of sections empties the ones it leaves out or brings back, like the database', async () => {
+    const service = createLocalScreens(NO_PRESENCE)
     await service.saveScreens([{ id: 1, name: 'P', sections: 3 }])
     await service.saveSections([SECTION, { ...SECTION, section: 3 }])
-    await service.removeSections(['1:3'])
+    await service.saveScreens([{ id: 1, name: 'Sala', sections: 3 }])
+    expect((await service.load()).sections).toHaveLength(2)
+    await service.saveScreens([{ id: 1, name: 'P', sections: 2 }])
     expect((await service.load()).sections).toEqual([SECTION])
   })
 })

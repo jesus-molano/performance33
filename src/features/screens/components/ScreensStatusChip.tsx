@@ -25,7 +25,7 @@ function ChipText({ summary }: { summary: ScreensSummary }) {
   )
 }
 
-/** 'Pantallas 2/2' (green), '1 sin conexión' (amber) or 'Ninguna abierta → Abrir' (grey) in the top bar. */
+/** 'Pantallas 2/2' (green), '1 sin abrir' (amber) or 'Ninguna abierta → Abrir' (grey) in the top bar. */
 export function ScreensStatusChip({ summary, expanded, onClick }: ScreensStatusChipProps) {
   const tone = TONES[summary.tone]
   return (

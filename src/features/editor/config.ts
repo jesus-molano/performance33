@@ -54,6 +54,9 @@ export const DND_TEXTS = {
 } as const
 
 /** Bottom-sheet title while the open row has no name yet. */
+/** Label of the '⋯' menu of a day. */
+export const DAY_MENU_LABEL = 'Opciones del día'
+
 export const NEW_EXERCISE_TITLE = 'Nuevo ejercicio'
 
 /** Placeholder of a warm-up / mobility block's free text. */

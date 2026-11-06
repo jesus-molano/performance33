@@ -1,19 +1,19 @@
 import { CircleAlert, CircleCheck, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { useToastTimer } from '@/hooks/useToastTimer'
 import { cn } from '@/lib/cn'
 import { useToastStore, type Toast } from '@/store/toastStore'
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
-  useEffect(() => {
-    const timer = setTimeout(() => onDismiss(toast.id), toast.durationMs)
-    return () => clearTimeout(timer)
-  }, [toast.id, toast.durationMs, onDismiss])
+  const expire = useCallback(() => onDismiss(toast.id), [onDismiss, toast.id])
+  const timer = useToastTimer(toast.durationMs, expire)
 
   const Icon = toast.tone === 'error' ? CircleAlert : toast.tone === 'success' ? CircleCheck : null
   return (
     <div
       role="status"
+      {...timer.handlers}
       className="pointer-events-auto flex w-full max-w-md animate-slide-up items-center gap-3 rounded-2xl bg-ink py-2.5 pr-2 pl-4 text-md text-white shadow-pop"
     >
       {Icon && <Icon size={18} aria-hidden className={cn(toast.tone === 'error' ? 'text-red-400' : 'text-emerald-400')} />}

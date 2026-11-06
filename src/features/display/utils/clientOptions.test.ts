@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_BRANDING } from '@/config/branding'
 import type { DisplayData, PublicClient, PublicProgram } from '@/types'
-import { buildClientOptions, filterClientOptions } from './clientOptions'
+import { buildClientOptions, filterClientOptions, shownClientId } from './clientOptions'
 
 const client = (id: string, firstName: string, lastName: string, extra: Partial<PublicClient> = {}): PublicClient => ({
   id,
@@ -36,26 +36,26 @@ const data: DisplayData = {
   ],
 }
 
-const labels = (query: string) => filterClientOptions(buildClientOptions(data, null), query).map((o) => o.label)
+const labels = (query: string) => filterClientOptions(buildClientOptions(data), query).map((o) => o.label)
 
 describe('buildClientOptions', () => {
   it('lists active clients by full name and marks those without a routine', () => {
-    const options = buildClientOptions(data, null)
+    const options = buildClientOptions(data)
     expect(options.map((o) => o.label)).toEqual(['Andrés Núñez', 'Laura Martín', 'laura Ruiz', 'Lucía Álvarez'])
     expect(options.map((o) => o.hasRoutine)).toEqual([false, true, false, false])
   })
 
   it('omits the trailing space when there is no surname', () => {
     const single = { ...data, clients: [client('ana', 'Ana', '')] }
-    expect(buildClientOptions(single, null).map((o) => o.label)).toEqual(['Ana'])
+    expect(buildClientOptions(single).map((o) => o.label)).toEqual(['Ana'])
   })
 
-  it('keeps the selected client even if archived', () => {
-    expect(buildClientOptions(data, 'sergio').map((o) => o.client.id)).toContain('sergio')
+  it('never offers an archived client', () => {
+    expect(buildClientOptions(data).map((o) => o.client.id)).not.toContain('sergio')
   })
 
   it('is empty without data', () => {
-    expect(buildClientOptions(null, null)).toEqual([])
+    expect(buildClientOptions(null)).toEqual([])
   })
 })
 
@@ -73,5 +73,15 @@ describe('filterClientOptions', () => {
 
   it('returns everything for an empty query', () => {
     expect(labels('  ')).toHaveLength(4)
+  })
+})
+
+describe('shownClientId', () => {
+  it('shows an archived client as nobody, and keeps active or unknown ids', () => {
+    expect(shownClientId(data, 'sergio')).toBeNull()
+    expect(shownClientId(data, 'laura')).toBe('laura')
+    expect(shownClientId(data, 'gone')).toBe('gone')
+    expect(shownClientId(null, 'sergio')).toBe('sergio')
+    expect(shownClientId(data, null)).toBeNull()
   })
 })

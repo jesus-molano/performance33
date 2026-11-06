@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
 import type { DisplayExerciseLine } from '@/lib/display'
-import type { DisplayDensity } from '@/features/display/utils/autoFit'
+import { FIT_ROW_PROPS, type DisplayDensity } from '@/features/display/utils/autoFit'
 import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { DENSITY_STYLES } from './densityStyles'
 
@@ -21,7 +21,7 @@ interface DisplayExerciseRowProps {
 export function DisplayExerciseRow({ line, density, muted, theme }: DisplayExerciseRowProps) {
   const styles = DENSITY_STYLES[density]
   return (
-    <li className={cn('grid grid-cols-[auto_minmax(0,1fr)_fit-content(58%)] items-baseline', styles.row)}>
+    <li {...FIT_ROW_PROPS} className={cn('grid grid-cols-[auto_minmax(0,1fr)_fit-content(58%)] items-baseline', styles.row)}>
       <span className={cn(line.label && cn('tabular text-center font-bold whitespace-nowrap', styles.label, theme.badge))}>{line.label}</span>
       <p className={cn('font-bold text-balance [overflow-wrap:anywhere]', styles.main, muted && theme.secondaryText)}>
         {line.name}

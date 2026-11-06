@@ -12,16 +12,16 @@ export interface ScreenPresence {
 
 export interface ScreensService {
   load: () => Promise<ScreensSnapshot>
-  /** `onlyNew`: a screen that already exists is left as it is (two windows creating the defaults at once). */
+  /** `onlyNew`: a screen that already exists is left as it is (two windows creating the defaults at once). A new
+   * number of sections empties the sections it leaves out or brings back (schema.sql: trim_screen_sections). */
   saveScreens: (screens: ScreenConfig[], onlyNew?: boolean) => Promise<void>
   /** Its sections go with it. */
   removeScreen: (id: number) => Promise<void>
   /** Their screens must exist. */
   saveSections: (sections: ScreenSection[]) => Promise<void>
-  removeSections: (ids: string[]) => Promise<void>
   /** `onMissed`: changes may have been lost (connected, reconnected, changed in another window): reload. */
   subscribe: (onEvent: (event: ScreensEvent) => void, onMissed: () => void) => () => void
   presence: ScreenPresence
   /** The last good read, for a window opened without connection. Only where reads can fail (the cloud). */
-  cache?: { read: () => ScreensSnapshot | null; write: (snapshot: ScreensSnapshot) => void }
+  cache?: { read: () => ScreensSnapshot | null; write: (snapshot: ScreensSnapshot) => void; clear: () => void }
 }

@@ -57,6 +57,11 @@ Se hace una sola vez. Calcula unos 45 minutos.
 En Supabase ve a **SQL Editor → New query**, pega el archivo `supabase/schema.sql` entero y pulsa **Run**.
 Se puede volver a ejecutar sin romper nada.
 
+**Al actualizar la app**, ejecuta primero el `schema.sql` nuevo y después publica la web: la versión con las pantallas
+en la base de datos necesita sus tablas, y el aviso de qué teles están abiertas va por un canal privado que solo
+funciona con los permisos de este archivo. No hace falta tocar **Realtime → Settings → Allow public access**: los
+datos en directo de las tablas siguen protegidos por sus propios permisos.
+
 **Si el proyecto ya tenía la versión anterior** (existe la tabla `staff`), el archivo se niega a ejecutarse y lo dice. Esa
 versión no se puede convertir sola: guarda lo que necesites y, **sabiendo que esto borra todos los datos**, ejecuta primero:
 
@@ -221,7 +226,37 @@ con su nombre como texto libre.
 
 ## Las pantallas del gimnasio
 
-**Una ventana por tele.** En **Pantallas** tienes Pantalla 1, Pantalla 2… Cada una recuerda sus columnas y se abre sin tocar las demás; con **Añadir pantalla** creas otra si tenéis más teles. Desde el móvil, en cambio, ves una lista de personas para abrir la rutina de cada una como una página normal: el Modo TV es para el ordenador conectado a la tele.
+**Una ventana por tele.** Cada tele es una pantalla (Pantalla 1, Pantalla 2…) con su nombre y de 1 a 6 secciones,
+una persona en cada una. Se configuran en **Ajustes → Pantallas** (o en el menú **Pantallas**), y es lo mismo para
+todo el equipo. Más de 3 secciones en una tele de 27″ se lee pequeño a 3-4 m, y una rutina larga puede no caber
+entera: lo dice una franja abajo («+3 ejercicios más abajo, no caben»).
+
+### Cada mañana: abrir las teles
+
+1. Enciende las teles y en el portátil pulsa **Win+K**: conecta cada tele y elige **Extender** (no «Duplicar»).
+2. Abre la app en Chrome o Edge, entra y abre el menú **Pantallas** de la barra lateral.
+3. La primera vez pulsa **Buscar teles** y, cuando el navegador pregunte, **Permitir**. Si sale «No hay ninguna tele
+   conectada», vuelve al paso 1.
+4. Pulsa cada pantalla («Abrir Pantalla 1 en «tele»»): la ventana se abre ya en su tele. Allí pulsa una vez
+   **Pantalla completa** (o la tecla F).
+5. Si una tele se coloca en la que no toca, en **Ajustes → Pantallas → Teles detectadas** elige en qué tele se abre
+   cada pantalla. Se guarda en ese portátil.
+
+En Firefox, o si el navegador no ve las teles, la ventana se abre en el portátil: arrástrala a su tele y pulsa F11.
+Arriba, «Pantallas 2/2» dice cuántas están abiertas; «1 sin abrir» quiere decir que esa ventana está cerrada, y
+«Pantalla 2 desconectada», que su tele se ha apagado o se ha caído Win+K.
+
+### Mandar a alguien a una sección
+
+- En la ficha de cada usuario, cada día de su rutina tiene el botón **Pantalla** (en el móvil, **Mandar**). Púlsalo y
+  toca la sección: la persona aparece en la tele al momento. Si ya estaba en otra sección, sale de allí; si la sección
+  tenía a otra persona, se sustituye.
+- El aviso dice a quién has mandado, qué día y a quién sustituye. **Deshacer** (o Ctrl+Z mientras se ve el aviso)
+  lo deja como estaba, sin tocar lo que otro monitor haya cambiado después.
+- **Ctrl+clic** en **Pantalla** (o mantenerlo pulsado en el móvil) la manda directamente a la última sección que usaste.
+- Funciona igual desde el móvil, en cualquier red: solo hace falta que la ventana de la tele esté abierta en el portátil.
+
+Desde el móvil, el Modo TV es una lista de personas para abrir la rutina de cada una como una página normal.
 
 Las ventanas de las teles comparten la sesión del navegador y solo guardan los datos que se pueden
 ver en público: nunca notas, objetivos ni comentarios internos. Si se cierra la sesión, muestran

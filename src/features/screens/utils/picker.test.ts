@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SEND_COPY } from '@/features/screens/config/copy'
 import type { ScreenView, SectionContent } from '@/features/screens/types'
-import { buildPickerScreens, replacedOccupant, resolveLastDestination, screenNameOf, summarizeScreens } from './picker'
+import { buildPickerScreens, movedFromSection, replacedOccupant, resolveLastDestination, screenNameOf, summarizeScreens } from './picker'
 
 const shows = (clientId: string | null, day = 1): SectionContent => ({ clientId, day, assignedAt: clientId ? '2026-11-06T10:00:00.000Z' : '' })
 const view = (id: number, contents: SectionContent[], online = true, name = `Pantalla ${id}`): ScreenView => ({
@@ -27,9 +27,11 @@ describe('buildPickerScreens', () => {
     expect(second.tiles.map((t) => t.ref)).toEqual([1, 2, 3, 4].map((section) => ({ screen: 2, section })))
   })
 
-  it('marks where the person already is (any day) and the last destination', () => {
+  it('marks where the person already is, telling the same day from another one, and the last destination', () => {
     const [first, second] = buildPickerScreens(views, names, { clientId: 'laura', day: 1 }, { screen: 2, section: 3 })
-    expect(first.tiles.map((t) => t.isTarget)).toEqual([false, false, true])
+    expect(first.tiles.map((t) => t.here)).toEqual([null, null, 'other-day'])
+    expect(first.tiles[2].shownDay).toBe(2)
+    expect(buildPickerScreens(views, names, { clientId: 'laura', day: 2 }, null)[0].tiles[2].here).toBe('same')
     expect(second.tiles.map((t) => t.isLast)).toEqual([false, false, true, false])
   })
 
@@ -88,9 +90,21 @@ describe('summarizeScreens', () => {
 })
 
 describe('send toast', () => {
-  it('reads like an arrow to the section, naming who was replaced', () => {
-    const where = SEND_COPY.where('Pantalla 1', 2)
-    expect(SEND_COPY.sent('Laura', where, null)).toBe('Laura → Pantalla 1 · Sección 2')
-    expect(SEND_COPY.sent('Laura', where, 'Javier')).toBe('Laura → Pantalla 1 · Sección 2 (antes: Javier)')
+  it('reads like an arrow to the section, with the day, who was replaced and where the person came from', () => {
+    const where = SEND_COPY.where('Pantalla 2', 2)
+    const base = { name: 'Marta', day: 2, where, replaced: null, movedFrom: null }
+    expect(SEND_COPY.sent(base)).toBe('Marta · Día 2 → Pantalla 2 · Sección 2')
+    expect(SEND_COPY.sent({ ...base, replaced: 'Laura', movedFrom: SEND_COPY.where('Pantalla 1', 1) })).toBe(
+      'Marta · Día 2 → Pantalla 2 · Sección 2, en lugar de Laura. Sale de Pantalla 1 · Sección 1',
+    )
+  })
+})
+
+describe('movedFromSection', () => {
+  it('finds the other section a send takes the person out of', () => {
+    const views = [view(1, [shows('laura'), shows(null)]), view(2, [shows(null), shows('javier')])]
+    expect(movedFromSection(views, { screen: 2, section: 1 }, 'laura')).toEqual({ screen: 1, section: 1 })
+    expect(movedFromSection(views, { screen: 1, section: 1 }, 'laura')).toBeNull()
+    expect(movedFromSection(views, { screen: 1, section: 2 }, 'andres')).toBeNull()
   })
 })

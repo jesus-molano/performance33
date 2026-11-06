@@ -10,9 +10,19 @@ export interface ScreensState extends ScreensData {
   status: ScreensStatus
   /** Screens whose TV window is open somewhere. */
   online: ReadonlySet<number>
+  /** The first read failed and nothing is known yet: trying again (a TV says so instead of staying blank). */
+  loadFailed: boolean
 }
 
-export const useScreensStore = create<ScreensState>()(() => ({ status: 'idle', screens: [], sections: {}, online: new Set() }))
+const initialState = (): ScreensState => ({ status: 'idle', screens: [], sections: {}, online: new Set(), loadFailed: false })
+
+export const useScreensStore = create<ScreensState>()(initialState)
 
 /** Writes of this window the server has not sent back yet. */
 export const pendingWrites = createPendingWrites(SCREENS_ECHO_WINDOW_MS)
+
+/** Back to knowing nothing (the session ended): the next session starts from the server. */
+export function resetScreensState(): void {
+  pendingWrites.clear()
+  useScreensStore.setState(initialState())
+}

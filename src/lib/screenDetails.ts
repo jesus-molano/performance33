@@ -1,5 +1,8 @@
 // Which screens this computer has (Window Management API, Chrome and Edge): the TVs extended with Win+K show up as
 // screens of their own, so each TV window can open on its TV. The browser is passed in, so tests use fakes.
+// What each screen is called and how it is told apart: detectedDisplays.ts.
+
+import { detectionFromScreens } from './detectedDisplays'
 
 /** Detection result: no API (Firefox, Safari), permission not asked yet, permission blocked, one screen only, TVs found. */
 export type ScreenDetectionState = 'unsupported' | 'needs-permission' | 'denied' | 'single' | 'ok'
@@ -61,29 +64,6 @@ export interface ScreenDetector {
   subscribe: (listener: () => void) => () => void
   /** Asks for the permission (must run inside a click) and reads the screens. */
   request: () => Promise<void>
-}
-
-const UNNAMED_SCREEN = 'Pantalla externa'
-
-/** Two identical TVs share a label, so their position tells them apart. */
-export function toDetectedDisplays(screens: readonly ScreenLike[]): DetectedDisplay[] {
-  return screens.map((screen, index) => {
-    const label = screen.label.trim() || `${UNNAMED_SCREEN} ${index + 1}`
-    const unique = screens.filter((other) => other.label.trim() === screen.label.trim()).length === 1
-    return {
-      key: unique && screen.label.trim() ? label : `${label}@${screen.left},${screen.top}`,
-      label,
-      isPrimary: screen.isPrimary,
-      isInternal: screen.isInternal,
-      area: { left: screen.availLeft, top: screen.availTop, width: screen.availWidth, height: screen.availHeight },
-      source: screen,
-    }
-  })
-}
-
-export function detectionFromScreens(screens: readonly ScreenLike[]): ScreenDetection {
-  const displays = toDetectedDisplays(screens)
-  return { state: displays.length > 1 ? 'ok' : 'single', displays }
 }
 
 const NO_DISPLAYS: readonly DetectedDisplay[] = []

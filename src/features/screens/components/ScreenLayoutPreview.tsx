@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { cn } from '@/lib/cn'
 import type { SectionContent } from '@/features/screens/types'
-import { gridFor } from '@/features/screens/utils/sections'
+import { emptyGridCells, gridFor } from '@/features/screens/utils/sections'
 
 export interface ScreenLayoutPreviewProps {
   /** One per section, in order. */
@@ -27,6 +27,9 @@ export function ScreenLayoutPreview({ contents, label, className }: ScreenLayout
           >
             {i + 1}
           </div>
+        ))}
+        {Array.from({ length: emptyGridCells(contents.length) }, (_, i) => (
+          <div key={`empty-${i}`} aria-hidden className="rounded-md bg-tv-canvas" />
         ))}
       </div>
     </div>

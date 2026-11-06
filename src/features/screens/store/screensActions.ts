@@ -2,12 +2,12 @@
 // first). A failed write reloads what the server has.
 
 import { screensService } from '@/features/screens/services/instance'
-import type { ScreenConfig, SectionChange, SectionRef, SectionTarget, SectionWrite } from '@/features/screens/types'
+import type { ScreenConfig, SectionChange, SectionRef, SectionTarget, SectionWrite, UndoResult } from '@/features/screens/types'
 import { screenKey, sectionKey } from '@/features/screens/utils/pendingWrites'
+import { sectionsResizedAway, writableWrites } from '@/features/screens/utils/sectionLimits'
 import {
   applyWrites,
   clampSectionCount,
-  defaultScreen,
   isScreenEmpty,
   normalizeScreen,
   planAssign,
@@ -18,11 +18,11 @@ import {
   planSwap,
   previousOf,
   sectionId,
-  sectionIdsBeyond,
   toSection,
   upsertScreen,
   withoutSections,
 } from '@/features/screens/utils/sections'
+import { planUndo } from '@/features/screens/utils/undo'
 import { screenConfigOf } from '@/features/screens/utils/views'
 import { reloadScreens } from './screensConnection'
 import { pendingWrites, useScreensStore } from './screensStore'
@@ -30,58 +30,47 @@ import { pendingWrites, useScreensStore } from './screensStore'
 const get = () => useScreensStore.getState()
 const nowIso = () => new Date().toISOString()
 
+/** A row this window wrote and the value it waits to hear back (null: deleted). */
+type PendingMark = readonly [key: string, value: unknown]
+
 let queue: Promise<unknown> = Promise.resolve()
 
 /** Runs the writes one after another; false (and a reload) when one fails. */
-function persist(keys: string[], task: () => Promise<unknown>): Promise<boolean> {
+function persist(marks: readonly PendingMark[], task: () => Promise<unknown>): Promise<boolean> {
+  marks.forEach(([key, value]) => pendingWrites.mark(key, value))
   const run = queue.then(task)
   queue = run.catch(() => undefined)
   return run.then(
     () => true,
     () => {
-      keys.forEach(pendingWrites.forget)
+      marks.forEach(([key, value]) => pendingWrites.forget(key, value))
       reloadScreens()
       return false
     },
   )
 }
 
-/**
- * Screens a write needs that this window does not know: created with the defaults, never over an existing one.
- * Not marked as pending: if the gym already had them, what the server says is right.
- */
-function addMissingScreens(ids: readonly number[]): Promise<boolean> {
-  const missing = [...new Set(ids)].filter((id) => !get().screens.some((s) => s.id === id)).map(defaultScreen)
-  if (!missing.length) return Promise.resolve(true)
-  useScreensStore.setState((state) => ({ screens: missing.reduce(upsertScreen, state.screens) }))
-  return persist([], () => screensService.saveScreens(missing, true))
-}
-
-function writeSections(writes: SectionWrite[]): SectionChange {
-  const { sections } = get()
-  const previous = previousOf(sections, writes)
-  if (!writes.length) return { previous, saved: Promise.resolve(true) }
-  const rows = writes.map(toSection)
-  const keys = rows.map((row) => sectionKey(sectionId(row)))
-  useScreensStore.setState({ sections: applyWrites(sections, writes) })
-  rows.forEach((row, i) => pendingWrites.mark(keys[i], row))
-  void addMissingScreens(rows.map((row) => row.screen))
-  return { previous, saved: persist(keys, () => screensService.saveSections(rows)) }
+function writeSections(planned: SectionWrite[]): SectionChange {
+  const { screens, sections } = get()
+  const written = writableWrites(screens, planned)
+  const previous = previousOf(sections, written)
+  if (!written.length) return { written, previous, saved: Promise.resolve(true) }
+  const rows = written.map(toSection)
+  useScreensStore.setState({ sections: applyWrites(sections, written) })
+  const marks = rows.map((row): PendingMark => [sectionKey(sectionId(row)), row])
+  return { written, previous, saved: persist(marks, () => screensService.saveSections(rows)) }
 }
 
 const sectionCount = (screen: number) => screenConfigOf(get().screens, screen).sections
 
+/** Name and number of sections. The database empties the sections a new count leaves out or brings back. */
 function saveScreen(config: ScreenConfig): Promise<boolean> {
   const screen = normalizeScreen(config)
   const { screens, sections } = get()
-  const beyond = sectionIdsBeyond(sections, screen.id, screen.sections)
-  useScreensStore.setState({ screens: upsertScreen(screens, screen), sections: withoutSections(sections, beyond) })
-  pendingWrites.mark(screenKey(screen.id), screen)
-  beyond.forEach((id) => pendingWrites.mark(sectionKey(id), null))
-  return persist([screenKey(screen.id), ...beyond.map(sectionKey)], async () => {
-    await screensService.saveScreens([screen])
-    if (beyond.length) await screensService.removeSections(beyond)
-  })
+  const away = sectionsResizedAway(sections, screens, screen)
+  useScreensStore.setState({ screens: upsertScreen(screens, screen), sections: withoutSections(sections, away) })
+  const marks = [[screenKey(screen.id), screen] as const, ...away.map((id) => [sectionKey(id), null] as const)]
+  return persist(marks, () => screensService.saveScreens([screen]))
 }
 
 function removeScreen(id: number): Promise<boolean> {
@@ -90,9 +79,8 @@ function removeScreen(id: number): Promise<boolean> {
     .filter((s) => s.screen === id)
     .map(sectionId)
   useScreensStore.setState({ screens: screens.filter((s) => s.id !== id), sections: withoutSections(sections, gone) })
-  pendingWrites.mark(screenKey(id), null)
-  gone.forEach((sid) => pendingWrites.mark(sectionKey(sid), null))
-  return persist([screenKey(id), ...gone.map(sectionKey)], () => screensService.removeScreen(id))
+  const marks = [[screenKey(id), null] as const, ...gone.map((sid) => [sectionKey(sid), null] as const)]
+  return persist(marks, () => screensService.removeScreen(id))
 }
 
 /** Fills a screen from an old ?slots= link: only once the screens have been read, and only if it shows nobody. */
@@ -101,6 +89,12 @@ function fillScreen(screen: number, targets: readonly SectionTarget[]): SectionC
   if (status !== 'ready' || !targets.length || !isScreenEmpty(sections, screen)) return null
   void saveScreen({ ...screenConfigOf(screens, screen), sections: clampSectionCount(targets.length) })
   return writeSections(planFill(get().sections, screen, targets, nowIso()))
+}
+
+/** Puts back what a change replaced, in the sections nobody has changed since. */
+function undo(change: Pick<SectionChange, 'previous' | 'written'>): UndoResult {
+  const { writes, skipped } = planUndo(get().sections, change)
+  return { skipped, saved: writeSections(writes).saved }
 }
 
 export const screensActions = {
@@ -113,14 +107,13 @@ export const screensActions = {
   /** Moves what section `from` shows to position `to` of the same screen (1-based); the ones in between shift. */
   reorder: (screen: number, from: number, to: number) =>
     writeSections(planReorder(get().sections, screen, sectionCount(screen), from, to)),
-  /** Puts back what a change replaced (its `previous`). */
+  /** Writes back sections exactly as they were (sections emptied by a smaller count, once the count is back). */
   restore: (previous: SectionWrite[]) => writeSections(previous),
+  undo,
   fillScreen,
-  /** Name and number of sections; the sections past the new count are emptied. */
+  /** Name and number of sections; the sections past the new count are emptied. Creates the screen if it is new. */
   saveScreen,
   removeScreen,
-  /** Creates the screen with the defaults if the gym does not have it. */
-  ensureScreen: (id: number) => addMissingScreens([id]),
 }
 
 export type ScreensActions = typeof screensActions

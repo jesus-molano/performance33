@@ -61,6 +61,8 @@ export const UNDO_GROUP_MS = 1000
 export const UNDO_LIMIT = 100
 
 export const TOAST_DURATION_MS = 6000
+/** A toast that undoes something outside the routine history (a send to a screen) stays longer: Ctrl+Z also uses it. */
+export const UNDO_ACTION_TOAST_MS = 12_000
 /** How long a 'Copiada' button stays that way. */
 export const COPIED_FLAG_MS = 2000
 /** Programs ending within this many days are flagged 'Termina en N días'. */

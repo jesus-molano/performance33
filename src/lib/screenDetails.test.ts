@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createScreenDetector, detectionFromScreens, toDetectedDisplays, type ScreenDetector } from './screenDetails'
+import { detectionFromScreens, toDetectedDisplays } from './detectedDisplays'
+import { createScreenDetector, type ScreenDetector } from './screenDetails'
 import { fakeBrowser, LAPTOP, tv } from './screenDetails.fakes'
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))

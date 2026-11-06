@@ -19,8 +19,10 @@ interface TvSlotViewProps {
   hasClients: boolean
   /** More than one column: reordering makes sense. */
   sortable: boolean
-  /** 'full' when it is the only column (may split in two numbered parts), else 'column' (never splits). */
+  /** 'full' when it is the only section, else 'column' (see RoutineDisplay). */
   layout: RoutineDisplayLayout
+  /** Height of the whole TV: sizes are read against it, not against the section. */
+  referenceHeight: number
   branding: Branding
   theme: DisplayThemeClasses
   fontScale: number
@@ -41,6 +43,7 @@ export function TvSlotView({
   hasClients,
   sortable,
   layout,
+  referenceHeight,
   branding,
   theme,
   fontScale,
@@ -50,7 +53,7 @@ export function TvSlotView({
   onClientChange,
   onDayChange,
 }: TvSlotViewProps) {
-  const { routine, dayNumber, flashBlockIds, clientOptions } = useTvSlot(data, slot)
+  const { clientId, routine, dayNumber, flashBlockIds, clientOptions } = useTvSlot(data, slot)
   const { setNodeRef, style, isDragging, handle } = useTvSortableSlot(id)
   // An open client list keeps the picker on screen even when the idle timer hides the controls.
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -60,14 +63,23 @@ export function TvSlotView({
   return (
     <section ref={setNodeRef} style={style} className={cn('relative h-full min-h-0 min-w-0 overflow-hidden', theme.root)}>
       {routine ? (
-        <RoutineDisplay routine={routine} dayNumber={dayNumber} layout={layout} fontScale={fontScale} flashBlockIds={flashBlockIds} unitCap={unitCap} onUnitChange={reportUnit} />
+        <RoutineDisplay
+          routine={routine}
+          dayNumber={dayNumber}
+          layout={layout}
+          fontScale={fontScale}
+          flashBlockIds={flashBlockIds}
+          unitCap={unitCap}
+          onUnitChange={reportUnit}
+          referenceHeight={referenceHeight}
+        />
       ) : (
-        <TvSlotEmpty data={data} clientId={slot.clientId} hasClients={hasClients} branding={branding} theme={theme} />
+        <TvSlotEmpty data={data} clientId={clientId} hasClients={hasClients} branding={branding} theme={theme} />
       )}
       <FadingOverlay visible={active || !routine} position="inset-x-0 top-3" fill>
         <TvSlotPicker
           index={index}
-          clientId={slot.clientId}
+          clientId={clientId}
           dayNumber={dayNumber}
           clientOptions={clientOptions}
           days={routine?.days ?? []}

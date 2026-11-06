@@ -24,3 +24,20 @@ export function removeStorage(key: string): void {
     // Per-viewer convenience only.
   }
 }
+
+/** sessionStorage: what this window remembers until it closes (a reload keeps it). */
+export function readSessionStorage(key: string): string | null {
+  try {
+    return window.sessionStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+export function writeSessionStorage(key: string, value: string): void {
+  try {
+    window.sessionStorage.setItem(key, value)
+  } catch {
+    // Per-viewer convenience only.
+  }
+}

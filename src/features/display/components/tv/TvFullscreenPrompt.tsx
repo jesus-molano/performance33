@@ -9,21 +9,21 @@ interface TvFullscreenPromptProps {
   onDismiss: () => void
 }
 
-/** Big button in the middle of a TV window that just opened: one click and the routine fills the TV. */
+/** Bar at the foot of a TV window that just opened, over the bottom edge only: one click and the routine fills the TV. */
 export function TvFullscreenPrompt({ theme, onFullscreen, onDismiss }: TvFullscreenPromptProps) {
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center p-6" onDoubleClick={(event) => event.stopPropagation()}>
-      <div className={cn('flex max-w-xl flex-col items-center gap-4 rounded-3xl px-8 py-7 text-center', theme.overlay)}>
+    <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center px-6" onDoubleClick={(event) => event.stopPropagation()}>
+      <div className={cn('pointer-events-auto flex items-center gap-5 rounded-3xl py-3 pr-4 pl-3 shadow-pop', theme.overlay)}>
         <button
           type="button"
           onClick={onFullscreen}
-          className={cn('inline-flex min-h-20 items-center gap-4 rounded-2xl px-10 text-4xl font-bold shadow-pop transition-transform hover:scale-[1.02]', theme.badge)}
+          className={cn('inline-flex min-h-16 items-center gap-3 rounded-2xl px-7 text-3xl font-bold transition-transform hover:scale-[1.02]', theme.badge)}
         >
-          <Maximize size={40} aria-hidden />
+          <Maximize size={32} aria-hidden />
           {TV_FULLSCREEN_COPY.button}
         </button>
-        <p className="text-lg">{TV_FULLSCREEN_COPY.hint}</p>
-        <button type="button" onClick={onDismiss} className="min-h-11 rounded-full px-4 text-base font-medium underline-offset-4 hover:underline">
+        <p className="max-w-sm text-xl font-medium">{TV_FULLSCREEN_COPY.hint}</p>
+        <button type="button" onClick={onDismiss} className="min-h-12 rounded-full px-4 text-xl font-semibold underline-offset-4 hover:underline">
           {TV_FULLSCREEN_COPY.later}
         </button>
       </div>

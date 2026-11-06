@@ -46,6 +46,8 @@ export const FONT_SCALE = { min: 0.7, max: 1.6, step: 0.1, initial: 1 } as const
 
 /** Overlay controls hide after this idle time. */
 export const CONTROLS_IDLE_MS = 3000
+/** The 'Pantalla completa' bar of a TV window that just opened goes by itself after this (or when the window loses focus). */
+export const FULLSCREEN_PROMPT_MS = 15_000
 /** 'Arrastra esta ventana a la tele' hint lifetime. */
 export const WINDOW_HINT_MS = 7000
 /** After A+, how long the columns get to report their new size, and how long the note stays. */
@@ -59,11 +61,13 @@ export const PREVIEW_ASPECT_CLASS = 'aspect-[16/27]'
 
 /** Per-viewer conveniences (localStorage, may be unavailable). */
 export const DISPLAY_STORAGE_KEYS = {
-  /** List of named screens on this device. */
-  tvScreens: 'p33:tv:screens',
   /** Columns of Pantalla 1 (the key older versions used); other screens add ':N'. */
   tvSlots: 'p33:tv:slots',
   fontScale: 'p33:display:fontScale',
+  /** Old ?slots= links already used on this device (see utils/legacyLinks.ts). */
+  legacyLinks: 'p33:tv:legacy-links:v1',
+  /** sessionStorage, + screen number: this TV window already offered fullscreen. */
+  fullscreenPrompt: 'p33:tv:fullscreen-prompt:',
 } as const
 
 /** Keyboard shortcuts on display windows. */
@@ -76,3 +80,9 @@ export const DISPLAY_KEYS = {
 } as const
 
 export type DisplayKeyAction = keyof typeof DISPLAY_KEYS
+
+/** What the foot of a routine says when the day does not fit even at the smallest size. */
+export const OVERFLOW_TEXTS = {
+  rows: (count: number) => (count === 1 ? '+1 ejercicio más abajo, no cabe' : `+${count} ejercicios más abajo, no caben`),
+  some: 'No cabe entera: pon menos secciones',
+} as const

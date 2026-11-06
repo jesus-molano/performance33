@@ -6,6 +6,7 @@ import {
   clampSectionCount,
   defaultScreens,
   EMPTY_SECTION,
+  emptyGridCells,
   findClientSections,
   firstFreeSection,
   gridFor,
@@ -55,6 +56,10 @@ describe('gridFor', () => {
     expect(gridFor(9)).toEqual({ columns: 3, rows: 2 })
     expect(clampSectionCount(Number.NaN)).toBe(TV_DEFAULT_SECTIONS)
     expect(clampSectionCount(2.6)).toBe(3)
+  })
+
+  it('leaves one cell of the grid unused with 5 sections only', () => {
+    expect([1, 2, 3, 4, 5, 6].map(emptyGridCells)).toEqual([0, 0, 0, 0, 1, 0])
   })
 })
 

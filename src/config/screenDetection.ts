@@ -42,6 +42,8 @@ export function detectionNote(state: ScreenDetectionState, tvCount: number): Det
 }
 
 export const SCREEN_DETECTION_COPY = {
+  /** A screen the browser gives no name (the key keeps the old 'Pantalla externa N', so choices saved before still match). */
+  unnamedScreen: (position: number) => `Pantalla externa ${position}`,
   title: 'Teles detectadas en este portátil',
   description: 'Elige en qué tele se abre cada pantalla. Se guarda solo en este ordenador.',
   opensOn: (name: string) => `${name} se abre en`,

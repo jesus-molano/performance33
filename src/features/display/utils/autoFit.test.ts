@@ -48,7 +48,7 @@ describe('readable floor', () => {
     expect(bounds.min).toBeLessThan(readableMinUnit(TV_HEIGHT, 'compact'))
     expect(bounds.target).toBeGreaterThan(readableMinUnit(TV_HEIGHT, 'compact'))
     expect(bounds.max).toBeCloseTo(19.2)
-    const shrunk = getUnitBounds(480, TV_HEIGHT, 'compact', 0.5)
+    const shrunk = getUnitBounds(480, TV_HEIGHT, 'compact', { fontScale: 0.5 })
     expect(shrunk.min).toBe(shrunk.max)
     expect(shrunk.target).toBe(shrunk.max)
   })
@@ -218,5 +218,50 @@ describe('fitStyle', () => {
     expect(varsAt(2)).toMatchObject({ '--display-extra': 'none', '--display-detail': 'block', '--display-note': 'flex' })
     expect(varsAt(3)).toMatchObject({ '--display-detail': 'none', '--display-note': 'flex' })
     expect(varsAt(LAST_DETAIL)).toMatchObject({ '--display-note': 'none' })
+  })
+})
+
+describe('sections of a 2-row grid (4 sections 2 × 2, 5-6 in 3 × 2) on a 1920 × 1080 TV', () => {
+  const HALF = 534
+  const section = (width: number, units: number, saved = 0, maxUnit?: number) =>
+    planFit({
+      width,
+      height: HALF,
+      referenceHeight: TV_HEIGHT,
+      density: getDisplayDensity(width, HALF),
+      fontScale: 1,
+      canSplit: true,
+      measure: contentOf(units, saved),
+      maxUnit,
+    })
+
+  it('aims at the same letter as a full-height column, not half of it', () => {
+    const halfBounds = getUnitBounds(954, HALF, 'comfortable', { referenceHeight: TV_HEIGHT })
+    expect(halfBounds.target).toBeCloseTo(getUnitBounds(1920, TV_HEIGHT, 'comfortable').target)
+    expect(readableMinUnit(TV_HEIGHT, 'comfortable') * 1.9).toBeGreaterThanOrEqual(23.9)
+    expect(section(954, 20).unit).toBeGreaterThanOrEqual(halfBounds.target)
+  })
+
+  it('a wide section (954 × 534) splits in two parts before hiding anything or shrinking', () => {
+    const target = getUnitBounds(954, HALF, 'comfortable', { referenceHeight: TV_HEIGHT }).target
+    const fit = section(954, Math.floor(HALF / target) + 6)
+    expect(fit).toMatchObject({ columns: 2, detail: 0 })
+    expect(fit.unit).toBeGreaterThanOrEqual(target)
+  })
+
+  it('a narrow section (632 × 534) is too narrow for two parts at the target: it hides secondary content first', () => {
+    const bounds = getUnitBounds(632, HALF, 'comfortable', { referenceHeight: TV_HEIGHT })
+    expect(section(632, Math.floor(HALF / bounds.target) + 2, 3)).toMatchObject({ columns: 1, detail: 1 })
+    // Only a day that does not fit at all goes to two narrow parts, still above the last-resort size.
+    const crowded = section(632, 120)
+    expect(crowded).toMatchObject({ columns: 2, detail: LAST_DETAIL })
+    expect(crowded.unit).toBeGreaterThanOrEqual(bounds.min)
+  })
+
+  it('with a shared size below its own, picks what to show at that size (sections hide the same things)', () => {
+    const own = section(954, 10)
+    const capped = section(954, 10, 0, own.unit / 2)
+    expect(capped.unit).toBeCloseTo(own.unit / 2)
+    expect(capped.detail).toBe(0)
   })
 })

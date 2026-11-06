@@ -1,6 +1,5 @@
-import { COPY } from '@/config/copy'
 import { useConfirm, useDisplayWindow, useToast } from '@/hooks'
-import { useTvScreenList } from '@/features/display/hooks/useTvScreenList'
+import { closeTvScreen } from '@/features/display/utils/tvScreenStore'
 import { canAddTvScreen, canRemoveTvScreen, nextTvScreen } from '@/features/display/utils/tvScreens'
 import { SCREENS_PANEL_COPY } from '@/features/screens/config/panel'
 import type { ScreensStatus, ScreenView } from '@/features/screens/types'
@@ -14,7 +13,8 @@ export interface ScreensPanelApi {
   screens: ScreenView[]
   canAdd: boolean
   canRemove: boolean
-  add: () => void
+  /** Adds the lowest free number for the whole gym; returns it, or null at the maximum. */
+  add: () => number | null
   rename: (screen: ScreenView, name: string) => void
   /** Fewer sections empties the ones past the new count, with an undo. */
   setSections: (screen: ScreenView, sections: number) => void
@@ -23,14 +23,13 @@ export interface ScreensPanelApi {
   open: (screen: ScreenView) => void
 }
 
-/** Ajustes → Pantallas: the gym's screens, their name and sections, shared by the whole team. */
+/** Ajustes → Pantallas and the 'Pantallas' menu: the gym's screens, their name and sections, shared by the whole team. */
 export function useScreensPanel(): ScreensPanelApi {
   const { status, screens } = useScreens()
   const actions = useScreenActions()
   const confirm = useConfirm()
-  const { toast } = useToast()
+  const { toast, toastUndoAction } = useToast()
   const { openTv } = useDisplayWindow()
-  const { remove: closeTvWindow } = useTvScreenList()
   const ids = screens.map((screen) => screen.id)
 
   const warnIfFailed = (saved: Promise<boolean>) => {
@@ -42,6 +41,7 @@ export function useScreensPanel(): ScreensPanelApi {
   const add = () => {
     const id = nextTvScreen(ids)
     if (id !== null) warnIfFailed(actions.saveScreen(defaultScreen(id)))
+    return id
   }
 
   const rename = (screen: ScreenView, name: string) => warnIfFailed(actions.saveScreen({ ...screen, name }))
@@ -50,10 +50,10 @@ export function useScreensPanel(): ScreensPanelApi {
     const cleared = occupiedBeyond(screen, sections)
     warnIfFailed(actions.saveScreen({ ...screen, sections }))
     if (!cleared.length) return
-    toast({
+    toastUndoAction({
       message: SCREENS_PANEL_COPY.sectionsCleared(cleared.length),
-      actionLabel: COPY.undo,
-      onAction: () => {
+      // The count comes back first, so the sections it emptied can be written again.
+      onUndo: () => {
         warnIfFailed(actions.saveScreen(screen))
         warnIfFailed(actions.restore(cleared).saved)
       },
@@ -69,7 +69,7 @@ export function useScreensPanel(): ScreensPanelApi {
     })
     if (!ok) return
     warnIfFailed(actions.removeScreen(screen.id))
-    closeTvWindow(screen.id)
+    closeTvScreen(screen.id)
   }
 
   return {

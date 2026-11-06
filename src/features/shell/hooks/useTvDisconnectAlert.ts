@@ -2,19 +2,23 @@ import { useEffect, useRef } from 'react'
 import { SCREEN_DETECTION_COPY } from '@/config/screenDetection'
 import { useToast, useTvDisplays } from '@/hooks'
 import { lostTvScreens } from '@/lib/tvDisplays'
-import { useScreens } from '@/features/screens'
+import { useBrowserScreenPresence, useScreens } from '@/features/screens'
 
-/** 'Pantalla 2 desconectada': says so when the TV of an open screen goes away (Win+K dropped, TV switched off). */
+/**
+ * 'Pantalla 2 desconectada': says so when the TV of a screen whose window is open in this browser goes away (Win+K
+ * dropped, TV switched off). A window open on another computer is not affected by this one's TVs.
+ */
 export function useTvDisconnectAlert(): void {
   const { detection, displayFor } = useTvDisplays()
   const { screens } = useScreens()
+  const openHere = useBrowserScreenPresence()
   const { toast } = useToast()
   const placed = useRef<ReadonlyMap<number, string>>(new Map())
 
   useEffect(() => {
     const now = new Map(
       screens.flatMap((screen) => {
-        const display = screen.online ? displayFor(screen.id) : null
+        const display = openHere.has(screen.id) ? displayFor(screen.id) : null
         return display ? [[screen.id, display.key] as const] : []
       }),
     )
@@ -23,9 +27,9 @@ export function useTvDisconnectAlert(): void {
     if (detection.state === 'ok' || detection.state === 'single') {
       for (const id of lostTvScreens(placed.current, now)) {
         const screen = screens.find((s) => s.id === id)
-        if (screen?.online) toast({ message: SCREEN_DETECTION_COPY.disconnectedToast(screen.name), tone: 'error' })
+        if (screen && openHere.has(id)) toast({ message: SCREEN_DETECTION_COPY.disconnectedToast(screen.name), tone: 'error' })
       }
     }
     placed.current = now
-  }, [detection.state, displayFor, screens, toast])
+  }, [detection.state, displayFor, openHere, screens, toast])
 }

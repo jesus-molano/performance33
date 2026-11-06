@@ -12,7 +12,7 @@ export interface ScreenSendButtonProps extends SendToScreenInput {
 }
 
 /**
- * 'Pantalla' on a day (icon only on phones): a click opens the picker; Ctrl+clic (or holding it on a phone) sends to
+ * 'Pantalla' on a day ('Mandar' on phones, so it does not look like the preview icon beside it): a click opens the picker; Ctrl+clic (or holding it on a phone) sends to
  * the last section used.
  */
 export function ScreenSendButton({ className, ...input }: ScreenSendButtonProps) {
@@ -35,9 +35,10 @@ export function ScreenSendButton({ className, ...input }: ScreenSendButtonProps)
         aria-label={SEND_COPY.buttonLabel(input.dayLabel)}
         aria-haspopup="dialog"
         title={SEND_COPY.buttonTip(send.lastLabel)}
-        className={cn('touch-manipulation select-none [-webkit-touch-callout:none] max-sm:w-11 max-sm:px-0', className)}
+        className={cn('touch-manipulation select-none [-webkit-touch-callout:none]', className)}
         {...longPress.handlers}
       >
+        <span className="sm:hidden">{SEND_COPY.buttonShort}</span>
         <span className="hidden sm:inline">{SEND_COPY.button}</span>
       </Button>
       <ScreenPicker {...send.pickerProps} />

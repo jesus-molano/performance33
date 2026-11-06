@@ -21,7 +21,7 @@ export function ScreenSectionTile({ tile, screenName, clientName, online, onPick
       className={cn(
         'relative flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border-2 px-2 py-2 text-center transition-colors',
         'focus-visible:ring-3 focus-visible:ring-brand-strong/30 focus-visible:outline-none',
-        tile.isTarget
+        tile.here
           ? 'border-brand-strong bg-brand-soft'
           : tile.occupant
             ? 'border-line-strong bg-surface hover:border-brand-strong hover:bg-brand-soft/60'
@@ -33,8 +33,10 @@ export function ScreenSectionTile({ tile, screenName, clientName, online, onPick
       <span className={cn('w-full truncate text-base font-semibold', tile.occupant ? 'text-fg' : 'text-fg-subtle')}>
         {tile.occupant ?? SEND_COPY.free}
       </span>
-      {tile.isTarget && <span className="text-xs font-medium text-brand-strong">{SEND_COPY.here}</span>}
-      {tile.isLast && !tile.isTarget && (
+      {tile.here && (
+        <span className="text-xs font-medium text-brand-strong">{tile.here === 'same' ? SEND_COPY.here : SEND_COPY.otherDay(tile.shownDay)}</span>
+      )}
+      {tile.isLast && !tile.here && (
         <span className="absolute top-1 right-1 rounded-full bg-ink px-1.5 text-[0.6875rem] font-semibold text-white">{SEND_COPY.last}</span>
       )}
     </button>

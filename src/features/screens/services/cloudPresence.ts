@@ -36,7 +36,8 @@ export function createCloudPresence(client: SupabaseClient): ScreenPresence {
 
   const join = () => {
     if (channel) return
-    channel = client.channel(SCREENS_PRESENCE_TOPIC, { config: { presence: { key: TAB_ID } } })
+    // Private: only active coaches may join (realtime.messages policies in schema.sql).
+    channel = client.channel(SCREENS_PRESENCE_TOPIC, { config: { private: true, presence: { key: TAB_ID } } })
     channel.on('presence', { event: 'sync' }, () => {
       if (!channel) return
       online = onlineScreens(channel.presenceState<PresencePayload>())

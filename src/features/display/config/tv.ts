@@ -3,8 +3,19 @@
 /** Space between the sections of a TV, so each person's part reads as its own. */
 export const TV_SECTION_GAP = '0.75rem'
 
+/** Old ?slots= links this device remembers having used (see utils/legacyLinks.ts). */
+export const LEGACY_TV_LINKS_REMEMBERED = 20
+
+/** What a TV window says while it has nothing to show. */
+export const TV_STATE_TEXTS = {
+  loading: 'Cargando la pantalla…',
+  retrying: 'Sin conexión, reintentando…',
+  removedTitle: 'Esta pantalla ya no existe',
+  removedHint: 'Se ha quitado en Ajustes › Pantallas. Puedes cerrar esta ventana, o volver a añadirla allí.',
+} as const
+
 export const TV_COLUMN_TEXTS = {
-  manySectionsNote: 'Con más de 3 secciones la letra es más pequeña',
+  manySectionsNote: 'Con más de 3 secciones la letra es más pequeña y una rutina larga puede no caber entera',
   sizeAtLimit: 'No cabe más grande: la rutina más larga ya llena la pantalla',
   remove: '− sección',
   add: '+ sección',

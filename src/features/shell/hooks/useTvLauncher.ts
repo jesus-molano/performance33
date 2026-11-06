@@ -1,10 +1,10 @@
 import { useCallback } from 'react'
 import { TV_DEFAULT_SCREEN } from '@/config/app'
-import { useConfirm, useDisplayWindow, useTvDisplays, type ScreenDetailsApi } from '@/hooks'
+import { useDisplayWindow, useTvDisplays, type ScreenDetailsApi } from '@/hooks'
 import { describeTvPlacement, type TvPlacement } from '@/lib/tvPlacement'
 import { useClients } from '@/store'
-import { describeScreenClients, tvScreenTitle, useTvScreenList } from '@/features/display'
-import { useScreenPresence, useScreens } from '@/features/screens'
+import { describeScreenClients } from '@/features/display'
+import { useScreensPanel } from '@/features/screens'
 import { TV_LAUNCHER } from '@/features/shell/config'
 
 export interface TvScreenEntry {
@@ -28,45 +28,43 @@ export interface TvLauncher {
   remove: (screen: number) => void
 }
 
-/** The 'Pantallas' menu: what each screen shows comes from the gym's screens; opening one only touches its own window. */
+/**
+ * The 'Pantallas' menu: the gym's screens (the same list as Ajustes → Pantallas, so adding or removing one here does
+ * it for everybody). Opening one only touches its own window.
+ */
 export function useTvLauncher(): TvLauncher {
   const { openTv } = useDisplayWindow()
   const clients = useClients()
-  const confirm = useConfirm()
-  const list = useTvScreenList()
-  const online = useScreenPresence()
-  const { screens: views } = useScreens()
+  const panel = useScreensPanel()
   const { detection, tvCount, displayFor } = useTvDisplays()
 
   const add = useCallback(() => {
-    const screen = list.add()
+    const screen = panel.add()
     if (screen !== null) openTv(screen)
-  }, [list, openTv])
+  }, [panel, openTv])
 
   const remove = useCallback(
     (screen: number) => {
-      const { title, description, confirmLabel } = TV_LAUNCHER.removeConfirm
-      void confirm({ title: title(tvScreenTitle(screen)), description, confirmLabel, danger: true }).then((confirmed) => {
-        if (confirmed) list.remove(screen)
-      })
+      const view = panel.screens.find((s) => s.id === screen)
+      if (view) void panel.remove(view)
     },
-    [confirm, list],
+    [panel],
   )
 
-  const entries = list.screens.map((screen) => {
-    const view = views.find((v) => v.id === screen)
-    const title = view?.name ?? tvScreenTitle(screen)
-    const isOpen = online.has(screen)
-    return {
-      screen,
-      title,
-      people: describeScreenClients(view?.contents ?? null, clients) || TV_LAUNCHER.nobody,
-      isOpen,
-      placement: describeTvPlacement({ title, isOpen, display: displayFor(screen), tvsDetected: detection.state === 'ok' && tvCount > 0 }),
-    }
-  })
+  const entries = panel.screens.map((view) => ({
+    screen: view.id,
+    title: view.name,
+    people: describeScreenClients(view.contents, clients) || TV_LAUNCHER.nobody,
+    isOpen: view.online,
+    placement: describeTvPlacement({
+      title: view.name,
+      isOpen: view.online,
+      display: displayFor(view.id),
+      tvsDetected: detection.state === 'ok' && tvCount > 0,
+    }),
+  }))
 
-  return { entries, detection, tvCount, canAdd: list.canAdd, canRemove: list.canRemove, open: openTv, add, remove }
+  return { entries, detection, tvCount, canAdd: panel.canAdd, canRemove: panel.canRemove, open: openTv, add, remove }
 }
 
 /** 'Pantallas' in the phone bar: there is no menu of TVs on a phone, it goes straight to the list of people. */

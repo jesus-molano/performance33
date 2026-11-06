@@ -43,11 +43,19 @@ export interface SectionWrite {
 }
 
 /**
- * What a write did. `previous` puts it back (restore). `saved` resolves to false when the server refused it or could
- * not be reached: the screens are then reloaded from the server.
+ * What a write did. `written` is what it wrote and `previous` what those sections showed before (undo puts it back
+ * where nothing changed since). `saved` resolves to false when the server refused it or could not be reached: the
+ * screens are then reloaded from the server.
  */
 export interface SectionChange {
+  written: SectionWrite[]
   previous: SectionWrite[]
+  saved: Promise<boolean>
+}
+
+/** What an undo did: `skipped` sections had changed again and were left as they are. */
+export interface UndoResult {
+  skipped: number
   saved: Promise<boolean>
 }
 

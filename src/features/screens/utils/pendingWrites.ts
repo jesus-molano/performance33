@@ -7,7 +7,9 @@ export interface PendingWrites {
   mark: (key: string, value: unknown) => void
   /** True when an incoming copy may be applied; the copy that matches the write ends the wait. */
   accept: (key: string, value: unknown) => boolean
-  forget: (key: string) => void
+  /** Stops waiting for a write that failed, unless a later write of that row (another value) is waiting too. */
+  forget: (key: string, value: unknown) => void
+  clear: () => void
 }
 
 export function createPendingWrites(windowMs: number, now: () => number = Date.now): PendingWrites {
@@ -21,7 +23,11 @@ export function createPendingWrites(windowMs: number, now: () => number = Date.n
       pending.delete(key)
       return true
     },
-    forget: (key) => pending.delete(key),
+    forget: (key, value) => {
+      const entry = pending.get(key)
+      if (entry && deepEqual(entry.value, value)) pending.delete(key)
+    },
+    clear: () => pending.clear(),
   }
 }
 

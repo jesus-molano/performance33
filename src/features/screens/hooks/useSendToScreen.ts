@@ -1,12 +1,11 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react'
-import { COPY } from '@/config/copy'
 import { useDisclosure, useDisplayWindow, useIsMobile, useToast } from '@/hooks'
 import { useClient, useClients } from '@/store'
 import type { ScreenPickerProps } from '@/features/screens/components/ScreenPicker'
 import { SEND_COPY } from '@/features/screens/config/copy'
 import { readLastDestination, saveLastDestination, subscribeLastDestination } from '@/features/screens/store/lastDestination'
-import type { SectionRef } from '@/features/screens/types'
-import { buildPickerScreens, replacedOccupant, resolveLastDestination, screenNameOf } from '@/features/screens/utils/picker'
+import type { SectionChange, SectionRef } from '@/features/screens/types'
+import { buildPickerScreens, movedFromSection, replacedOccupant, resolveLastDestination, screenNameOf } from '@/features/screens/utils/picker'
 import { useScreenActions } from './useScreenActions'
 import { useScreens } from './useScreens'
 
@@ -28,13 +27,17 @@ export interface SendToScreen {
   sendToLast: () => void
 }
 
-/** Sends one client and day to a section of a screen; the toast's 'Deshacer' puts back who was there. */
+/**
+ * Sends one client and day to a section of a screen. The toast says the day, who was replaced and where the person
+ * came from; its 'Deshacer' (or Ctrl+Z while it is up) puts back the sections nobody has changed since.
+ */
 export function useSendToScreen({ clientId, day, dayLabel }: SendToScreenInput): SendToScreen {
   const client = useClient(clientId)
-  const clients = useClients({ includeArchived: true })
+  // Archived people show as nobody on the TV, so their section is free here too.
+  const clients = useClients()
   const { status, screens } = useScreens()
   const actions = useScreenActions()
-  const { toast } = useToast()
+  const { toast, toastUndoAction } = useToast()
   const { openTv } = useDisplayWindow()
   const isMobile = useIsMobile()
   const { isOpen, open: openPicker, close: closePicker } = useDisclosure()
@@ -47,28 +50,43 @@ export function useSendToScreen({ clientId, day, dayLabel }: SendToScreenInput):
   const pickerScreens = useMemo(() => buildPickerScreens(screens, names, target, last), [screens, names, target, last])
   const whereOf = useCallback((ref: SectionRef) => SEND_COPY.where(screenNameOf(screens, ref.screen), ref.section), [screens])
 
+  const warnIfFailed = useCallback(
+    (saved: Promise<boolean>) =>
+      void saved.then((ok) => {
+        if (!ok) toast({ message: SEND_COPY.failed, tone: 'error' })
+      }),
+    [toast],
+  )
+
+  const undoSend = useCallback(
+    (change: SectionChange) => {
+      const { skipped, saved } = actions.undo(change)
+      if (skipped) toast({ message: SEND_COPY.undoSkipped(skipped) })
+      warnIfFailed(saved)
+    },
+    [actions, toast, warnIfFailed],
+  )
+
   const send = useCallback(
     (ref: SectionRef) => {
       closePicker()
       saveLastDestination(ref)
       const where = whereOf(ref)
       const replaced = replacedOccupant(screens, ref, clientId, names)
+      const from = movedFromSection(screens, ref, clientId)
       const change = actions.send(ref, target)
-      if (!change.previous.length) {
+      if (!change.written.length) {
         toast({ message: SEND_COPY.alreadyThere(name, where) })
         return
       }
-      toast({
-        message: SEND_COPY.sent(name, where, replaced),
+      toastUndoAction({
+        message: SEND_COPY.sent({ name, day, where, replaced, movedFrom: from ? whereOf(from) : null }),
         tone: 'success',
-        actionLabel: COPY.undo,
-        onAction: () => void actions.restore(change.previous),
+        onUndo: () => undoSend(change),
       })
-      void change.saved.then((saved) => {
-        if (!saved) toast({ message: SEND_COPY.failed, tone: 'error' })
-      })
+      warnIfFailed(change.saved)
     },
-    [actions, clientId, closePicker, name, names, screens, target, toast, whereOf],
+    [actions, clientId, closePicker, day, name, names, screens, target, toast, toastUndoAction, undoSend, warnIfFailed, whereOf],
   )
 
   const sendToLast = useCallback(() => (last ? send(last) : openPicker()), [last, openPicker, send])

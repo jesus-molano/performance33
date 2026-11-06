@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DetectedDisplay } from './screenDetails'
 import { displaysOf, LAPTOP, tv } from './screenDetails.fakes'
-import { assignTvDisplay, lostTvScreens, parseTvDisplayMap, resolveTvDisplays, serializeTvDisplayMap, tvCandidates } from './tvDisplays'
+import { assignTvDisplay, lostTvScreens, parseTvDisplayMap, rememberTvDisplays, resolveTvDisplays, serializeTvDisplayMap, tvCandidates } from './tvDisplays'
 
 const gym = displaysOf(LAPTOP, tv(3840, 'Derecha'), tv(1920, 'Izquierda'))
 const keysOf = (resolved: ReadonlyMap<number, DetectedDisplay>) => Object.fromEntries([...resolved].map(([screen, d]) => [screen, d.key]))
@@ -39,6 +39,25 @@ describe('resolveTvDisplays', () => {
   it('leaves a screen without TV when its TV is not connected, instead of taking another one', () => {
     const oneTv = displaysOf(LAPTOP, tv(1920, 'Izquierda'))
     expect(keysOf(resolveTvDisplays({ 2: 'Derecha' }, oneTv))).toEqual({ 1: 'Izquierda' })
+  })
+
+  it('an automatic screen keeps its TV: when the left one goes, Pantalla 1 is left without and Pantalla 2 keeps the right', () => {
+    const first = resolveTvDisplays({}, gym)
+    const remembered = rememberTvDisplays({}, first, {})
+    expect(remembered).toEqual({ 1: 'Izquierda', 2: 'Derecha' })
+    const rightOnly = displaysOf(LAPTOP, tv(3840, 'Derecha'))
+    const without = resolveTvDisplays({}, rightOnly, remembered)
+    expect(keysOf(without)).toEqual({ 2: 'Derecha' })
+    const kept = rememberTvDisplays({}, without, remembered)
+    expect(keysOf(resolveTvDisplays({}, gym, kept))).toEqual({ 1: 'Izquierda', 2: 'Derecha' })
+  })
+
+  it('a new TV goes to the screen that lost its own, and a choice made by hand still wins', () => {
+    const remembered = { 1: 'Izquierda', 2: 'Derecha' }
+    const replaced = displaysOf(LAPTOP, tv(3840, 'Derecha'), tv(5760, 'Nueva'))
+    expect(keysOf(resolveTvDisplays({}, replaced, remembered))).toEqual({ 1: 'Nueva', 2: 'Derecha' })
+    expect(keysOf(resolveTvDisplays({ 2: 'Izquierda' }, gym, remembered))).toEqual({ 1: 'Derecha', 2: 'Izquierda' })
+    expect(rememberTvDisplays({ 2: 'Izquierda' }, resolveTvDisplays({ 2: 'Izquierda' }, gym, remembered), remembered)).toEqual({ 1: 'Derecha' })
   })
 
   it('has nothing to place without TVs', () => {

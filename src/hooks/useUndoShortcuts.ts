@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { redo, undo } from '@/store/history'
+import { takeShortcutUndo } from '@/store/toastStore'
 
 /** Inputs whose value is NOT bound to the store opt out of store undo with this attribute. */
 export const NATIVE_UNDO_ATTRIBUTE = 'data-native-undo'
@@ -21,7 +22,8 @@ function wantsNativeUndo(target: EventTarget | null): boolean {
 /**
  * Global Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y → store undo/redo. Store-bound inputs are
  * handled consistently (the store reverts the value). Local-state inputs (search boxes, modal
- * forms) keep native undo: Modal and Input with `nativeUndo` mark themselves with data-native-undo.
+ * forms) keep native undo: Modal and Input with `nativeUndo` mark themselves with data-native-undo. Right after a send
+ * to a screen, Ctrl+Z undoes that send instead (its toast is up, see useToast().toastUndoAction).
  */
 export function useUndoShortcuts(): void {
   useEffect(() => {
@@ -29,8 +31,9 @@ export function useUndoShortcuts(): void {
       const command = commandFor(event)
       if (!command || wantsNativeUndo(event.target)) return
       event.preventDefault()
-      if (command === 'undo') undo()
-      else redo()
+      if (command === 'undo') {
+        if (!takeShortcutUndo()) undo()
+      } else redo()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)

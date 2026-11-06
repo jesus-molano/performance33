@@ -25,3 +25,12 @@ export function subscribeTvDisplays(listener: () => void): () => void {
     window.removeEventListener('storage', onStorage)
   }
 }
+
+/** What the automatic Pantallas got in this window (memory only: a new window starts from left to right again). */
+let automatic: TvDisplayMap = {}
+
+export const readAutomaticTvDisplays = (): TvDisplayMap => automatic
+
+export function saveAutomaticTvDisplays(next: TvDisplayMap): void {
+  automatic = next
+}

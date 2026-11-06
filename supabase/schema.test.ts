@@ -4,12 +4,15 @@
 import { readFileSync } from 'node:fs'
 import { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TV_MAX_SCREENS, TV_MAX_SECTIONS, TV_MIN_SECTIONS, TV_SCREEN_NAME_MAX_LENGTH } from '../src/config/app.ts'
 
 // Booting Postgres in WASM takes seconds, far more while the whole suite runs in parallel.
 const PGLITE_TIMEOUT_MS = 60_000
 vi.setConfig({ testTimeout: PGLITE_TIMEOUT_MS, hookTimeout: PGLITE_TIMEOUT_MS })
 
 const SCHEMA = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8')
+/** The schema the live project had before the TV screens (commit a094f9a): this file is run over it there. */
+const PREVIOUS_SCHEMA = readFileSync(new URL('./fixtures/schema.previous.sql', import.meta.url), 'utf8')
 
 const SUPABASE_STUBS = `
   create role anon nologin;
@@ -26,6 +29,14 @@ const SUPABASE_STUBS = `
   create function auth.uid() returns uuid language sql stable as $$ select (auth.jwt() ->> 'sub')::uuid $$;
   grant execute on all functions in schema auth to anon, authenticated, service_role;
   create publication supabase_realtime;
+  create schema realtime;
+  create table realtime.messages (id bigserial primary key, topic text not null, extension text not null, payload jsonb);
+  alter table realtime.messages enable row level security;
+  create function realtime.topic() returns text language sql stable as
+    $$ select nullif(current_setting('realtime.topic', true), '') $$;
+  grant usage on schema realtime to anon, authenticated;
+  grant select, insert on realtime.messages to anon, authenticated;
+  grant usage on sequence realtime.messages_id_seq to anon, authenticated;
 `
 
 const ID = {
@@ -874,5 +885,138 @@ describe('TV screens and their sections', () => {
     expect(await count('screen_sections')).toBe(2)
     await asAnon()
     await expect(count('screens')).rejects.toThrow(/permission denied/)
+  })
+})
+
+describe('TV screens: limits, cleanup and who sees which TVs are open', () => {
+  const SENT_AT = '2026-11-06T10:00:00.000Z'
+  const section = (clientId: string | null, assignedAt = SENT_AT) => JSON.stringify({ clientId, day: 1, assignedAt })
+  const insertSection = (id: string, data: string) =>
+    rows('insert into public.screen_sections (id, screen_id, data) values ($1, $2, $3)', [id, id.split(':')[0], data])
+  const setSections = (screen: string, sections: number) =>
+    rows(`update public.screens set data = jsonb_build_object('name', 'P', 'sections', $2::int) where id = $1`, [screen, sections])
+  const sectionIds = async () => (await rows<{ id: string }>('select id from public.screen_sections order by id')).map((r) => r.id)
+  const presenceRows = async () => (await rows('select id from realtime.messages')).length
+
+  it('allows exactly the limits the app uses', async () => {
+    await asPerson(ANA)
+    const screen = (id: number, sections: number, name = 'P') =>
+      rows('insert into public.screens (id, data) values ($1, $2)', [String(id), JSON.stringify({ name, sections })])
+    await screen(TV_MAX_SCREENS, TV_MAX_SECTIONS, 'a'.repeat(TV_SCREEN_NAME_MAX_LENGTH))
+    await expect(screen(TV_MAX_SCREENS + 1, TV_MIN_SECTIONS)).rejects.toThrow(/check constraint/)
+    await expect(screen(2, TV_MAX_SECTIONS + 1)).rejects.toThrow(/check constraint/)
+    await expect(screen(2, TV_MIN_SECTIONS - 1)).rejects.toThrow(/check constraint/)
+    await expect(screen(2, TV_MIN_SECTIONS, 'a'.repeat(TV_SCREEN_NAME_MAX_LENGTH + 1))).rejects.toThrow(/check constraint/)
+    await insertSection(`${TV_MAX_SCREENS}:${TV_MAX_SECTIONS}`, section(null))
+    await expect(insertSection(`${TV_MAX_SCREENS}:${TV_MAX_SECTIONS + 1}`, section(null))).rejects.toThrow(/check constraint/)
+  })
+
+  it('a section takes only an id like the app makes and an ISO time (or none): no free text', async () => {
+    await asPerson(ANA)
+    await insertSection('1:2', section('cli_AE77VPj-SM'))
+    await insertSection('1:3', section(null, ''))
+    for (const data of [
+      section('lesión de hombro'),
+      section('a'.repeat(65)),
+      section(''),
+      section('c1', 'lesión de hombro'),
+      section('c1', '2026-11-06'),
+      section('c1', `${SENT_AT} y algo más`),
+    ]) {
+      await expect(insertSection('1:4', data)).rejects.toThrow(/check constraint/)
+    }
+  })
+
+  it('fewer sections empties the ones left out in the same change, and more starts the new ones empty', async () => {
+    await asPerson(ANA)
+    await setSections('1', 6)
+    for (const id of ['1:2', '1:5', '1:6']) await insertSection(id, section('c1'))
+    await setSections('1', 4)
+    expect(await sectionIds()).toEqual(['1:1', '1:2'])
+    // A section written past the count (a window that had not heard of the change) never comes back into view.
+    await insertSection('1:6', section('c1'))
+    await setSections('1', 6)
+    expect(await sectionIds()).toEqual(['1:1', '1:2'])
+    await rows(`update public.screens set data = '{"name":"Otro nombre","sections":6}' where id = '1'`)
+    expect(await sectionIds()).toEqual(['1:1', '1:2'])
+  })
+
+  it('running the file again updates a rule of a table that already exists, and keeps the rows it finds', async () => {
+    await asSuperuser()
+    const longName = 'a'.repeat(TV_SCREEN_NAME_MAX_LENGTH + 5)
+    await db.exec('alter table public.screens drop constraint screens_data_check')
+    await db.query('insert into public.screens (id, data) values ($1, $2)', ['2', JSON.stringify({ name: longName, sections: 3 })])
+    await db.exec(SCHEMA)
+    expect(await count('screens')).toBe(2)
+    await asPerson(ANA)
+    await expect(rows(`insert into public.screens (id, data) values ('3', '{"name":"P","sections":9}')`)).rejects.toThrow(/check constraint/)
+    await asSuperuser()
+    await db.exec(`delete from public.screens where id = '2'; alter table public.screens validate constraint screens_data_check;`)
+  })
+
+  it('only active coaches see and announce which TV windows are open', async () => {
+    const onTopic = (topic: string) => db.query(`select set_config('realtime.topic', $1, false)`, [topic])
+    const announce = () => rows(`insert into realtime.messages (topic, extension, payload) values ('p33-screens-presence', 'presence', '{}')`)
+    await asPerson(ANA)
+    await onTopic('p33-screens-presence')
+    await announce()
+    expect(await presenceRows()).toBe(1)
+    await expect(rows(`insert into realtime.messages (topic, extension) values ('p33-screens-presence', 'broadcast')`)).rejects.toThrow(
+      /row-level security/,
+    )
+    await onTopic('otro-canal')
+    expect(await presenceRows()).toBe(0)
+    await expect(rows(`insert into realtime.messages (topic, extension) values ('otro-canal', 'presence')`)).rejects.toThrow(/row-level security/)
+    for (const who of [STRANGER, FORMER, NEWBIE]) {
+      await asPerson(who)
+      await onTopic('p33-screens-presence')
+      expect(await presenceRows()).toBe(0)
+      await expect(announce()).rejects.toThrow(/row-level security/)
+    }
+    await asAnon()
+    await onTopic('p33-screens-presence')
+    expect(await presenceRows()).toBe(0)
+    await expect(announce()).rejects.toThrow(/row-level security/)
+    await asSuperuser()
+    await db.exec('truncate realtime.messages')
+  })
+})
+
+describe('schema.sql over the database of the live project', () => {
+  it('adds the TV screens next to the data in use, twice in a row, without touching it', async () => {
+    const live = new PGlite()
+    await live.exec(SUPABASE_STUBS)
+    await live.exec(PREVIOUS_SCHEMA)
+    await live.exec(`
+      insert into auth.users (id, email) values ('${ID.admin}', 'admin@p33.test');
+      insert into public.profiles (user_id, username, email, name, role, must_change_password)
+        values ('${ID.admin}', 'admin', 'admin@p33.test', 'Admin', 'admin', false);
+      insert into public.clients (id, data) values ('c1', '{"firstName":"Laura"}');
+      insert into public.programs (id, data) values ('p1', '{"clientId":"c1"}');
+      insert into public.settings (id, data) values ('main', '{"gymName":"P33"}');
+    `)
+    const snapshot = async () => ({
+      clients: (await live.query('select * from public.clients order by id')).rows,
+      programs: (await live.query('select * from public.programs order by id')).rows,
+      settings: (await live.query('select * from public.settings')).rows,
+      profiles: (await live.query('select * from public.profiles')).rows,
+    })
+    const before = await snapshot()
+    await live.exec(SCHEMA)
+    await live.exec(SCHEMA)
+    expect(await snapshot()).toEqual(before)
+    const secured = await live.query(`select relname, relrowsecurity from pg_class where relname in ('screens', 'screen_sections') order by relname`)
+    expect(secured.rows).toEqual([
+      { relname: 'screen_sections', relrowsecurity: true },
+      { relname: 'screens', relrowsecurity: true },
+    ])
+    const grants = await live.query(
+      `select grantee, privilege_type from information_schema.role_table_grants
+       where table_name = 'screens' and grantee in ('anon', 'authenticated') order by grantee, privilege_type`,
+    )
+    expect(grants.rows).toEqual(['DELETE', 'INSERT', 'SELECT', 'UPDATE'].map((privilege_type) => ({ grantee: 'authenticated', privilege_type })))
+    await live.exec('set role anon')
+    await expect(live.query('select * from public.screens')).rejects.toThrow(/permission denied/)
+    await live.close()
   })
 })

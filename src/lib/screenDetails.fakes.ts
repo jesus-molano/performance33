@@ -1,7 +1,7 @@
 // Fake browser screens for the tests of the screen detection (no React, no DOM needed).
 
 import type { DetectedDisplay, PermissionLike, ScreenDetailsLike, ScreenEnv, ScreenLike } from './screenDetails'
-import { toDetectedDisplays } from './screenDetails'
+import { toDetectedDisplays } from './detectedDisplays'
 
 export const LAPTOP: ScreenLike = { availLeft: 0, availTop: 0, availWidth: 1920, availHeight: 1040, left: 0, top: 0, isPrimary: true, isInternal: true, label: 'Pantalla integrada' }
 export const tv = (left: number, label = 'Wireless Display'): ScreenLike => ({

@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { screensService } from '@/features/screens/services/instance'
+import { useEffect, useState } from 'react'
+import { browserPresence, screensService } from '@/features/screens/services/instance'
 import { useScreensStore } from '@/features/screens/store/screensStore'
 import { useScreensConnection } from './useScreensConnection'
 
@@ -9,7 +9,15 @@ export function useScreenPresence(): ReadonlySet<number> {
   return useScreensStore((state) => state.online)
 }
 
-/** A TV window says it shows this screen while it is open. */
+/** Screens whose TV window is open in this browser (what a TV unplugged from this computer affects). */
+export function useBrowserScreenPresence(): ReadonlySet<number> {
+  const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set())
+  useEffect(() => browserPresence.watch(setOpen), [])
+  return open
+}
+
+/** A TV window says it shows this screen while it is open: to the whole gym, and to the other windows of this browser. */
 export function useTrackScreenPresence(screen: number): void {
   useEffect(() => screensService.presence.track(screen), [screen])
+  useEffect(() => (screensService.presence === browserPresence ? undefined : browserPresence.track(screen)), [screen])
 }

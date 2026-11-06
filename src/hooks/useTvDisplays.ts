@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react'
 import type { DetectedDisplay } from '@/lib/screenDetails'
-import { readTvDisplaysRaw, saveTvDisplays, subscribeTvDisplays } from '@/lib/tvDisplayStore'
-import { assignTvDisplay, parseTvDisplayMap, resolveTvDisplays, tvCandidates, type TvDisplayMap } from '@/lib/tvDisplays'
+import { readAutomaticTvDisplays, readTvDisplaysRaw, saveAutomaticTvDisplays, saveTvDisplays, subscribeTvDisplays } from '@/lib/tvDisplayStore'
+import { assignTvDisplay, parseTvDisplayMap, rememberTvDisplays, resolveTvDisplays, tvCandidates, type TvDisplayMap } from '@/lib/tvDisplays'
 import { useScreenDetails, type ScreenDetailsApi } from './useScreenDetails'
 
 export interface TvDisplays {
@@ -21,7 +21,11 @@ export function useTvDisplays(): TvDisplays {
   const detection = useScreenDetails()
   const raw = useSyncExternalStore(subscribeTvDisplays, readTvDisplaysRaw)
   const choices = useMemo(() => parseTvDisplayMap(raw), [raw])
-  const resolved = useMemo(() => resolveTvDisplays(choices, detection.displays), [choices, detection.displays])
+  const resolved = useMemo(() => resolveTvDisplays(choices, detection.displays, readAutomaticTvDisplays()), [choices, detection.displays])
+  // A TV that goes away leaves its Pantalla 'desconectada': the others keep theirs (only while the TVs can be seen).
+  useEffect(() => {
+    if (detection.state === 'ok') saveAutomaticTvDisplays(rememberTvDisplays(choices, resolved, readAutomaticTvDisplays()))
+  }, [choices, resolved, detection.state])
 
   const displayFor = useCallback((screen: number) => resolved.get(screen) ?? null, [resolved])
   const choose = useCallback((screen: number, key: string | null) => saveTvDisplays(assignTvDisplay(choices, screen, key)), [choices])

@@ -25,11 +25,6 @@ export const TV_LAUNCHER = {
   open: 'Abrir',
   nobody: 'Sin personas todavía',
   removeLabel: (title: string) => `Quitar ${title}`,
-  removeConfirm: {
-    title: (title: string) => `¿Quitar ${title}?`,
-    description: 'Se cerrará su ventana y se olvidarán sus columnas. Podrás añadirla de nuevo cuando quieras.',
-    confirmLabel: 'Quitar',
-  },
 } as const
 
 export interface SaveStatusMeta {

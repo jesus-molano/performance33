@@ -28,7 +28,7 @@ export function BrandingPanel() {
         <SettingsSection title="Logotipos" description="Imágenes de hasta 1,5 MB.">
           <LogoUploadField
             label="Logo para fondo negro"
-            hint="Mejor en PNG con fondo transparente. Se usa en el menú y en la tele."
+            hint="Mejor en PNG con fondo transparente. Se usa en el menú y, en la tele, sobre una placa negra."
             value={branding.logoUrl}
             defaultValue={DEFAULT_BRANDING.logoUrl}
             onChange={(logoUrl) => update({ logoUrl })}
@@ -45,10 +45,10 @@ export function BrandingPanel() {
         </SettingsSection>
         <SettingsSection title="Colores">
           <div className="grid gap-5 sm:grid-cols-2">
-            <ColorField label="Color principal" hint="Sobre negro: menú y pantallas." value={branding.primaryColor} onChange={(primaryColor) => update({ primaryColor })} onEditEnd={endEdit} warning={lowOnDark ? 'Poco contraste sobre negro (pantalla): en la tele se usará un tono más claro.' : undefined} />
+            <ColorField label="Color principal" hint="Sobre negro: el menú y la tele en tema oscuro." value={branding.primaryColor} onChange={(primaryColor) => update({ primaryColor })} onEditEnd={endEdit} warning={lowOnDark ? 'Poco contraste sobre negro: en el menú y en la tele oscura se usará un tono más claro.' : undefined} />
             <ColorField
               label="Color de botones y textos"
-              hint="Sobre blanco: botones y enlaces del panel."
+              hint="Sobre blanco: botones y enlaces del panel, y letras y detalles de la tele en blanco."
               value={branding.accentColor}
               onChange={(accentColor) => update({ accentColor })}
               onEditEnd={endEdit}

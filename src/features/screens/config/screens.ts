@@ -10,7 +10,7 @@ export const SCREENS_COLUMNS: Record<ScreensTable, string> = {
 
 /** Live row changes (each subscription gets a topic of its own, see uniqueChannelTopic). */
 export const SCREENS_CHANNEL = 'p33-screens'
-/** Which TV windows are open: one topic shared by every window of the gym, so it is never recreated. */
+/** Which TV windows are open: one private topic shared by every window of the gym, so it is never recreated (its policies are in schema.sql). */
 export const SCREENS_PRESENCE_TOPIC = 'p33-screens-presence'
 
 /** Last section this device sent someone to ('N:M'), for Ctrl+clic and long press. */

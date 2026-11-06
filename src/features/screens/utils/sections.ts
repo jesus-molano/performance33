@@ -45,6 +45,12 @@ export function gridFor(count: number): { columns: number; rows: number } {
   return { columns: Math.ceil(sections / rows), rows }
 }
 
+/** Cells of the grid nobody uses (5 sections in 3 × 2 leave one): filled with the background, never the gutter. */
+export function emptyGridCells(count: number): number {
+  const { columns, rows } = gridFor(count)
+  return columns * rows - clampSectionCount(count)
+}
+
 export const toSectionMap = (sections: readonly ScreenSection[]): SectionMap =>
   Object.fromEntries(sections.map((section) => [sectionId(section), section]))
 
@@ -78,7 +84,7 @@ export const sectionIdsBeyond = (sections: SectionMap, screen: number, count: nu
     .filter((row) => row.screen === screen && row.section > count)
     .map(sectionId)
 
-const sameContent = (a: SectionContent, b: SectionContent) => a.clientId === b.clientId && a.day === b.day && a.assignedAt === b.assignedAt
+export const sameContent = (a: SectionContent, b: SectionContent): boolean => a.clientId === b.clientId && a.day === b.day && a.assignedAt === b.assignedAt
 
 /** Keeps only the writes that change something. */
 const changed = (sections: SectionMap, writes: SectionWrite[]): SectionWrite[] =>

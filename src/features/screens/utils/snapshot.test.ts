@@ -26,6 +26,16 @@ describe('pending writes', () => {
     now = 1001
     expect(pending.accept('k', { a: 0 })).toBe(true)
   })
+
+  it('a failed write stops the wait only if no later write of the same row is waiting', () => {
+    const pending = createPendingWrites(1000, () => 0)
+    pending.mark('k', { a: 1 })
+    pending.mark('k', { a: 2 })
+    pending.forget('k', { a: 1 })
+    expect(pending.accept('k', { a: 1 })).toBe(false)
+    pending.forget('k', { a: 2 })
+    expect(pending.accept('k', { a: 1 })).toBe(true)
+  })
 })
 
 describe('mergeSnapshot', () => {

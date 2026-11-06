@@ -17,6 +17,10 @@ import { useTvScreenSetup } from './useTvScreenSetup'
 
 export interface TvSlotsApi {
   status: ScreensStatus
+  /** Nothing read yet and the first read failed: trying again. */
+  loadFailed: boolean
+  /** False once the gym's screens are read without this one (removed in Ajustes). */
+  exists: boolean
   /** Name of the screen as saved ('Pantalla 2'). */
   name: string
   /** What each section shows, in order. */
@@ -38,7 +42,7 @@ export interface TvSlotsApi {
  * order) fill a newly added section. An old ?slots= link fills the screen once, if it was empty.
  */
 export function useTvSlots(screen: number, legacySlots: TvSlot[] | null, candidateClientIds: readonly string[]): TvSlotsApi {
-  const { status, config, contents } = useScreenSections(screen)
+  const { status, loadFailed, exists, config, contents } = useScreenSections(screen)
   const actions = useScreenActions()
   useTvScreenSetup(screen, legacySlots, status)
   const slots = useMemo(() => contents.map(({ clientId, day }) => ({ clientId, day })), [contents])
@@ -56,7 +60,8 @@ export function useTvSlots(screen: number, legacySlots: TvSlot[] | null, candida
   const setSlotClient = useCallback(
     (index: number, clientId: string | null) => {
       const next = assignSlotClient(slots, index, clientId)
-      if (next !== slots) actions.assign(sectionOf(index), next[index])
+      // Like the 'Pantalla' button: whoever is picked leaves any other section, a person is on one screen at a time.
+      if (next !== slots) actions.send(sectionOf(index), next[index])
     },
     [slots, actions, sectionOf],
   )
@@ -87,6 +92,8 @@ export function useTvSlots(screen: number, legacySlots: TvSlot[] | null, candida
 
   return {
     status,
+    loadFailed,
+    exists,
     name: config.name,
     slots,
     slotIds,

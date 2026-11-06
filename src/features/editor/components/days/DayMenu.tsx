@@ -1,8 +1,7 @@
 import { Cast } from 'lucide-react'
 import { DropdownMenu, type MenuItem } from '@/components/ui'
 import { ScreenPicker, SEND_COPY, useSendToScreen, type SendToScreenInput } from '@/features/screens'
-
-const MENU_LABEL = 'Opciones del día'
+import { DAY_MENU_LABEL } from '@/features/editor/config'
 
 export interface DayMenuProps {
   menuItems: MenuItem[]
@@ -15,7 +14,7 @@ function DaySendMenu({ menuItems, screenTarget }: { menuItems: MenuItem[]; scree
   const items: MenuItem[] = [{ label: SEND_COPY.menuItem, icon: Cast, onSelect: send.openPicker }, 'separator', ...menuItems]
   return (
     <>
-      <DropdownMenu items={items} label={MENU_LABEL} />
+      <DropdownMenu items={items} label={DAY_MENU_LABEL} />
       <ScreenPicker {...send.pickerProps} hint={null} />
     </>
   )
@@ -23,5 +22,5 @@ function DaySendMenu({ menuItems, screenTarget }: { menuItems: MenuItem[]; scree
 
 /** The day's '⋯': 'Mandar a pantalla…' first when the day can go to a TV, then the day actions. */
 export function DayMenu({ menuItems, screenTarget }: DayMenuProps) {
-  return screenTarget ? <DaySendMenu menuItems={menuItems} screenTarget={screenTarget} /> : <DropdownMenu items={menuItems} label={MENU_LABEL} />
+  return screenTarget ? <DaySendMenu menuItems={menuItems} screenTarget={screenTarget} /> : <DropdownMenu items={menuItems} label={DAY_MENU_LABEL} />
 }

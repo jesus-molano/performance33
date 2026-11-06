@@ -12,12 +12,12 @@ export interface ClientOption {
 
 const fullName = (client: PublicClient) => `${client.firstName} ${client.lastName}`.trim()
 
-/** Picker options: active clients (plus the selected one, even if archived), sorted by label. */
-export function buildClientOptions(data: DisplayData | null, selectedId: string | null): ClientOption[] {
+/** Picker options: active clients, sorted by label. */
+export function buildClientOptions(data: DisplayData | null): ClientOption[] {
   if (!data) return []
   const withRoutine = new Set(getDisplayableClients(data).map((c) => c.id))
   return data.clients
-    .filter((c) => !c.archived || c.id === selectedId)
+    .filter((c) => !c.archived)
     .map((client) => ({ client, label: fullName(client), hasRoutine: withRoutine.has(client.id) }))
     .sort((a, b) => a.label.localeCompare(b.label, 'es'))
 }
@@ -25,4 +25,13 @@ export function buildClientOptions(data: DisplayData | null, selectedId: string 
 /** Accent- and case-insensitive filter on the full name ('lau mar' finds 'Laura Martín'). */
 export function filterClientOptions(options: readonly ClientOption[], query: string): ClientOption[] {
   return options.filter((o) => matchesQuery(query, o.label))
+}
+
+/**
+ * Who a section shows on the TV: an archived client shows as nobody, so their name and routine leave the wall without
+ * anyone emptying the section. A client that no longer exists keeps its id ('Usuario no disponible', no name).
+ */
+export function shownClientId(data: DisplayData | null, clientId: string | null): string | null {
+  if (!data || !clientId) return clientId
+  return data.clients.find((c) => c.id === clientId)?.archived ? null : clientId
 }

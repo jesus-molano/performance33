@@ -2,9 +2,8 @@
 
 import { TV_DEFAULT_SCREEN, TV_MAX_SCREENS } from '@/config/app'
 import { DISPLAY_STORAGE_KEYS } from '@/features/display/config/display'
+import type { ScreensStatus } from '@/features/screens/types'
 import { defaultScreenName } from '@/features/screens/utils/sections'
-
-const isValidScreen = (screen: number) => Number.isInteger(screen) && screen >= 1 && screen <= TV_MAX_SCREENS
 
 /** Name of a screen the gym has not renamed. */
 export const tvScreenTitle = defaultScreenName
@@ -15,14 +14,6 @@ export const tvSlotsKey = (screen: number): string =>
 
 /** Name for the remembered A-/A+ size (Pantalla 1 keeps the older one). */
 export const tvFontScaleName = (screen: number): string => (screen === TV_DEFAULT_SCREEN ? 'tv' : `tv:${screen}`)
-
-/** '1,2' → [1, 2], sorted and without repeats. Nothing valid (first use, damaged value) → only Pantalla 1. */
-export function parseTvScreens(raw: string | null): number[] {
-  const screens = (raw ?? '').split(',').filter(Boolean).map(Number).filter(isValidScreen)
-  return screens.length ? [...new Set(screens)].sort((a, b) => a - b) : [TV_DEFAULT_SCREEN]
-}
-
-export const serializeTvScreens = (screens: readonly number[]): string => screens.join(',')
 
 export const canAddTvScreen = (screens: readonly number[]): boolean => screens.length < TV_MAX_SCREENS
 /** At least one screen always stays. */
@@ -36,11 +27,10 @@ export function nextTvScreen(screens: readonly number[]): number | null {
   return next
 }
 
-/** Adds a number if it is not there (a bookmarked window of a screen this device does not list). */
-export function includeTvScreen(screens: readonly number[], screen: number): number[] {
-  return screens.includes(screen) ? [...screens] : [...screens, screen].sort((a, b) => a - b)
-}
+/** What a TV window shows instead of its sections, or null to show them. */
+export type TvWindowState = 'loading' | 'retrying' | 'removed'
 
-export function removeTvScreen(screens: readonly number[], screen: number): number[] {
-  return canRemoveTvScreen(screens) ? screens.filter((s) => s !== screen) : [...screens]
+export function tvWindowState(status: ScreensStatus, loadFailed: boolean, exists: boolean): TvWindowState | null {
+  if (status === 'idle') return loadFailed ? 'retrying' : 'loading'
+  return exists ? null : 'removed'
 }

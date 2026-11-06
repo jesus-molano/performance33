@@ -9,6 +9,7 @@ import { DisplayBlockList } from './routine/DisplayBlockList'
 import { DisplayEmptyDay } from './routine/DisplayEmptyDay'
 import { DisplayHeader } from './routine/DisplayHeader'
 import { DisplayHeaderCompact } from './routine/DisplayHeaderCompact'
+import { DisplayOverflowBand } from './routine/DisplayOverflowBand'
 
 export type RoutineDisplayLayout = 'column' | 'full' | 'preview'
 
@@ -17,8 +18,9 @@ export interface RoutineDisplayProps {
   /** 1-based day number (clamp with clampDayNumber). */
   dayNumber: number
   /**
-   * column = one TV slot, always one column read top to bottom; full = only client on the screen, the same unless it is
-   * landscape and one column does not fit at a good size (then two numbered parts); preview = editor side panel.
+   * column = one TV section; full = only client on the screen. Both read as one column top to bottom unless the slot is
+   * landscape (full screen, or a section of a 2-row grid) and one column does not fit at a good size: then two parts.
+   * preview = editor side panel, never split.
    * Narrow slots switch to the compact density automatically.
    */
   layout?: RoutineDisplayLayout
@@ -32,6 +34,8 @@ export interface RoutineDisplayProps {
   unitCap?: number
   /** The unit this day could show by itself; null when it leaves the screen. */
   onUnitChange?: (unit: number | null) => void
+  /** Height of the whole TV when this is one section of it (sizes are read against the TV, not the section). */
+  referenceHeight?: number
 }
 
 const NO_FLASH: ReadonlySet<string> = new Set()
@@ -49,14 +53,16 @@ export function RoutineDisplay({
   onFitChange,
   unitCap,
   onUnitChange,
+  referenceHeight,
 }: RoutineDisplayProps) {
   const day = routine.days[dayNumber - 1] ?? null
   const theme = getDisplayTheme(routine.branding.displayTheme)
-  const { containerRef, contentRef, style, density, overflowing, tooSmall, detailHidden, fittedUnit } = useAutoFit({
-    canSplit: layout === 'full' && (day?.blocks.length ?? 0) > 1,
+  const { containerRef, contentRef, style, density, overflowing, tooSmall, detailHidden, fittedUnit, hiddenRows } = useAutoFit({
+    canSplit: layout !== 'preview' && (day?.blocks.length ?? 0) > 1,
     fontScale,
     fitKey: day,
     unitCap,
+    referenceHeight,
   })
   useEffect(() => {
     onUnitChange?.(fittedUnit)
@@ -80,11 +86,7 @@ export function RoutineDisplay({
           <DisplayEmptyDay hasDays={routine.days.length > 0} theme={theme} />
         )}
       </div>
-      {overflowing && layout !== 'preview' && (
-        <span aria-hidden className={cn('absolute right-[0.6em] bottom-[0.2em] text-[2em] leading-none font-bold', theme.accentText)}>
-          …
-        </span>
-      )}
+      {overflowing && layout !== 'preview' && <DisplayOverflowBand hiddenRows={hiddenRows} theme={theme} />}
     </div>
   )
 }
