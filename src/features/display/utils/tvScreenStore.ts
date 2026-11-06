@@ -2,7 +2,8 @@
 
 import { DISPLAY_STORAGE_KEYS } from '@/features/display/config/display'
 import { readStorage, removeStorage, writeStorage } from '@/lib/safeStorage'
-import { includeTvScreen, parseTvScreens, serializeTvScreens, tvFontScaleName, tvSlotsKey } from './tvScreens'
+import { includeTvScreen, parseTvScreens, serializeTvScreens, tvFontScaleName } from './tvScreens'
+import { forgetStoredSlots } from './tvSlots'
 
 const listeners = new Set<() => void>()
 
@@ -34,6 +35,6 @@ export function ensureTvScreenListed(screen: number): void {
 
 /** A screen added again later starts fresh: its columns and its A-/A+ go with it. */
 export function forgetTvScreen(screen: number): void {
-  removeStorage(tvSlotsKey(screen))
+  forgetStoredSlots(screen)
   removeStorage(`${DISPLAY_STORAGE_KEYS.fontScale}:${tvFontScaleName(screen)}`)
 }

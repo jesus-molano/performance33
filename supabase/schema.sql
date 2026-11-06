@@ -99,6 +99,38 @@ create table if not exists public.settings (
   updated_by uuid references public.profiles (id) on delete set null
 );
 
+-- Las teles de la sala (Pantalla 1, 2… hasta 8): nombre y cuántas secciones tiene, de 1 a 6.
+create table if not exists public.screens (
+  id text primary key check (id ~ '^[1-8]$'),
+  data jsonb not null check (coalesce(
+    data - array['name', 'sections'] = '{}'::jsonb
+    and jsonb_typeof(data -> 'name') = 'string' and char_length(btrim(data ->> 'name')) between 1 and 30
+    and jsonb_typeof(data -> 'sections') = 'number' and (data ->> 'sections') ~ '^[1-6]$',
+    false
+  )),
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null
+);
+
+-- Qué se ve en cada sección ('pantalla:sección'): un usuario (o nadie) y el día de su rutina. Nada más, nada privado.
+-- Una fila por sección: dos monitores que mandan a la vez a secciones distintas no se pisan.
+create table if not exists public.screen_sections (
+  id text primary key check (id ~ '^[1-8]:[1-6]$'),
+  screen_id text not null references public.screens (id) on delete cascade,
+  data jsonb not null check (coalesce(
+    data - array['clientId', 'day', 'assignedAt'] = '{}'::jsonb
+    and jsonb_typeof(data -> 'clientId') in ('string', 'null') and char_length(coalesce(data ->> 'clientId', '')) <= 100
+    and jsonb_typeof(data -> 'day') = 'number' and (data ->> 'day') ~ '^[1-9][0-9]?$'
+    and jsonb_typeof(data -> 'assignedAt') = 'string' and char_length(data ->> 'assignedAt') <= 40,
+    false
+  )),
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null,
+  check (split_part(id, ':', 1) = screen_id)
+);
+
+create index if not exists screen_sections_screen_id_idx on public.screen_sections (screen_id);
+
 -- Copia de lo que había antes de cada cambio o borrado, para poder deshacer un destrozo desde el SQL Editor (README.md).
 -- Nadie la lee desde la app. Las notas no entran: una nota de salud borrada debe desaparecer de verdad.
 create table if not exists public.row_history (
@@ -479,7 +511,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['clients', 'programs', 'library_exercises', 'notes', 'settings'] loop
+  foreach t in array array['clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections'] loop
     execute format('drop trigger if exists stamp_row on public.%I', t);
     execute format('create trigger stamp_row before insert or update on public.%I for each row execute function public.stamp_row()', t);
   end loop;
@@ -527,11 +559,14 @@ alter table public.programs enable row level security;
 alter table public.library_exercises enable row level security;
 alter table public.notes enable row level security;
 alter table public.settings enable row level security;
+alter table public.screens enable row level security;
+alter table public.screen_sections enable row level security;
 
 revoke all on public.row_history from public, anon, authenticated;
 revoke all on public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings from anon, authenticated;
+revoke all on public.screens, public.screen_sections from public, anon, authenticated;
 grant select, insert, update, delete
-  on public.clients, public.programs, public.library_exercises, public.notes, public.settings
+  on public.clients, public.programs, public.library_exercises, public.notes, public.settings, public.screens, public.screen_sections
   to authenticated;
 grant all on public.profiles, public.login_attempts to service_role;
 
@@ -547,12 +582,12 @@ create policy profiles_update on public.profiles for update to authenticated
   using (id = public.current_profile_id())
   with check (id = public.current_profile_id());
 
--- Rutinas y biblioteca: todo el equipo activo.
+-- Rutinas, biblioteca y lo que se ve en las teles: todo el equipo activo.
 do $$
 declare
   t text;
 begin
-  foreach t in array array['programs', 'library_exercises'] loop
+  foreach t in array array['programs', 'library_exercises', 'screens', 'screen_sections'] loop
     execute format('drop policy if exists %I on public.%I', t || '_all', t);
     execute format(
       'create policy %I on public.%I for all to authenticated using (public.is_active_staff()) with check (public.is_active_staff())',
@@ -603,7 +638,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings'] loop
+  foreach t in array array['profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

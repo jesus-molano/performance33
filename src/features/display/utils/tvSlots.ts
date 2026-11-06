@@ -1,22 +1,20 @@
-import { TV_DEFAULT_SLOTS, TV_MAX_SLOTS, TV_MIN_SLOTS } from '@/config/app'
+import { TV_MAX_SECTIONS, TV_MIN_SECTIONS } from '@/config/app'
 import { moveItem } from '@/lib/arrays'
-import { parseTvSlots, serializeTvSlots, type TvSlot } from '@/lib/routes'
+import { parseLegacyTvSlots, serializeTvSlots, type TvSlot } from '@/lib/routes'
+import { readStorage, removeStorage } from '@/lib/safeStorage'
 import type { Client, DisplayData } from '@/types'
 import { tvSlotsKey } from './tvScreens'
-import { readStorage, writeStorage } from '@/lib/safeStorage'
 
-export const isEmptySlotSet = (slots: TvSlot[]): boolean => slots.every((s) => !s.clientId)
+export const isEmptySlotSet = (slots: readonly TvSlot[]): boolean => slots.every((s) => !s.clientId)
 
-/** Last setup of this screen saved on this device (column count included), or null. */
+/** Setup of this screen that older versions kept on this device (column count included), or null. */
 export function loadStoredSlots(screen: number): TvSlot[] | null {
-  const raw = readStorage(tvSlotsKey(screen))
-  if (raw == null) return null
-  const slots = parseTvSlots(raw)
-  return isEmptySlotSet(slots) ? null : slots
+  const slots = parseLegacyTvSlots(readStorage(tvSlotsKey(screen)))
+  return slots && !isEmptySlotSet(slots) ? slots : null
 }
 
-export function storeSlots(screen: number, slots: TvSlot[]): void {
-  writeStorage(tvSlotsKey(screen), serializeTvSlots(slots))
+export function forgetStoredSlots(screen: number): void {
+  removeStorage(tvSlotsKey(screen))
 }
 
 export function replaceSlot(slots: TvSlot[], index: number, patch: Partial<TvSlot>): TvSlot[] {
@@ -29,8 +27,8 @@ export function assignSlotClient(slots: TvSlot[], index: number, clientId: strin
   return replaceSlot(slots, index, { clientId, day: 1 })
 }
 
-export const canAddSlot = (slots: TvSlot[]): boolean => slots.length < TV_MAX_SLOTS
-export const canRemoveSlot = (slots: TvSlot[]): boolean => slots.length > TV_MIN_SLOTS
+export const canAddSlot = (slots: readonly TvSlot[]): boolean => slots.length < TV_MAX_SECTIONS
+export const canRemoveSlot = (slots: readonly TvSlot[]): boolean => slots.length > TV_MIN_SECTIONS
 
 /** Appends a column with the first candidate client not already on screen (or empty). */
 export function addSlot(slots: TvSlot[], candidateClientIds: readonly string[]): TvSlot[] {
@@ -39,7 +37,7 @@ export function addSlot(slots: TvSlot[], candidateClientIds: readonly string[]):
   return [...slots, { clientId: next, day: 1 }]
 }
 
-/** Drops the last column (never below TV_MIN_SLOTS). */
+/** Drops the last column (never below TV_MIN_SECTIONS). */
 export function removeLastSlot(slots: TvSlot[]): TvSlot[] {
   return canRemoveSlot(slots) ? slots.slice(0, -1) : slots
 }
@@ -53,7 +51,7 @@ export function moveSlot<T>(slots: T[], from: number, to: number): T[] {
 
 /**
  * Session keys that follow each column when it is moved, added or removed (client ids can repeat and
- * positions change on a move), tied to the URL setup they were computed for.
+ * positions change on a move), tied to the setup they were computed for.
  */
 export interface TvSlotKeys {
   serialized: string
@@ -67,8 +65,8 @@ export function resizeSlotKeys(keys: readonly number[], count: number): number[]
   return [...keys, ...Array.from({ length: count - keys.length }, (_, i) => first + i)]
 }
 
-/** Keys for the current slots: unchanged when they match, resized after an outside URL change. */
-export function reconcileSlotKeys(previous: TvSlotKeys | null, slots: TvSlot[]): TvSlotKeys {
+/** Keys for the current slots: unchanged when they match, resized after a change from elsewhere. */
+export function reconcileSlotKeys(previous: TvSlotKeys | null, slots: readonly TvSlot[]): TvSlotKeys {
   const serialized = serializeTvSlots(slots)
   if (previous?.serialized === serialized) return previous
   return { serialized, keys: resizeSlotKeys(previous?.keys ?? [], slots.length) }
@@ -83,22 +81,8 @@ export function findClientFirstName(data: DisplayData | null, clientId: string |
   return data.clients.find((c) => c.id === clientId)?.firstName ?? null
 }
 
-type SlotClient = Pick<Client, 'id' | 'archived' | 'currentProgramId'>
-
-/** The first clients with a current routine, not already on another screen, fill the columns (day 1); the rest stay empty. */
-export function pickDefaultTvSlots(clients: readonly SlotClient[], takenClientIds: readonly string[] = []): TvSlot[] {
-  const withRoutine = clients.filter((c) => !c.archived && c.currentProgramId && !takenClientIds.includes(c.id))
-  return Array.from({ length: TV_DEFAULT_SLOTS }, (_, i) => ({ clientId: withRoutine[i]?.id ?? null, day: 1 }))
-}
-
-/** Slots to open a screen with: its setup last used on this device, else the clients the other screens are not showing. */
-export function initialTvSlots(screen: number, otherScreens: readonly number[], clients: readonly SlotClient[]): TvSlot[] {
-  const taken = otherScreens.flatMap((other) => (loadStoredSlots(other) ?? []).flatMap((slot) => slot.clientId ?? []))
-  return loadStoredSlots(screen) ?? pickDefaultTvSlots(clients, taken)
-}
-
 /** First names on a screen, for the 'Pantallas' menu ('Laura, Javier'), without repeats. */
-export function describeScreenClients(slots: readonly TvSlot[] | null, clients: readonly Pick<Client, 'id' | 'firstName'>[]): string {
+export function describeScreenClients(slots: readonly Pick<TvSlot, 'clientId'>[] | null, clients: readonly Pick<Client, 'id' | 'firstName'>[]): string {
   const names = (slots ?? []).flatMap((slot) => clients.find((c) => c.id === slot.clientId)?.firstName ?? [])
   return [...new Set(names)].join(', ')
 }

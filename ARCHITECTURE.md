@@ -47,7 +47,7 @@ src/
                   EmptyState Switch HelpTip Privacy(PrivacyLabel, PrivateSurface) Modal ConfirmDialog(ConfirmHost)
                   Toaster DropdownMenu Pagination PaginatedList styles
   components/  exercises/ (ExerciseLink, ExerciseFilterFields), GoogleIcon, ColorSwatchPicker (profile + client forms), SplashScreen, ConfigErrorScreen, AppErrorBoundary
-  features/{auth,team,shell,clients,settings,editor,display}/
+  features/{auth,team,shell,clients,settings,editor,display,screens}/
 supabase/  schema.sql (tables, RLS, triggers, realtime; run once)  schema.test.ts (checks it on real Postgres via PGlite)  config.toml
   functions/  admin-users/ login-username/ (thin Deno entry points, outside the Vite and tsc builds)
               _runtime/ (Deno only: env and clients)  _shared/ (pure TS with injected backends: type-checked by tsconfig.node, tested by vitest)
@@ -62,10 +62,10 @@ supabase/  schema.sql (tables, RLS, triggers, realtime; run once)  schema.test.t
 | `#/clientes/:clientId/programa/:programId` | `program` | `ProgramEditorPage { clientId, programId }` |
 | `#/ajustes?tab=marca\|biblioteca\|equipo\|datos` | `settings` | `SettingsPage { tab: SettingsTab }` (default `marca`; monitors only get `biblioteca`, see `useSettingsTabs`) |
 | `#/pantalla/:clientId?dia=N&programa=pid` | `display` | `DisplayPage { clientId, day: number\|null, programId: string\|null }` (phone: normal page with scroll) |
-| `#/tv?slots=cid:1,-,cid:2&pantalla=2` | `tv` | `TvPage { screen: number, slots: TvSlot[] }` (phone: list of people; no or invalid `pantalla` = Pantalla 1; `TV_MIN_SLOTS`–`TV_MAX_SLOTS` = 1–4 columns, `-` = empty column; missing list → `TV_DEFAULT_SLOTS` = 3; old `cid:1,cid:2,` URLs still give 3) |
+| `#/tv?pantalla=2` | `tv` | `TvPage { screen: number, legacySlots: TvSlot[] \| null }` (phone: list of people; no or invalid `pantalla` = Pantalla 1; its sections live in the database, see Screens). Old links `#/tv?slots=cid:1,-,cid:2&pantalla=2` still open: `legacySlots` fills that screen once if it shows nobody, then the address loses `slots` |
 
-Helpers: `paths.*` builders, `navigate(path)`, `replaceRoute(path)` (no history entry), `parseRoute`,
-`isScreenRoute`, `absoluteHashUrl`, `parseTvSlots`/`serializeTvSlots`, `SETTINGS_TABS`.
+Helpers: `paths.*` builders (`paths.tv(screen)`), `navigate(path)`, `replaceRoute(path)` (no history entry), `parseRoute`,
+`isScreenRoute`, `absoluteHashUrl`, `parseLegacyTvSlots`/`serializeTvSlots`, `SETTINGS_TABS`.
 Hook: `useHashRoute(): Route`. Without a ready session every dashboard route renders the login (or the
 matching session screen) and keeps its address, so the person lands where they were going.
 
@@ -127,40 +127,47 @@ Pure selectors: `findClient`, `findProgram`, `sortClients`, `selectClientNotes`,
 | `features/settings` | `SettingsPage` | `{ tab: SettingsTab }` |
 | `features/editor` | `ProgramEditorPage` | `{ clientId: string; programId: string }` |
 | `features/display` | `DisplayPage` | `{ clientId: string; day: number \| null; programId: string \| null }` |
-| `features/display` | `TvPage` | `{ screen: number; slots: TvSlot[] }` |
+| `features/display` | `TvPage` | `{ screen: number; legacySlots: TvSlot[] \| null }` |
 | `features/display` | `RoutineDisplay` | `{ routine: DisplayRoutine; dayNumber: number; layout?: 'column'\|'full'\|'preview'; fontScale?: number; flashBlockIds?: ReadonlySet<string> }` (pure; only `full` may split) |
 | `features/display` | `RoutinePreview` | `{ programId: string; dayId: string | null; className?: string }` (editor embeds it; owns its 640×1080 frame; reads store, sanitises with `toPublicClient` / `toPublicProgram`) |
 
 Opening displays from anywhere (shell client page, editor header): `useDisplayWindow()` →
-`openDisplay(clientId, day?, programId?)`, `openTv(screen, slots?)`. Call directly in the click handler; a blocked popup
+`openDisplay(clientId, day?, programId?)`, `openTv(screen)`. Call directly in the click handler; a blocked popup
 shows a toast with an "Abrir pantalla" retry. On a phone (`isPhoneScreen`) there are no popups: once `flushDashboardSaves` succeeds, the same tab goes to the route. Display windows read ONLY `useDisplayData()` →
 `{ data: DisplayData | null, version }` and format with `buildDisplayRoutine(data, clientId, {programId?})`,
 `getDisplayableClients(data)`, `clampDayNumber(routine, day)` from `lib/display`. They must apply branding with
-`useBrandingStyles(data.branding)` when data exists. Persist TV slot changes with `replaceRoute(paths.tv(slots, screen))`.
+`useBrandingStyles(data.branding)` when data exists. TV section changes go through `useScreenActions()` (Screens below), never the URL.
 
-Named screens: Pantalla 1, 2… (up to `TV_MAX_SCREENS`), one window per TV, each with its own window name (`tvWindowName`), URL, columns (`tvSlotsKey`) and A-/A+ (Pantalla 1 keeps the older keys). Rules in `utils/tvScreens.ts`, list in `utils/tvScreenStore.ts` (`p33:tv:screens`), `useTvScreenList`. The 'Pantallas' sidebar menu (`TvScreensMenu`, `useTvLauncher`) opens or focuses each one, adds the lowest free number and removes one (not the last). A new screen starts with the people the others are not showing. Over BroadcastChannel `p33-tv-screens` each window says it is open (`useTvScreenPresence` / `useOpenTvScreens`) and closes itself when removed. The title shows in the toolbar and in the tab.
+Named screens: Pantalla 1, 2… (up to `TV_MAX_SCREENS`), one window per TV, each with its own window name (`tvWindowName`), URL and A-/A+ (Pantalla 1 keeps the older key). Rules in `utils/tvScreens.ts`, this device's menu list in `utils/tvScreenStore.ts` (`p33:tv:screens`), `useTvScreenList`. The 'Pantallas' sidebar menu (`TvScreensMenu`, `useTvLauncher`) opens or focuses each one, adds the lowest free number and removes one (not the last); who each shows and whether it is open come from `useScreens` / `useScreenPresence`. Over BroadcastChannel `p33-tv-screens` a window closes itself when removed (`useTvScreenPresence`). The title (the screen's saved name) shows in the toolbar and in the tab. Columns that older versions kept on the device (`tvSlotsKey`) fill their screen once, like an old link, and are forgotten.
+
+Screens (`features/screens`, import from `'@/features/screens'`): what each TV shows lives in two tables, `screens` (id '1'..'8', `data {name, sections 1-6}`) and `screen_sections` (id 'N:M', `screen_id` with cascade, `data {clientId|null, day, assignedAt}`), one row per section so two coaches sending at once to different sections never collide. Nothing private, not in `DOMAIN_TABLES` (no undo, no backups). `screensService` (`services/instance.ts`): `cloudScreens` (table helpers of `persistence/supabaseGateway`, Presence on the shared topic `p33-screens-presence`, a copy in `p33:screens:cache:v1` for a TV opened offline) or `localScreens` (`p33:screens:v1`, other windows reload on the storage event; presence over `p33-tv-screens`). Own zustand store (`store/screensStore.ts`, outside zundo), loaded and followed while any hook is mounted (`retainScreens`: reload on (re)connect, focus, `online`, visible tab, every `CLOUD_REFETCH_INTERVAL_MS`). An empty gym gets Pantalla 1 and 2 with `TV_DEFAULT_SECTIONS` = 3 (insert that never overwrites, so two windows at once are fine); a screen a write or a TV window needs is created the same way. Writes show at once, run one after another (a section needs its screen) and a failure reloads; until the server sends back a row this window wrote (`SCREENS_ECHO_WINDOW_MS`), older copies of it are ignored (`utils/pendingWrites.ts`).
+Hooks: `useScreens() → {status, screens: ScreenView[]}` (each with `contents` per section and `online`), `useScreenSections(n) → {status, config, contents}`, `useScreenPresence() → ReadonlySet<number>`, `useTrackScreenPresence(n)` (TV windows), `useScreenActions()` → `assign(ref, {clientId, day})`, `send(ref, target)` (also takes the client out of any other section), `clear(ref)`, `swap(a, b)`, `reorder(screen, from, to)`, `restore(previous)`, `fillScreen(screen, targets)`, `saveScreen(config)` (fewer sections empties the rest), `removeScreen(id)`, `ensureScreen(id)`. Section writes return `{previous, saved: Promise<boolean>}`: `restore(previous)` is the undo. `status`: `idle` (nothing yet), `cached` (last copy), `ready` (read from the server). Pure rules in `utils/sections.ts` (`sectionId`, `parseSectionId`, `gridFor`: 1-3 side by side, 4 in 2 × 2, 5-6 in 3 × 2, `firstFreeSection`, `findClientSections`, `plan*`).
 
 Phones (`usePhoneScreen`: `PHONE_SCREEN_QUERY` and not a popup, recognised by its `window.name`, because a Pantalla popup is also narrow): `DisplayPage` renders `MobileDisplayPage` (normal scroll, sticky equal numbered day buttons with the name below, nothing hidden, no auto-fit, 'Volver' returns to the page it came from through `goBackInApp`; the dashboard reloads on return, so its undo does not survive and `useDisplayWindow` says so when there was something to undo) and `TvPage` renders `MobileTvPage` (list of people plus a note). Same `useScreenData`, so the same sanitised data.
 
-Modo TV (`features/display`): `useTvSlots(screen, slots, candidateClientIds)` owns every slot change (pure helpers in
-`utils/tvSlots.ts`: `assignSlotClient` keeps the day when the same client is picked, `addSlot`/`removeLastSlot`/`moveSlot`)
+Modo TV (`features/display`): `useTvSlots(screen, legacySlots, candidateClientIds)` reads the screen's sections
+(`useScreenSections`) and writes every change through `useScreenActions` (pure helpers in
+`utils/tvSlots.ts`: `assignSlotClient` keeps the day when the same client is picked, `addSlot`/`removeLastSlot`/`moveSlot`;
+'+ sección'/'− sección' change the screen's number of sections, 1 to `TV_MAX_SECTIONS` = 6)
 and gives each column a stable `slotIds[i]` (React key + dnd-kit sortable id; never the index, client ids can repeat).
-Columns are reordered by their grip (`TvColumns` + `useTvColumnSort`, pointer after `TV_DRAG_ACTIVATION_DISTANCE` px or
+`useTvScreenSetup` creates the screen if needed and fills it from an old link once. `useTvScreen` also tracks presence and holds a Screen Wake Lock (`useWakeLock`).
+Sections are laid out by `gridFor` with a `TV_SECTION_GAP` gutter and reordered by their grip (`TvColumns` + `useTvColumnSort`, pointer after `TV_DRAG_ACTIVATION_DISTANCE` px or
 keyboard). The client picker is a searchable combobox (`useComboboxSearch`, pure logic in `utils/combobox.ts`) showing
 full names, searchable by first name and surname (`label` from `utils/clientOptions.ts`); an open
 list keeps its column's controls visible. A single column renders `RoutineDisplay layout="full"`, like the Pantalla window. TV copy lives in
 `features/display/config/tv.ts`.
 
-Block order: with 2 or more TV columns (`layout="column"`) a client is always one column, top to bottom. With one client on a landscape screen (`canSplit`), `getFitStages` tries one comfortable column, then one compact column (limited to `max-w-[62em]` so the prescription stays near its name), and only if neither holds the whole day at the target size, two parts: blocks flow down the left then down the right (CSS columns, `break-inside-avoid`), with a `column-rule` divider and big block numbers (`--display-order`).
+Block order: with 2 or more TV columns (`layout="column"`) a client is always one column, top to bottom. With one client on a landscape screen (`canSplit`), `getFitStages` tries one comfortable column, then one compact column (limited to `max-w-[62em]` so the prescription stays near its name), and only if neither holds the whole day at the target size, two parts: blocks flow down the left then down the right (CSS columns, `break-inside-avoid`), with a `column-rule` divider (the block letters already give the order).
 
 Text size across columns: `useSharedTextSize` (`TvWindow`) collects what each column could show by itself and passes the smallest back as `unitCap`; the fit keeps finding and reporting its own unit, so a day getting shorter lifts the others again. When A+ cannot grow the text the toolbar says so (`sizeAtLimit`).
 
 The stage walk needs a commit per density. `awaitingDensity` says one is pending: `continueFit` does not measure meanwhile, and a layout effect with no dependencies carries on after every commit. It must not depend on the density: two requests in one batch (a resize observer firing while the walk runs) can leave it where it was, and the screen would stay on the last size measured. No name, cue or day title is clamped on the TV: the fit measures their real lines.
 
 Routine density: `useAutoFit({ canSplit, fontScale, fitKey, unitCap })` picks `compact` (width < `AUTO_FIT.compactMaxAspect` × height: 2–4 TV
-columns, editor preview) or `comfortable` (full screen) from the slot's shape. `planFit` keeps the target size (`AUTO_FIT.target*`, names 28 px on 1080p in both densities) by hiding secondary content in the order of `DETAIL_LEVELS`: cues, then tempo/rest lines, then block notes. Only with all of that
+columns, editor preview) or `comfortable` (full screen) from the slot's shape. `planFit` keeps the target size (`AUTO_FIT.target*`, names 28 px on 1080p in both densities) by hiding secondary content in the order of `DETAIL_LEVELS`: cues (`--display-cue`), then small icons and the week pill (`--display-extra`), then tempo/rest lines (`--display-detail`), then block notes. Only with all of that
 hidden does the text go below the target, down to `lastResortUnitPerHeight`; below `readableUnitPerHeight` it reports `tooSmall`. The block's rest stays
 in its header. The level is applied with CSS variables (`fitVars`), so measuring needs no re-render. `FitStatus.detailHidden` tells the editor preview to say so.
+Blocks (`DisplayBlockCard`): a card with a full-width band (`DisplayBlockHeader`): a tile (`DisplayBlockTile`) with the block letter A/B/C (`getBlockLetter` in `lib/format/labels.ts`, also used by A1/A2; `DisplayBlock.letter`) or the icon of a warm-up/mobility block on a soft band, the headline, and pills for type, rep scheme and rest that drop below when they do not fit. Theme: light by default (off-white canvas, white cards, black bands; `tv-*` tokens in `index.css`, `tv-accent` = brand accent darkened to 7:1 on white, `config/contrast.ts`), dark stays selectable in Ajustes. `displayThemeVersion` moves branding saved before the light default to light once (`persistence/migrate.ts`); a later choice of dark is kept. Classes per theme in `utils/theme.ts` (`sectionGutter` colours the gap between TV sections).
 Per-density classes live in `components/routine/densityStyles.ts`. Name and prescription share one size, the prescription right-aligned; the current week's
 progression value is shown without any week mark (the header already says 'Semana 2 de 4').
 
@@ -171,11 +178,11 @@ Store actions apply it and return unchanged (`''` or nothing) on every path: add
 returns how many it did copy. `updateExercise`/`addExercise` cut name and cue to their maximum (`clampExerciseTexts`). Over-limit data (imports) still renders,
 with a warning in `DayCapacityIndicator`. Editor: `getDayCapacity`, `AddExerciseButton`, `AddBlockButton`, `useCapacityToast`.
 
-Measured at 1920 × 1080, exercise name in px, nothing cut off. All the columns of a screen show the same size:
+Measured at 1920 × 1080 on a page rendering the real `RoutineDisplay`, exercise name in px, nothing cut off. All the columns of a screen show the same size. Before the light theme the densest day was 28,9 / 28,9 / 28,9 / 25,9 with everything visible; the roomier cards cost the cues at 2-4 columns (about 165 px at 3).
 
 | Day | 1 col | 2 col | 3 col | 4 col |
 |---|---|---|---|---|
-| Densest demo day (Laura, Día 1: 5 blocks, 15 exercises) in the first column, everything visible | 28,9 | 28,9 | 28,9 | 25,9 |
+| Densest demo day (Laura, Día 1: 5 blocks, 15 exercises), light theme, same day in every column | 32,2, two parts, everything visible | 30,2, cues hidden | 29,2, cues hidden | 26,0, cues, icons, week pill and tempo hidden |
 | At the limits (5 blocks, 16 exercises, long names, cues and notes), reached by a live edit from a 53 px day | 28,3, two parts | not measured | not measured | not measured |
 
 A two-line name costs a full row: only about 20 lines fit at 28 px, which is why long names lower the size. Change a limit or a size only after measuring again.
@@ -283,7 +290,7 @@ Andrés 1 day; Sergio archived). Every routine day has 4–5 realistic blocks (L
 15-line stress case; her programs never contain overhead work, see `seed.test.ts`). Saved data has no seed version:
 an existing browser keeps its old demo until "Restablecer datos de demostración" (admins only, typing `BORRAR`: `requireText` in `useConfirm`).
 
-Not checkable without a real project, so check it there: both functions running under Deno (they have never been deployed; `_shared` is tested, `index.ts` and `_runtime` are not), Google OAuth and its account chooser, auto-link and `signup_disabled` with sign-ups off and the exact error in the redirect, `linkIdentity`/`unlinkIdentity`, the `amr` claim of a Google session and after a token refresh, `.invalid` addresses accepted by `auth.admin.createUser`, `ban_duration` and whether a banned login gets `user_banned`, `revoke_user_sessions` and `encrypted_password` reads as table owner on the `auth` schema, realtime payloads and reconnect (also with column grants on `profiles`), a TV window surviving token refresh for days, `schema.sql` under Supabase's own roles and default grants
+Not checkable without a real project, so check it there: both functions running under Deno (they have never been deployed; `_shared` is tested, `index.ts` and `_runtime` are not), Google OAuth and its account chooser, auto-link and `signup_disabled` with sign-ups off and the exact error in the redirect, `linkIdentity`/`unlinkIdentity`, the `amr` claim of a Google session and after a token refresh, `.invalid` addresses accepted by `auth.admin.createUser`, `ban_duration` and whether a banned login gets `user_banned`, `revoke_user_sessions` and `encrypted_password` reads as table owner on the `auth` schema, realtime payloads and reconnect (also with column grants on `profiles`), Presence on `p33-screens-presence` (a public topic: it carries screen numbers only) and the realtime events of `screen_sections` rows removed by the cascade, a TV window surviving token refresh for days, `schema.sql` under Supabase's own roles and default grants
 (`information_schema.role_table_grants`), reading and deleting `auth.identities` as table owner (`signed_in_with_google`, `remove_other_google_identities`), `cf-connecting-ip` or the last `x-forwarded-for` being the caller's real address (`clientKey`), `password_requirements` and `.invalid` under the admin API, `enable_confirmations` not disturbing admin-created accounts or Google, the `seed_library` request size for 322 rows, the last-admin lock under concurrency, and whether a stranger's realtime subscription sees the table and id of deleted rows (documented behaviour for DELETE events).
 
 ## 9. Design tokens & UI conventions

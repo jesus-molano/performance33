@@ -2,7 +2,8 @@ import { useCallback } from 'react'
 import { TV_DEFAULT_SCREEN } from '@/config/app'
 import { useConfirm, useDisplayWindow } from '@/hooks'
 import { useClients } from '@/store'
-import { describeScreenClients, initialTvSlots, loadStoredSlots, storeSlots, tvScreenTitle, useOpenTvScreens, useTvScreenList } from '@/features/display'
+import { describeScreenClients, tvScreenTitle, useTvScreenList } from '@/features/display'
+import { useScreenPresence, useScreens } from '@/features/screens'
 import { TV_LAUNCHER } from '@/features/shell/config'
 
 export interface TvScreenEntry {
@@ -22,32 +23,19 @@ export interface TvLauncher {
   remove: (screen: number) => void
 }
 
-/**
- * The 'Pantallas' menu. Opening a screen restores its setup on this device or, the first time, the people the other
- * screens are not showing, and only ever touches that screen's own window.
- */
+/** The 'Pantallas' menu: what each screen shows comes from the gym's screens; opening one only touches its own window. */
 export function useTvLauncher(): TvLauncher {
   const { openTv } = useDisplayWindow()
   const clients = useClients()
   const confirm = useConfirm()
   const list = useTvScreenList()
-  const openScreens = useOpenTvScreens()
-  const { screens } = list
-
-  const open = useCallback(
-    (screen: number) => {
-      const others = screens.filter((other) => other !== screen)
-      const slots = initialTvSlots(screen, others, clients)
-      storeSlots(screen, slots)
-      openTv(screen, slots)
-    },
-    [openTv, clients, screens],
-  )
+  const online = useScreenPresence()
+  const { screens: views } = useScreens()
 
   const add = useCallback(() => {
     const screen = list.add()
-    if (screen !== null) open(screen)
-  }, [list, open])
+    if (screen !== null) openTv(screen)
+  }, [list, openTv])
 
   const remove = useCallback(
     (screen: number) => {
@@ -59,14 +47,17 @@ export function useTvLauncher(): TvLauncher {
     [confirm, list],
   )
 
-  const entries = screens.map((screen) => ({
-    screen,
-    title: tvScreenTitle(screen),
-    people: describeScreenClients(loadStoredSlots(screen), clients) || TV_LAUNCHER.nobody,
-    isOpen: openScreens.has(screen),
-  }))
+  const entries = list.screens.map((screen) => {
+    const view = views.find((v) => v.id === screen)
+    return {
+      screen,
+      title: view?.name ?? tvScreenTitle(screen),
+      people: describeScreenClients(view?.contents ?? null, clients) || TV_LAUNCHER.nobody,
+      isOpen: online.has(screen),
+    }
+  })
 
-  return { entries, canAdd: list.canAdd, canRemove: list.canRemove, open, add, remove }
+  return { entries, canAdd: list.canAdd, canRemove: list.canRemove, open: openTv, add, remove }
 }
 
 /** 'Pantallas' in the phone bar: there is no menu of TVs on a phone, it goes straight to the list of people. */

@@ -18,7 +18,7 @@ export function DisplayHeaderCompact({ routine, day, theme }: DisplayHeaderCompa
       </div>
       <div className="flex items-baseline gap-x-[0.6em]">
         <p className={`min-w-0 flex-1 text-[1.35em] leading-[1.2] font-bold [overflow-wrap:anywhere] ${theme.accentText}`}>{day?.title}</p>
-        <p className={`tabular shrink-0 text-right text-[1.2em] leading-[1.2] font-semibold whitespace-nowrap ${theme.secondaryText}`}>
+        <p className={`tabular shrink-0 text-right text-[1.2em] leading-[1.2] font-semibold whitespace-nowrap [display:var(--display-extra,block)] ${theme.secondaryText}`}>
           {routine.weekLabel}
         </p>
       </div>

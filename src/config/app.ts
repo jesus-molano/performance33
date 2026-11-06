@@ -10,6 +10,10 @@ export const STORAGE_KEYS = {
   localTeam: 'p33:local:accounts',
   /** Session of the cloud login, shared by every window of this browser (popups included). */
   cloudSession: 'p33:session',
+  /** Local test mode only: TV screens and what each section shows. */
+  screens: 'p33:screens:v1',
+  /** Last screens and sections read from the cloud (no private data): a TV reopened without connection has something to show. */
+  screensCache: 'p33:screens:cache:v1',
 } as const
 
 /** Left by older versions (dataset with coach profiles, picked profile, team without passwords). Removed on start-up. */
@@ -73,10 +77,19 @@ export const DISPLAY_WINDOW_SIZE = { width: 640, height: 1080 } as const
 export const TV_WINDOW_SIZE = { width: 1600, height: 900 } as const
 /** Space left around a popup so it fits within the screen (taskbar, window chrome). */
 export const POPUP_SCREEN_MARGIN = 40
-/** Modo TV columns: old URLs and fresh setups get the default; coaches can choose MIN..MAX. */
-export const TV_DEFAULT_SLOTS = 3
-export const TV_MIN_SLOTS = 1
-export const TV_MAX_SLOTS = 4
+/** Sections of a TV screen, one person each: a new screen gets the default; coaches choose MIN..MAX. */
+export const TV_DEFAULT_SECTIONS = 3
+export const TV_MIN_SECTIONS = 1
+export const TV_MAX_SECTIONS = 6
+/** More sections than this on a 27″ TV read from 3-4 m means smaller text. */
+export const TV_READABLE_SECTIONS = 3
+/** From this many sections a screen uses two rows (4 → 2 × 2, 5-6 → 3 × 2); fewer go side by side. */
+export const TV_TWO_ROWS_FROM = 4
+/** Screens created the first time the gym has none (Pantalla 1, Pantalla 2). */
+export const TV_DEFAULT_SCREEN_COUNT = 2
+export const TV_SCREEN_NAME_MAX_LENGTH = 30
+/** A section written here ignores other copies of it for this long, unless one is what was written (older echoes). */
+export const SCREENS_ECHO_WINDOW_MS = 5000
 /** Named TV windows (Pantalla 1, Pantalla 2…), one per TV. Old URLs without a number are Pantalla 1. */
 export const TV_DEFAULT_SCREEN = 1
 export const TV_MAX_SCREENS = 8
@@ -84,7 +97,7 @@ export const TV_MAX_SCREENS = 8
 export const TV_WINDOW_CASCADE_PX = 40
 /** window.name of the popups: it also tells a TV window from a phone, whatever its width (see isScreenPopup). */
 export const SCREEN_WINDOW_NAMES = { display: 'p33-pantalla-', tv: 'p33-tv-' } as const
-/** URL token for an empty TV column ('-' keeps a single empty column distinct from a missing list). */
+/** Old TV URLs (?slots=): token for an empty column ('-' keeps a single empty column distinct from a missing list). */
 export const TV_EMPTY_SLOT_TOKEN = '-'
 /** Pixels the pointer must move on a column grip before a drag starts (a click stays a click). */
 export const TV_DRAG_ACTIVATION_DISTANCE = 6

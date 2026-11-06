@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR } from '@/config/branding'
+import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR, LIGHT_DISPLAY_THEME_VERSION } from '@/config/branding'
 import { EXERCISE_LIBRARY, EXERCISES_ADDED_IN_V2 } from '@/data/exercises'
 import { createSeedData } from '@/data/seed'
 import { SCHEMA_VERSION } from '@/types'
@@ -67,5 +67,20 @@ describe('normalizeAppData', () => {
   it('migrates the old low-contrast accent colour', () => {
     const data = normalizeAppData({ clients: [], branding: { accentColor: LEGACY_ACCENT_COLOR } })
     expect(data?.branding.accentColor).toBe(DEFAULT_BRANDING.accentColor)
+  })
+
+  it('moves a dark TV saved before the light default to light, once', () => {
+    const migrated = normalizeAppData({ clients: [], branding: { displayTheme: 'dark' } })?.branding
+    expect(migrated).toMatchObject({ displayTheme: 'light', displayThemeVersion: LIGHT_DISPLAY_THEME_VERSION })
+    expect(normalizeAppData({ clients: [], branding: migrated })?.branding).toEqual(migrated)
+  })
+
+  it('keeps dark when it was chosen after the light default', () => {
+    const chosen = { ...DEFAULT_BRANDING, displayTheme: 'dark' as const }
+    expect(normalizeAppData({ clients: [], branding: chosen })?.branding).toEqual(chosen)
+  })
+
+  it('starts light without saved branding', () => {
+    expect(normalizeAppData({ clients: [] })?.branding.displayTheme).toBe('light')
   })
 })

@@ -3,7 +3,11 @@
 
 import { readFileSync } from 'node:fs'
 import { PGlite } from '@electric-sql/pglite'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
+// Booting Postgres in WASM takes seconds, far more while the whole suite runs in parallel.
+const PGLITE_TIMEOUT_MS = 60_000
+vi.setConfig({ testTimeout: PGLITE_TIMEOUT_MS, hookTimeout: PGLITE_TIMEOUT_MS })
 
 const SCHEMA = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8')
 
@@ -88,7 +92,7 @@ const connectGoogle = (user: string, email: string) =>
 async function seedPeople(): Promise<void> {
   await asSuperuser()
   await db.exec(`
-    truncate public.row_history, public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings cascade;
+    truncate public.row_history, public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings, public.screens, public.screen_sections cascade;
     delete from auth.users;
     delete from auth.refresh_tokens;
     delete from auth.identities;
@@ -110,6 +114,8 @@ async function seedPeople(): Promise<void> {
     insert into public.programs (id, data) values ('p1', '{"clientId":"c1"}');
     insert into public.library_exercises (id, data) values ('l1', '{"name":"Remo"}');
     insert into public.settings (id, data) values ('main', '{"gymName":"P33"}');
+    insert into public.screens (id, data) values ('1', '{"name":"Pantalla 1","sections":3}');
+    insert into public.screen_sections (id, screen_id, data) values ('1:1', '1', '{"clientId":"c1","day":2,"assignedAt":"2026-11-06T10:00:00.000Z"}');
   `)
 }
 
@@ -189,7 +195,7 @@ describe('schema.sql', () => {
     const tables = await rows<{ tablename: string }>(
       `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by tablename`,
     )
-    expect(tables.map((t) => t.tablename)).toEqual(['clients', 'library_exercises', 'notes', 'profiles', 'programs', 'settings'])
+    expect(tables.map((t) => t.tablename)).toEqual(['clients', 'library_exercises', 'notes', 'profiles', 'programs', 'screen_sections', 'screens', 'settings'])
   })
 })
 
@@ -333,7 +339,7 @@ describe('temporary passwords', () => {
 })
 
 describe('people without access', () => {
-  const TABLES = ['clients', 'programs', 'library_exercises', 'notes', 'settings']
+  const TABLES = ['clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections']
 
   for (const [label, enter] of [
     ['a signed-in stranger', () => asPerson(STRANGER)],
@@ -771,5 +777,102 @@ describe('private notes', () => {
     await db.exec(`delete from auth.users where id = '${ID.ana}'`)
     const [note] = await rows<{ author_profile_id: string | null }>(`select author_profile_id from public.notes where id = 'n1'`)
     expect(note.author_profile_id).toBeNull()
+  })
+})
+
+describe('TV screens and their sections', () => {
+  const SECTION = (clientId: string | null, day = 1) => JSON.stringify({ clientId, day, assignedAt: '2026-11-06T10:00:00.000Z' })
+
+  it('every active coach reads and writes them, and the server stamps who', async () => {
+    const ben = await profileId('ben')
+    await asPerson(BEN)
+    expect(await count('screens')).toBe(1)
+    expect(await count('screen_sections')).toBe(1)
+    await rows(`insert into public.screens (id, data) values ('2', '{"name":"Pantalla 2","sections":6}')`)
+    await rows(`insert into public.screen_sections (id, screen_id, data) values ('2:6', '2', $1)`, [SECTION(null)])
+    expect(await affected(`update public.screen_sections set data = $1 where id = '1:1'`, [SECTION('c1', 3)])).toBe(1)
+    const [row] = await rows<{ updated_by: string }>(`select updated_by from public.screen_sections where id = '1:1'`)
+    expect(row.updated_by).toBe(ben)
+    expect(await affected(`delete from public.screen_sections where id = '2:6'`)).toBe(1)
+    expect(await affected(`delete from public.screens where id = '2'`)).toBe(1)
+  })
+
+  it('sending the default screens twice, also at the same time, creates them once and changes nothing', async () => {
+    await asPerson(ANA)
+    const insertDefaults = `insert into public.screens (id, data) values
+      ('1', '{"name":"Pantalla 1","sections":3}'), ('2', '{"name":"Pantalla 2","sections":3}') on conflict (id) do nothing`
+    await rows(`update public.screens set data = '{"name":"Sala","sections":4}' where id = '1'`)
+    await rows(insertDefaults)
+    await rows(insertDefaults)
+    expect(await rows(`select id, data ->> 'name' as name from public.screens order by id`)).toEqual([
+      { id: '1', name: 'Sala' },
+      { id: '2', name: 'Pantalla 2' },
+    ])
+  })
+
+  it('only accepts screens 1 to 8 with 1 to 6 sections and a name', async () => {
+    await asPerson(ANA)
+    for (const [id, data] of [
+      ['9', '{"name":"P","sections":3}'],
+      ['0', '{"name":"P","sections":3}'],
+      ['2', '{"name":"P","sections":7}'],
+      ['2', '{"name":"P","sections":0}'],
+      ['2', '{"name":"P","sections":2.5}'],
+      ['2', '{"name":"P","sections":"3"}'],
+      ['2', '{"name":"   ","sections":3}'],
+      ['2', `{"name":"${'a'.repeat(31)}","sections":3}`],
+      ['2', '{"sections":3}'],
+      ['2', '{"name":"P","sections":3,"notes":"lesión de hombro"}'],
+    ]) {
+      await expect(rows('insert into public.screens (id, data) values ($1, $2)', [id, data])).rejects.toThrow(/check constraint/)
+    }
+  })
+
+  it('a section holds only a person, a day and when it was sent: nothing private fits', async () => {
+    await asPerson(ANA)
+    const insert = (id: string, screen: string, data: string) =>
+      rows('insert into public.screen_sections (id, screen_id, data) values ($1, $2, $3)', [id, screen, data])
+    await expect(insert('1:7', '1', SECTION(null))).rejects.toThrow(/check constraint/)
+    await expect(insert('2:1', '1', SECTION(null))).rejects.toThrow(/check constraint/)
+    await expect(insert('1:2', '1', '{"clientId":"c1","day":0,"assignedAt":"x"}')).rejects.toThrow(/check constraint/)
+    await expect(insert('1:2', '1', '{"clientId":"c1","assignedAt":"x"}')).rejects.toThrow(/check constraint/)
+    await expect(insert('1:2', '1', '{"clientId":5,"day":1,"assignedAt":"x"}')).rejects.toThrow(/check constraint/)
+    await expect(insert('1:2', '1', '{"clientId":"c1","day":1,"assignedAt":"x","goal":"perder peso"}')).rejects.toThrow(/check constraint/)
+    await expect(insert('3:1', '3', SECTION(null))).rejects.toThrow(/foreign key/)
+    await insert('1:2', '1', SECTION(null))
+    expect(await count('screen_sections')).toBe(2)
+  })
+
+  it('removing a screen takes its sections with it, and nothing else', async () => {
+    await asPerson(ANA)
+    await rows(`insert into public.screens (id, data) values ('2', '{"name":"Pantalla 2","sections":3}')`)
+    await rows(`insert into public.screen_sections (id, screen_id, data) values ('2:1', '2', $1)`, [SECTION('c1')])
+    await rows(`delete from public.screens where id = '1'`)
+    expect(await rows('select id from public.screen_sections')).toEqual([{ id: '2:1' }])
+    expect(await count('clients')).toBe(1)
+  })
+
+  it('are not part of the history of changes', async () => {
+    await asPerson(ANA)
+    await rows(`update public.screen_sections set data = $1 where id = '1:1'`, [SECTION(null)])
+    await asSuperuser()
+    expect(await count('row_history')).toBe(0)
+  })
+
+  it('running the whole file again over a gym in use keeps every screen and section', async () => {
+    await asPerson(ANA)
+    await rows(`insert into public.screens (id, data) values ('2', '{"name":"Sala grande","sections":6}')`)
+    await rows(`insert into public.screen_sections (id, screen_id, data) values ('2:5', '2', $1)`, [SECTION('c1', 2)])
+    await asSuperuser()
+    const before = await rows('select * from public.screens order by id')
+    const sectionsBefore = await rows('select * from public.screen_sections order by id')
+    await db.exec(SCHEMA)
+    expect(await rows('select * from public.screens order by id')).toEqual(before)
+    expect(await rows('select * from public.screen_sections order by id')).toEqual(sectionsBefore)
+    expect(await count('clients')).toBe(1)
+    await asPerson(BEN)
+    expect(await count('screen_sections')).toBe(2)
+    await asAnon()
+    await expect(count('screens')).rejects.toThrow(/permission denied/)
   })
 })

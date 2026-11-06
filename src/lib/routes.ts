@@ -5,9 +5,10 @@
 //   #/clientes/:clientId/programa/:programId → program (editor)
 //   #/ajustes?tab=marca|biblioteca|equipo|datos → settings
 //   #/pantalla/:clientId?dia=2&programa=pid  → display (single client, no app chrome)
-//   #/tv?slots=cid:1,-,cid:2&pantalla=2      → tv (Pantalla N, default 1; 1-4 columns, '-' = empty, no app chrome)
+//   #/tv?pantalla=2                          → tv (Pantalla N, default 1, no app chrome; its sections live in the database)
+//   #/tv?slots=cid:1,-,cid:2&pantalla=2      → old TV links: the list fills that screen once, if it was empty
 
-import { TV_DEFAULT_SCREEN, TV_DEFAULT_SLOTS, TV_EMPTY_SLOT_TOKEN, TV_MAX_SCREENS, TV_MAX_SLOTS, TV_MIN_SLOTS } from '@/config/app'
+import { TV_DEFAULT_SCREEN, TV_EMPTY_SLOT_TOKEN, TV_MAX_SCREENS, TV_MAX_SECTIONS, TV_MIN_SECTIONS } from '@/config/app'
 import { clamp } from '@/lib/numbers'
 
 export interface TvSlot {
@@ -25,7 +26,8 @@ export type Route =
   | { name: 'program'; clientId: string; programId: string }
   | { name: 'settings'; tab: SettingsTab }
   | { name: 'display'; clientId: string; day: number | null; programId: string | null }
-  | { name: 'tv'; screen: number; slots: TvSlot[] }
+  /** `legacySlots`: the list of an old ?slots= link, null when there is none. */
+  | { name: 'tv'; screen: number; legacySlots: TvSlot[] | null }
   | { name: 'not-found'; path: string }
 
 export type RouteName = Route['name']
@@ -53,18 +55,19 @@ function parseTvSlot(raw: string): TvSlot {
 }
 
 /**
- * 'cid:1,-,cid:2' → one slot per entry, clamped to TV_MIN_SLOTS..TV_MAX_SLOTS.
- * Missing list → TV_DEFAULT_SLOTS empty slots. Old 3-slot URLs ('cid:1,cid:2,') keep working.
+ * Old links: 'cid:1,-,cid:2' → one slot per entry, clamped to TV_MIN_SECTIONS..TV_MAX_SECTIONS.
+ * Missing or empty list → null. Old 3-slot URLs ('cid:1,cid:2,') keep their 3 columns.
  */
-export function parseTvSlots(raw: string | null): TvSlot[] {
-  const parts = raw ? raw.split(',') : []
-  const count = parts.length ? clamp(parts.length, TV_MIN_SLOTS, TV_MAX_SLOTS) : TV_DEFAULT_SLOTS
-  return Array.from({ length: count }, (_, i) => parseTvSlot(parts[i] ?? ''))
+export function parseLegacyTvSlots(raw: string | null): TvSlot[] | null {
+  if (!raw) return null
+  const parts = raw.split(',')
+  return Array.from({ length: clamp(parts.length, TV_MIN_SECTIONS, TV_MAX_SECTIONS) }, (_, i) => parseTvSlot(parts[i] ?? ''))
 }
 
-export function serializeTvSlots(slots: TvSlot[]): string {
+/** Same text format as the old links: also a compact key for a set of slots. */
+export function serializeTvSlots(slots: readonly TvSlot[]): string {
   return slots
-    .slice(0, TV_MAX_SLOTS)
+    .slice(0, TV_MAX_SECTIONS)
     .map((slot) => (slot.clientId ? `${encodeURIComponent(slot.clientId)}:${slot.day || 1}` : TV_EMPTY_SLOT_TOKEN))
     .join(',')
 }
@@ -84,8 +87,7 @@ export const paths = {
     const qs = query.toString()
     return `#/pantalla/${enc(clientId)}${qs ? `?${qs}` : ''}`
   },
-  tv: (slots: TvSlot[] = [], screen: number = TV_DEFAULT_SCREEN) =>
-    `#/tv?slots=${serializeTvSlots(slots)}${screen === TV_DEFAULT_SCREEN ? '' : `&pantalla=${screen}`}`,
+  tv: (screen: number = TV_DEFAULT_SCREEN) => `#/tv?pantalla=${screen}`,
 }
 
 function parseSettingsTab(raw: string | null): SettingsTab {
@@ -108,7 +110,9 @@ export function parseRoute(hash: string): Route {
   if (seg[0] === 'pantalla' && seg.length === 2) {
     return { name: 'display', clientId: seg[1], day: parseDay(query.get('dia')), programId: query.get('programa') }
   }
-  if (seg[0] === 'tv' && seg.length === 1) return { name: 'tv', screen: parseTvScreen(query.get('pantalla')), slots: parseTvSlots(query.get('slots')) }
+  if (seg[0] === 'tv' && seg.length === 1) {
+    return { name: 'tv', screen: parseTvScreen(query.get('pantalla')), legacySlots: parseLegacyTvSlots(query.get('slots')) }
+  }
   return { name: 'not-found', path: pathPart }
 }
 
@@ -130,7 +134,7 @@ export function goBackInApp(): boolean {
   return true
 }
 
-/** Replace the current hash without a history entry (TV slot changes, day switch). */
+/** Replace the current hash without a history entry (day switch, an old TV link once read). */
 export function replaceRoute(path: string): void {
   const url = `${window.location.pathname}${window.location.search}${toHash(path)}`
   window.history.replaceState(null, '', url)

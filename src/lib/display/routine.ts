@@ -2,7 +2,7 @@ import { BLOCK_TYPE_META } from '@/config/blockTypes'
 import type { DisplayData, ISODate, PublicClient, PublicDay } from '@/types'
 import { blockShowsSets } from '@/lib/blocks'
 import { todayISO } from '@/lib/dates'
-import { formatDayTitle, getBlockHeader, getEntryParts, getExerciseLabels } from '@/lib/format'
+import { formatDayTitle, getBlockHeader, getBlockLetter, getEntryParts, getExerciseLabels } from '@/lib/format'
 import { formatProgramPeriod, getProgramWeekInfo, getProgressionWeek } from '@/lib/program'
 import type { DisplayBlock, DisplayDay, DisplayRoutine } from './types'
 
@@ -19,6 +19,7 @@ function formatBlock(day: PublicDay, blockIndex: number, week: number | null): D
   return {
     id: block.id,
     type: block.type,
+    letter: getBlockLetter(day.blocks, blockIndex),
     ...getBlockHeader(block),
     note: block.note.trim(),
     text: block.text.trim(),

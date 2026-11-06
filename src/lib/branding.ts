@@ -1,10 +1,13 @@
-import { DISPLAY_DARK_BACKGROUND, MIN_TEXT_CONTRAST } from '@/config/contrast'
+import { DISPLAY_DARK_BACKGROUND, MIN_TEXT_CONTRAST, MIN_TV_TEXT_CONTRAST, WHITE } from '@/config/contrast'
 import type { Branding } from '@/types'
 import { ensureContrast, isHexColor, readableTextOn } from './color'
 
+const BLACK = '#000000'
+
 /**
  * CSS custom properties derived from branding (consumed by the Tailwind theme tokens).
- * --color-brand-on-dark is the primary colour lightened as needed to stay readable on the black TV.
+ * --color-brand-on-dark is the primary colour lightened as needed to stay readable on the black TV;
+ * --color-tv-accent is the accent darkened as needed to stay readable from 3-4 m on the white TV.
  */
 export function brandingCssVars(branding: Branding): Record<string, string> {
   const vars: Record<string, string> = {}
@@ -18,6 +21,9 @@ export function brandingCssVars(branding: Branding): Record<string, string> {
   if (isHexColor(branding.accentColor)) {
     vars['--color-brand-strong'] = branding.accentColor
     vars['--color-brand-strong-contrast'] = readableTextOn(branding.accentColor)
+    const tvAccent = ensureContrast(branding.accentColor, WHITE, MIN_TV_TEXT_CONTRAST, BLACK)
+    vars['--color-tv-accent'] = tvAccent
+    vars['--color-tv-accent-contrast'] = readableTextOn(tvAccent)
   }
   return vars
 }

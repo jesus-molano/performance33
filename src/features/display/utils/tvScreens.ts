@@ -2,10 +2,12 @@
 
 import { TV_DEFAULT_SCREEN, TV_MAX_SCREENS } from '@/config/app'
 import { DISPLAY_STORAGE_KEYS } from '@/features/display/config/display'
+import { defaultScreenName } from '@/features/screens/utils/sections'
 
 const isValidScreen = (screen: number) => Number.isInteger(screen) && screen >= 1 && screen <= TV_MAX_SCREENS
 
-export const tvScreenTitle = (screen: number): string => `Pantalla ${screen}`
+/** Name of a screen the gym has not renamed. */
+export const tvScreenTitle = defaultScreenName
 
 /** Pantalla 1 keeps the key of older versions, so a setup saved before named screens is still there. */
 export const tvSlotsKey = (screen: number): string =>

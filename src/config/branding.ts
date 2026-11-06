@@ -1,5 +1,11 @@
 import type { Branding } from '@/types'
 
+/**
+ * Version of the TV theme default. Data saved before it (no version) moves to the light theme once;
+ * a theme chosen afterwards in Ajustes is saved with this version and kept.
+ */
+export const LIGHT_DISPLAY_THEME_VERSION = 1
+
 export const DEFAULT_BRANDING: Branding = {
   gymName: 'Performance33',
   tagline: 'Mejora tu rendimiento, transforma tus hábitos',
@@ -7,7 +13,8 @@ export const DEFAULT_BRANDING: Branding = {
   iconUrl: '/brand/icon.jpg',
   primaryColor: '#f79cce',
   accentColor: '#b8287a',
-  displayTheme: 'dark',
+  displayTheme: 'light',
+  displayThemeVersion: LIGHT_DISPLAY_THEME_VERSION,
 }
 
 /** Accent default of earlier versions (too little contrast on white): migrated to the new default. */

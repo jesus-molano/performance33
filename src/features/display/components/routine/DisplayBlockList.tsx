@@ -14,16 +14,15 @@ interface DisplayBlockListProps {
 
 /**
  * Blocks read top to bottom. When auto-fit splits the screen they flow down the left and then down the right, balanced,
- * with a divider between both parts and no block ever cut (break-inside-avoid on the card).
+ * with a divider between both parts and no block ever cut (break-inside-avoid on the card). The band letters keep the order.
  */
 export function DisplayBlockList({ blocks, density, theme, flashBlockIds }: DisplayBlockListProps) {
   return (
     <div className={cn('[column-count:var(--display-columns,1)]', DENSITY_STYLES[density].split, theme.splitDivider)}>
-      {blocks.map((block, index) => (
+      {blocks.map((block) => (
         <DisplayBlockCard
           key={block.id}
           block={block}
-          number={index + 1}
           density={density}
           theme={theme}
           flashing={flashBlockIds.has(block.id)}

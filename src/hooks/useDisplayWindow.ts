@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { COPY } from '@/config/copy'
 import { isPhoneScreen, openDisplayWindow, openTvWindow } from '@/lib/displayWindow'
-import { navigate, paths, type TvSlot } from '@/lib/routes'
+import { navigate, paths } from '@/lib/routes'
 import { flushDashboardSaves } from '@/persistence/dashboardSync'
 import { useHistoryState } from '@/store/hooks'
 import { useToast } from './useToast'
@@ -9,8 +9,8 @@ import { useToast } from './useToast'
 export interface DisplayWindowApi {
   /** Opens a client's Pantalla popup. Call directly inside a click handler. */
   openDisplay: (clientId: string, day?: number | null, programId?: string | null) => void
-  /** Opens the popup of a named TV screen (1-4 columns). */
-  openTv: (screen: number, slots?: TvSlot[]) => void
+  /** Opens (or focuses) the popup of a named TV screen. */
+  openTv: (screen: number) => void
 }
 
 /**
@@ -58,9 +58,9 @@ export function useDisplayWindow(): DisplayWindowApi {
   )
 
   const openTv = useCallback<DisplayWindowApi['openTv']>(
-    (screen, slots = []) => {
-      if (isPhoneScreen()) goOnPhone(paths.tv())
-      else if (!openTvWindow(screen, slots)) fallback(() => openTvWindow(screen, slots))
+    (screen) => {
+      if (isPhoneScreen()) goOnPhone(paths.tv(screen))
+      else if (!openTvWindow(screen)) fallback(() => openTvWindow(screen))
     },
     [fallback, goOnPhone],
   )

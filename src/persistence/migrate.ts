@@ -4,7 +4,7 @@
 
 import { DEFAULT_PROGRAM_WEEKS, LIBRARY_ADDITIONS_VERSION } from '@/config/app'
 import { BLOCK_TYPE_META } from '@/config/blockTypes'
-import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR } from '@/config/branding'
+import { DEFAULT_BRANDING, LEGACY_ACCENT_COLOR, LIGHT_DISPLAY_THEME_VERSION } from '@/config/branding'
 import { UNKNOWN_AUTHOR_COLOR } from '@/config/colors'
 import { MEASURE_META } from '@/config/exerciseFields'
 import { PLAN_BY_ID } from '@/config/plans'
@@ -133,8 +133,15 @@ function normalizeLibrary(raw: UnknownRecord): LibraryExercise[] {
   return [...normalizeList(raw.customExercises, normalizeLibraryExercise), ...EXERCISE_LIBRARY.map((exercise) => ({ ...exercise }))]
 }
 
+/** Branding saved before the light TV default had no theme version: it moves to light once, a later choice is kept. */
+function withThemeDefault(branding: Branding, savedVersion: unknown): Branding {
+  if (typeof savedVersion === 'number' && savedVersion >= LIGHT_DISPLAY_THEME_VERSION) return branding
+  return { ...branding, displayTheme: 'light', displayThemeVersion: LIGHT_DISPLAY_THEME_VERSION }
+}
+
 export function normalizeBranding(raw: unknown): Branding {
-  const branding = { ...DEFAULT_BRANDING, ...(isRecord(raw) ? (raw as Partial<Branding>) : {}) }
+  const saved = isRecord(raw) ? (raw as Partial<Branding>) : {}
+  const branding = withThemeDefault({ ...DEFAULT_BRANDING, ...saved }, saved.displayThemeVersion)
   return branding.accentColor === LEGACY_ACCENT_COLOR ? { ...branding, accentColor: DEFAULT_BRANDING.accentColor } : branding
 }
 

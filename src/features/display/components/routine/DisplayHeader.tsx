@@ -15,7 +15,7 @@ export function DisplayHeader({ routine, day, theme }: DisplayHeaderProps) {
       <div className="flex items-center justify-between gap-[0.8em]">
         <DisplayLogo branding={routine.branding} theme={theme} />
         <span
-          className={`tabular shrink-0 rounded-full px-[0.8em] py-[0.25em] text-[1.15em] font-semibold ${theme.outlineBadge}`}
+          className={`tabular shrink-0 rounded-full px-[0.8em] py-[0.25em] text-[1.15em] font-semibold [display:var(--display-extra,block)] ${theme.outlineBadge}`}
         >
           {routine.weekLabel}
         </span>

@@ -29,12 +29,16 @@ export const AUTO_FIT = {
   iterations: 9,
 } as const
 
-/** What stays on screen, from everything to the main text only. Each level is tried at the target size in turn. */
+/**
+ * What stays on screen, from everything to the main text only. Each level is tried at the target size in turn:
+ * cues first, then the decorations (block icons, the week pill), then tempo/rest lines, then block notes.
+ */
 export const DETAIL_LEVELS = [
-  { cues: true, details: true, notes: true },
-  { cues: false, details: true, notes: true },
-  { cues: false, details: false, notes: true },
-  { cues: false, details: false, notes: false },
+  { cues: true, extras: true, details: true, notes: true },
+  { cues: false, extras: true, details: true, notes: true },
+  { cues: false, extras: false, details: true, notes: true },
+  { cues: false, extras: false, details: false, notes: true },
+  { cues: false, extras: false, details: false, notes: false },
 ] as const
 
 /** Manual A-/A+ multiplier of the auto-fit maximum (A+ never pushes content off screen). */

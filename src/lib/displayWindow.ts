@@ -1,8 +1,8 @@
-// window.open helpers for the Pantalla (one client) and Modo TV (named screens, 1-4 columns each) windows.
+// window.open helpers for the Pantalla (one client) and Modo TV (named screens, 1-6 sections each) windows.
 // MUST be called synchronously inside a click handler, otherwise popup blockers kick in.
 
 import { DISPLAY_WINDOW_SIZE, PHONE_SCREEN_QUERY, POPUP_SCREEN_MARGIN, SCREEN_WINDOW_NAMES, TV_DEFAULT_SCREEN, TV_WINDOW_CASCADE_PX, TV_WINDOW_SIZE } from '@/config/app'
-import { absoluteHashUrl, paths, type TvSlot } from './routes'
+import { absoluteHashUrl, paths } from './routes'
 
 interface WindowSize {
   width: number
@@ -55,8 +55,8 @@ export function displayWindowUrl(clientId: string, day?: number | null, programI
   return absoluteHashUrl(paths.display(clientId, day ?? null, programId ?? null))
 }
 
-export function tvWindowUrl(screen: number, slots: TvSlot[] = []): string {
-  return absoluteHashUrl(paths.tv(slots, screen))
+export function tvWindowUrl(screen: number): string {
+  return absoluteHashUrl(paths.tv(screen))
 }
 
 /** Single-client display: tall narrow column ≈ a third of a 16:9 TV. One window per client. */
@@ -67,15 +67,15 @@ export function openDisplayWindow(clientId: string, day?: number | null, program
 
 const tvWindows = new Map<number, Window>()
 
-/** Window of a named screen (16:9, 1-4 columns). If this tab already opened it, it is focused, not reloaded. */
-export function openTvWindow(screen: number, slots: TvSlot[] = []): Window | null {
+/** Window of a named screen (16:9). If this tab already opened it, it is focused, not reloaded. */
+export function openTvWindow(screen: number): Window | null {
   const current = tvWindows.get(screen)
   if (current && !current.closed) {
     current.focus()
     return current
   }
   const size = tvWindowSize(window.screen.availWidth, window.screen.availHeight)
-  const opened = openPopup(tvWindowUrl(screen, slots), tvWindowName(screen), size, (screen - TV_DEFAULT_SCREEN) * TV_WINDOW_CASCADE_PX)
+  const opened = openPopup(tvWindowUrl(screen), tvWindowName(screen), size, (screen - TV_DEFAULT_SCREEN) * TV_WINDOW_CASCADE_PX)
   if (opened) tvWindows.set(screen, opened)
   return opened
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { DETAIL_LEVELS } from '@/features/display/config/display'
 import {
   findFittingUnit,
+  fitStyle,
   getColumnBounds,
   getDisplayDensity,
   getFitStages,
@@ -12,6 +14,7 @@ import {
 } from './autoFit'
 
 const TV_HEIGHT = 1080
+const LAST_DETAIL = DETAIL_LEVELS.length - 1
 /** Content `units` em tall in one column (halved, rounded up, in two); each detail level dropped saves `saved` em. */
 const contentOf = (units: number, saved = 0) => ({ unit, columns, detail }: FitResult) =>
   Math.ceil((units - detail * saved) / columns) * unit
@@ -118,18 +121,19 @@ describe('planFit', () => {
     expect(plan(640, atTarget + 5, false, 6).detail).toBe(1)
     expect(plan(640, atTarget + 11, false, 6).detail).toBe(2)
     expect(plan(640, atTarget + 17, false, 6).detail).toBe(3)
+    expect(plan(640, atTarget + 23, false, 6).detail).toBe(4)
     expect(plan(640, atTarget + 5, false, 6).unit).toBeGreaterThanOrEqual(target)
   })
 
   it('shrinks the text only with everything secondary hidden', () => {
     const fit = plan(640, 80, false, 2)
-    expect(fit.detail).toBe(3)
+    expect(fit.detail).toBe(LAST_DETAIL)
     expect(fit.unit).toBeLessThan(target)
     expect(fit.unit).toBeGreaterThanOrEqual(getUnitBounds(640, TV_HEIGHT, 'compact').min)
   })
 
   it('stays at the last-resort size in a narrow slot that cannot split (overflow indicator)', () => {
-    expect(plan(480, 120)).toEqual({ unit: getUnitBounds(480, TV_HEIGHT, 'compact').min, columns: 1, detail: 3 })
+    expect(plan(480, 120)).toEqual({ unit: getUnitBounds(480, TV_HEIGHT, 'compact').min, columns: 1, detail: LAST_DETAIL })
   })
 
   it('never splits a column of a TV with 2 or more, however long the day', () => {
@@ -165,7 +169,7 @@ describe('planFit', () => {
   it('prefers two parts when nothing fits, down to the last-resort size', () => {
     const fit = plan(1920, 320, true)
     expect(fit.columns).toBe(2)
-    expect(fit.detail).toBe(3)
+    expect(fit.detail).toBe(LAST_DETAIL)
     expect(fit.unit).toBeGreaterThanOrEqual(getUnitBounds(1920, TV_HEIGHT, 'comfortable').min)
   })
 })
@@ -202,5 +206,17 @@ describe('layouts for one client on a landscape screen', () => {
 
   it('the last stage always gives an answer', () => {
     expect(planStage(input(200), { density: 'comfortable', strict: false })).toMatchObject({ columns: 2 })
+  })
+})
+
+describe('fitStyle', () => {
+  const varsAt = (detail: number) => fitStyle({ unit: 20, columns: 1, detail }) as Record<string, string>
+
+  it('hides the cues first, then the decorations (icons, week), then tempo/rest, then notes', () => {
+    expect(varsAt(0)).toMatchObject({ '--display-cue': 'block', '--display-extra': 'block', '--display-detail': 'block' })
+    expect(varsAt(1)).toMatchObject({ '--display-cue': 'none', '--display-extra': 'block' })
+    expect(varsAt(2)).toMatchObject({ '--display-extra': 'none', '--display-detail': 'block', '--display-note': 'flex' })
+    expect(varsAt(3)).toMatchObject({ '--display-detail': 'none', '--display-note': 'flex' })
+    expect(varsAt(LAST_DETAIL)).toMatchObject({ '--display-note': 'none' })
   })
 })

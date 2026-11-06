@@ -35,6 +35,22 @@
   --color-fg-muted: #5f5f6b;
   --color-fg-subtle: #71717a;
 
+  /*
+   * Light TV (read from 3-4 m): off-white canvas so a ceiling TV does not glare, white block cards, a black header
+   * band per block. tv-accent is the brand-strong colour darkened at runtime to 7:1 on white (brandingCssVars).
+   */
+  --color-tv-canvas: #eceef1;
+  --color-tv-card: #ffffff;
+  --color-tv-line: #d4d4d8;
+  --color-tv-gutter: #a1a1aa;
+  --color-tv-band: #0b0b0c;
+  --color-tv-band-soft: #e4e4e7;
+  --color-tv-ink: #0b0b0c;
+  --color-tv-text-2: #3f3f46;
+  --color-tv-text-3: #52525b;
+  --color-tv-accent: #932062;
+  --color-tv-accent-contrast: #ffffff;
+
   --color-private: #92400e;
   --color-private-bg: #fffbeb;
   --color-private-line: #fcd34d;

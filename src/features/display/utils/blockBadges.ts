@@ -10,3 +10,8 @@ export function getVisibleBadge(block: DisplayBlock): string | null {
   if (!block.badge) return null
   return block.headline.toUpperCase().includes(block.badge) ? null : block.badge
 }
+
+/** Pills on the right of a block's band: acronym, rep scheme and rest between rounds. */
+export function getBandChips(block: DisplayBlock): string[] {
+  return [getVisibleBadge(block), block.chip, block.footer].filter((chip): chip is string => Boolean(chip))
+}

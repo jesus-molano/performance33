@@ -61,12 +61,12 @@ export interface FitStage {
   strict: boolean
 }
 
-/** CSS variables read by the block list (column-count), the block numbers (only when split) and the rows (secondary content). */
+/** CSS variables read by the block list (column-count), the decorations (icons, week) and the rows (secondary content). */
 export const COLUMNS_VAR = '--display-columns'
 const CUE_VAR = '--display-cue'
+const EXTRA_VAR = '--display-extra'
 const DETAIL_VAR = '--display-detail'
 const NOTE_VAR = '--display-note'
-const ORDER_VAR = '--display-order'
 
 export function getDisplayDensity(width: number, height: number): DisplayDensity {
   return width < height * AUTO_FIT.compactMaxAspect ? 'compact' : 'comfortable'
@@ -171,9 +171,9 @@ function fitVars({ columns, detail }: FitResult): Record<string, string> {
   return {
     [COLUMNS_VAR]: String(columns),
     [CUE_VAR]: level.cues ? 'block' : 'none',
+    [EXTRA_VAR]: level.extras ? 'block' : 'none',
     [DETAIL_VAR]: level.details ? 'block' : 'none',
     [NOTE_VAR]: level.notes ? 'flex' : 'none',
-    [ORDER_VAR]: columns > 1 ? 'flex' : 'none',
   }
 }
 

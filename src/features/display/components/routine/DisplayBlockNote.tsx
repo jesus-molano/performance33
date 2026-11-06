@@ -13,7 +13,7 @@ interface DisplayBlockNoteProps {
 export function DisplayBlockNote({ note, className, theme }: DisplayBlockNoteProps) {
   return (
     <p className={cn('items-start font-medium [display:var(--display-note,flex)]', className, theme.noteSurface, theme.secondaryText)}>
-      <MessageSquareText size="1em" aria-hidden className={cn('mt-[0.2em] shrink-0', theme.accentText)} />
+      <MessageSquareText size="1em" aria-hidden className={cn('mt-[0.2em] shrink-0 [display:var(--display-extra,block)]', theme.accentText)} />
       <span className="min-w-0 [overflow-wrap:anywhere]">{note}</span>
     </p>
   )

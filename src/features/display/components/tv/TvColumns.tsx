@@ -1,21 +1,26 @@
 import { closestCenter, DndContext } from '@dnd-kit/core'
-import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable'
+import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
+import { gridFor } from '@/features/screens'
 import { useTvColumnSort } from '@/features/display/hooks/useTvColumnSort'
-import type { DisplayThemeClasses } from '@/features/display/utils/theme'
-import { TV_DND_TEXTS } from '@/features/display/config/tv'
+import { TV_DND_TEXTS, TV_SECTION_GAP } from '@/features/display/config/tv'
 
 interface TvColumnsProps {
   ids: string[]
-  theme: DisplayThemeClasses
   onMove: (from: number, to: number) => void
+  /** Theme colour of the gap between sections (DisplayThemeClasses.sectionGutter). */
+  gutterClassName: string
   children: ReactNode
 }
 
-/** Equal-width TV columns that can be reordered by their grips (pointer or keyboard). */
-export function TvColumns({ ids, theme, onMove, children }: TvColumnsProps) {
+/**
+ * The sections of a TV (1-3 side by side, 4 in 2 × 2, 5-6 in 3 × 2), reordered by their grips. Between them a gutter in
+ * the theme's gutter colour, so each person's part reads as its own.
+ */
+export function TvColumns({ ids, onMove, gutterClassName, children }: TvColumnsProps) {
   const { sensors, announcements, onDragEnd } = useTvColumnSort(ids, onMove)
+  const { columns, rows } = gridFor(ids.length)
 
   return (
     <DndContext
@@ -24,10 +29,14 @@ export function TvColumns({ ids, theme, onMove, children }: TvColumnsProps) {
       onDragEnd={onDragEnd}
       accessibility={{ announcements, screenReaderInstructions: { draggable: TV_DND_TEXTS.instructions } }}
     >
-      <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
+      <SortableContext items={ids} strategy={rectSortingStrategy}>
         <div
-          className={cn('grid h-full grid-rows-[minmax(0,1fr)] divide-x-2', theme.columnDivider)}
-          style={{ gridTemplateColumns: `repeat(${ids.length}, minmax(0, 1fr))` }}
+          className={cn('grid h-full', gutterClassName)}
+          style={{
+            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+            gap: TV_SECTION_GAP,
+          }}
         >
           {children}
         </div>

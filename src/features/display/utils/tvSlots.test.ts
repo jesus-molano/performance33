@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TV_MAX_SLOTS, TV_MIN_SLOTS } from '@/config/app'
+import { TV_MAX_SECTIONS, TV_MIN_SECTIONS } from '@/config/app'
 import type { TvSlot } from '@/lib/routes'
 import {
   addSlot,
@@ -8,7 +8,6 @@ import {
   canRemoveSlot,
   describeScreenClients,
   moveSlot,
-  pickDefaultTvSlots,
   reconcileSlotKeys,
   removeLastSlot,
   resizeSlotKeys,
@@ -27,10 +26,10 @@ describe('TV column helpers', () => {
   })
 
   it('never goes above the maximum or below the minimum', () => {
-    const full = slotsOf(...Array.from({ length: TV_MAX_SLOTS }, () => null))
+    const full = slotsOf(...Array.from({ length: TV_MAX_SECTIONS }, () => null))
     expect(canAddSlot(full)).toBe(false)
     expect(addSlot(full, ['z'])).toBe(full)
-    const single = slotsOf(...Array.from({ length: TV_MIN_SLOTS }, () => 'a'))
+    const single = slotsOf(...Array.from({ length: TV_MIN_SECTIONS }, () => 'a'))
     expect(canRemoveSlot(single)).toBe(false)
     expect(removeLastSlot(single)).toBe(single)
   })
@@ -56,22 +55,6 @@ describe('TV column helpers', () => {
     expect(assignSlotClient(slots, 0, 'a')).toBe(slots)
     expect(assignSlotClient(slots, 0, 'b')).toEqual([{ clientId: 'b', day: 1 }])
     expect(assignSlotClient(slots, 0, null)).toEqual([{ clientId: null, day: 1 }])
-  })
-
-  it('fills the default columns with clients that have a routine', () => {
-    const clients = [
-      { id: 'a', archived: false, currentProgramId: 'p1' },
-      { id: 'b', archived: true, currentProgramId: 'p2' },
-      { id: 'c', archived: false, currentProgramId: null },
-      { id: 'd', archived: false, currentProgramId: 'p3' },
-    ]
-    expect(ids(pickDefaultTvSlots(clients))).toEqual(['a', 'd', null])
-  })
-
-  it('leaves out the clients another screen is showing', () => {
-    const clients = ['a', 'b', 'c', 'd'].map((id) => ({ id, archived: false, currentProgramId: 'p' }))
-    expect(ids(pickDefaultTvSlots(clients, ['a', 'b']))).toEqual(['c', 'd', null])
-    expect(ids(pickDefaultTvSlots(clients, ['a', 'b', 'c', 'd']))).toEqual([null, null, null])
   })
 })
 

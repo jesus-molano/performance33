@@ -20,6 +20,8 @@ export interface DisplayExerciseLine {
 export interface DisplayBlock {
   id: string
   type: BlockType
+  /** 'A', 'B'… among the main blocks (matches the A1/A2 labels); null for warm-up/mobility. */
+  letter: string | null
   title: string
   headline: string
   badge?: string

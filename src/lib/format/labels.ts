@@ -9,8 +9,12 @@ function numbered(count: number): Array<string | null> {
   return count > 1 ? Array.from({ length: count }, (_, i) => String(i + 1)) : Array(count).fill(null)
 }
 
-/** Superset letter = position among the day's main (non warm-up/mobility) blocks. */
-function supersetLetter(blocks: BlockLike[], blockIndex: number): string {
+/**
+ * Block letter = position among the day's main (non warm-up/mobility) blocks: the 'A' of A1/A2 and of the TV's block
+ * tile. Warm-up and mobility blocks have none.
+ */
+export function getBlockLetter(blocks: Pick<BlockLike, 'type'>[], blockIndex: number): string | null {
+  if (isAccessoryBlock(blocks[blockIndex].type)) return null
   const mainBefore = blocks.slice(0, blockIndex).filter((b) => !isAccessoryBlock(b.type)).length
   return LETTERS[mainBefore % LETTERS.length]
 }
@@ -26,7 +30,7 @@ export function getExerciseLabels(blocks: BlockLike[], blockIndex: number): Arra
   const count = block.exercises.length
   switch (block.type) {
     case 'superset': {
-      const letter = supersetLetter(blocks, blockIndex)
+      const letter = getBlockLetter(blocks, blockIndex)
       return Array.from({ length: count }, (_, i) => `${letter}${i + 1}`)
     }
     case 'circuit':

@@ -268,6 +268,8 @@ export interface Branding {
   accentColor: string
   /** TV / display theme. */
   displayTheme: DisplayTheme
+  /** LIGHT_DISPLAY_THEME_VERSION once the theme follows the light default or a later choice (absent on older data). */
+  displayThemeVersion: number
 }
 
 // ── Root ────────────────────────────────────────────────────────────────────
