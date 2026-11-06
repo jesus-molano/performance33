@@ -1,6 +1,7 @@
 import { Laptop, Settings } from 'lucide-react'
 import { Modal } from '@/components/ui'
 import { paths } from '@/lib/routes'
+import { ScreensFillActions } from '@/features/classes'
 import { REMOTE_COPY } from '@/features/screens'
 import { TV_LAUNCHER } from '@/features/shell/config'
 import { useScreensRemoteSheet } from '@/features/shell/hooks/useScreensRemoteSheet'
@@ -30,6 +31,7 @@ function RemoteSheetBody({ onClose }: { onClose: () => void }) {
             <RemoteScreenCard key={screen.id} screen={screen} onPick={sheet.pick} onSections={(sections) => setSections(screen.id, sections)} />
           ))
         )}
+        {screens.length > 0 && <ScreensFillActions className="-mx-3" />}
         <p className="flex items-start gap-2 text-sm text-fg-subtle">
           <Laptop size={16} aria-hidden className="mt-0.5 shrink-0" />
           {REMOTE_COPY.laptopOnly}

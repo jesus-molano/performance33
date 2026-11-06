@@ -66,8 +66,15 @@ describe('initialScreenDay', () => {
     expect(initialScreenDay(options, 2)).toBe(2)
   })
 
-  it('starts on Día 1 when she is on no TV, or that day no longer exists', () => {
+  it('on no TV, starts on the day that is next for her', () => {
+    expect(initialScreenDay(options, null, 3)).toBe(3)
+    expect(initialScreenDay(options, 2, 3)).toBe(2)
+    expect(initialScreenDay(options, 7, 3)).toBe(3)
+  })
+
+  it('starts on Día 1 with neither, or when those days no longer exist', () => {
     expect(initialScreenDay(options, null)).toBe(DEFAULT_SCREEN_DAY)
     expect(initialScreenDay(options, 7)).toBe(DEFAULT_SCREEN_DAY)
+    expect(initialScreenDay(options, null, 9)).toBe(DEFAULT_SCREEN_DAY)
   })
 })

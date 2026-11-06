@@ -10,6 +10,7 @@ import {
   BOOKING_ERROR_CODES,
   BOOKING_LIMITS,
   BOOKING_STATUSES,
+  FILL_LEAD_MINUTES,
   GYM_TIME_ZONE,
   NOTIFICATION_KINDS,
   SLOT_LIST_MAX_DAYS,
@@ -23,6 +24,8 @@ import {
   type BookingRpcs,
   type BookingSettingsValues,
 } from '../shared/booking/index.ts'
+import { SESSION_CASE_PEOPLE, SESSION_CASES } from '../shared/routine/sessionCases.ts'
+import { SESSION_UNDO_MINUTES } from '../shared/routine/index.ts'
 
 // Booting Postgres in WASM takes seconds, far more while the whole suite runs in parallel.
 const PGLITE_TIMEOUT_MS = 60_000
@@ -122,7 +125,7 @@ async function seedPeople(): Promise<void> {
   await asSuperuser()
   await db.exec(`
     truncate public.row_history, public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings, public.screens, public.screen_sections cascade;
-    truncate public.bookings, public.class_slots, public.class_templates, public.notification_outbox, public.booking_settings cascade;
+    truncate public.training_sessions, public.bookings, public.class_slots, public.class_templates, public.notification_outbox, public.booking_settings cascade;
     insert into public.booking_settings (id) values ('main');
     delete from auth.users;
     delete from auth.refresh_tokens;
@@ -228,7 +231,7 @@ describe('schema.sql', () => {
     )
     expect(tables.map((t) => t.tablename)).toEqual([
       'booking_settings', 'bookings', 'class_slots', 'class_templates', 'clients', 'library_exercises', 'notes', 'profiles', 'programs',
-      'screen_sections', 'screens', 'settings',
+      'screen_sections', 'screens', 'settings', 'training_sessions',
     ])
   })
 })
@@ -1037,7 +1040,8 @@ describe('schema.sql over the database of the live project', () => {
     expect(await snapshot()).toEqual(before)
     const secured = await live.query<{ relname: string; relrowsecurity: boolean }>(
       `select relname, relrowsecurity from pg_class
-       where relname in ('booking_settings', 'class_templates', 'class_slots', 'bookings', 'notification_outbox') order by relname`,
+       where relname in ('booking_settings', 'class_templates', 'class_slots', 'bookings', 'notification_outbox', 'training_sessions')
+       order by relname`,
     )
     expect(secured.rows.map((r) => [r.relname, r.relrowsecurity])).toEqual([
       ['booking_settings', true],
@@ -1045,6 +1049,7 @@ describe('schema.sql over the database of the live project', () => {
       ['class_slots', true],
       ['class_templates', true],
       ['notification_outbox', true],
+      ['training_sessions', true],
     ])
     expect((await live.query('select id from public.booking_settings')).rows).toEqual([{ id: 'main' }])
     await live.exec('set role anon')
@@ -1799,5 +1804,195 @@ describe('classes and bookings: the last place and running the file again', () =
     const before = await snapshot()
     await db.exec(SCHEMA)
     expect(await snapshot()).toEqual(before)
+  })
+})
+
+// ── The day each person did (training sessions) ──────────────────────────────
+
+describe('training sessions: the same cases as the local rule (shared/routine/sessionCases.ts)', () => {
+  async function seedCasePeople(): Promise<void> {
+    await asSuperuser()
+    for (const [id, person] of Object.entries(SESSION_CASE_PEOPLE)) {
+      const client = { firstName: id, archived: person.archived, currentProgramId: person.routine?.id ?? null }
+      await rows(`insert into public.clients (id, data) values ($1, $2)`, [id, JSON.stringify(client)])
+      if (person.routine) {
+        const program = { clientId: id, days: person.routine.dayIds.map((dayId) => ({ id: dayId })) }
+        await rows(`insert into public.programs (id, data) values ($1, $2)`, [person.routine.id, JSON.stringify(program)])
+      }
+    }
+    await db.exec(`
+      delete from public.screen_sections;
+      insert into public.screens (id, data) values ('2', '{"name":"Pantalla 2","sections":3}');
+    `)
+  }
+
+  /** Writes those sections in one request, as the app does. */
+  const putSections = (entries: ReadonlyArray<readonly [string, readonly [string | null, number]]>) =>
+    rows(
+      `insert into public.screen_sections (id, screen_id, data)
+       select x.id, split_part(x.id, ':', 1), x.data from jsonb_to_recordset($1::jsonb) as x(id text, data jsonb)
+       on conflict (id) do update set data = excluded.data`,
+      [JSON.stringify(entries.map(([id, [clientId, day]]) => ({ id, data: { clientId, day, assignedAt: '' } })))],
+    )
+
+  const sessions = async () => {
+    await asSuperuser()
+    return rows<{ clientId: string; dayNumber: number; daysAgo: number }>(
+      `select client_id as "clientId", day_number as "dayNumber", (public.gym_today() - gym_date) as "daysAgo"
+       from public.training_sessions order by client_id, gym_date`,
+    )
+  }
+
+  beforeEach(seedCasePeople)
+
+  for (const testCase of SESSION_CASES) {
+    it(testCase.name, async () => {
+      await asSuperuser()
+      if (Object.keys(testCase.before).length) await putSections(Object.entries(testCase.before))
+      await db.exec('delete from public.training_sessions')
+      for (const s of testCase.existing ?? []) {
+        const routine = SESSION_CASE_PEOPLE[s.clientId].routine
+        await rows(
+          `insert into public.training_sessions (client_id, gym_date, program_id, day_id, day_number, created_at)
+           values ($1, public.gym_today() - $2::int, $3, $4, $5, now() - make_interval(mins => $6::int))`,
+          [s.clientId, s.daysAgo ?? 0, routine?.id ?? '', routine?.dayIds[s.dayNumber - 1] ?? null, s.dayNumber, s.minutesAgo],
+        )
+      }
+      const changed = Object.entries(testCase.after).filter(
+        ([id, [who, day]]) => testCase.before[id]?.[0] !== who || testCase.before[id]?.[1] !== day,
+      )
+      const gone = Object.keys(testCase.before).filter((id) => !(id in testCase.after))
+      await asPerson(ANA)
+      if (changed.length) await putSections(changed)
+      if (gone.length) await rows(`delete from public.screen_sections where id = any($1::text[])`, [gone])
+      const expected = testCase.expected
+        .map((s) => ({ clientId: s.clientId, dayNumber: s.dayNumber, daysAgo: s.daysAgo ?? 0 }))
+        .sort((a, b) => a.clientId.localeCompare(b.clientId) || b.daysAgo - a.daysAgo)
+      expect(await sessions()).toEqual(expected)
+    })
+  }
+})
+
+describe('training sessions: what each one keeps and who sees them', () => {
+  const LAURA = 'laura'
+
+  beforeEach(async () => {
+    await asSuperuser()
+    await db.exec(`
+      insert into public.clients (id, data) values ('laura', '{"firstName":"Laura","currentProgramId":"p-laura"}');
+      insert into public.programs (id, data) values ('p-laura', '{"clientId":"laura","days":[{"id":"l1"},{"id":"l2"},{"id":"l3"}]}');
+      delete from public.screen_sections;
+    `)
+  })
+
+  const show = async (day: number, who: string | null = LAURA) => {
+    await asPerson(BEN)
+    await rows(
+      `insert into public.screen_sections (id, screen_id, data) values ('1:1', '1', $1) on conflict (id) do update set data = excluded.data`,
+      [JSON.stringify({ clientId: who, day, assignedAt: '' })],
+    )
+  }
+
+  const recorded = async () => {
+    await asSuperuser()
+    return rows<{ program_id: string; day_id: string; day_number: number; slot_id: string | null; created_at: string; today: boolean }>(
+      `select program_id, day_id, day_number, slot_id, created_at::text, gym_date = public.gym_today() as today from public.training_sessions`,
+    )
+  }
+
+  const bookLaura = async (startsInMinutes: number) => {
+    const slot = await slotIn(startsInMinutes, 4)
+    await rows(`insert into public.bookings (slot_id, client_id, status) values ($1, $2, 'booked')`, [slot, LAURA])
+    return slot
+  }
+
+  it('records the routine, the day and the gym date, written by a coach through the screen alone', async () => {
+    await show(2)
+    expect(await recorded()).toEqual([expect.objectContaining({ program_id: 'p-laura', day_id: 'l2', day_number: 2, slot_id: null, today: true })])
+  })
+
+  it('a current routine of someone else is no routine: nothing recorded (as localSessionContext)', async () => {
+    await asSuperuser()
+    await db.exec(`insert into public.clients (id, data) values ('pablo', '{"firstName":"Pablo","currentProgramId":"p-laura"}')`)
+    await show(1, 'pablo')
+    expect(await recorded()).toEqual([])
+  })
+
+  it('keeps the class she holds a place in now, from 15 minutes before it starts', async () => {
+    const slot = await bookLaura(10)
+    await bookLaura(120)
+    await show(1)
+    expect((await recorded())[0].slot_id).toBe(slot)
+  })
+
+  it('sending another day keeps when it was first recorded', async () => {
+    await show(1)
+    await asSuperuser()
+    await rows(`update public.training_sessions set created_at = now() - interval '1 hour'`)
+    const [before] = await recorded()
+    await show(3)
+    const [after] = await recorded()
+    expect(after).toMatchObject({ day_number: 3, day_id: 'l3', created_at: before.created_at })
+  })
+
+  it('a removed screen takes its people off: within 10 minutes their session goes', async () => {
+    await show(2)
+    await asPerson(ANA)
+    await rows(`delete from public.screens where id = '1'`)
+    expect(await recorded()).toEqual([])
+  })
+
+  it('uses the limits of the app: 10 minutes to undo, 15 before a class', () => {
+    expect(SESSION_UNDO_MINUTES).toBe(10)
+    expect(SCHEMA).toContain(`t.created_at > now() - interval '${SESSION_UNDO_MINUTES} minutes'`)
+    expect(SCHEMA).toContain(`now() >= s.starts_at - interval '${FILL_LEAD_MINUTES} minutes'`)
+  })
+
+  it('the team reads them; nobody writes them directly, nor calls the inner functions', async () => {
+    await show(2)
+    await asPerson(ADMIN)
+    expect(await count('training_sessions')).toBe(1)
+    await expect(
+      rows(`insert into public.training_sessions (client_id, gym_date, program_id, day_number) values ('laura', current_date, 'p', 1)`),
+    ).rejects.toThrow(/permission denied/)
+    await expect(rows(`update public.training_sessions set day_number = 3`)).rejects.toThrow(/permission denied/)
+    await expect(rows(`delete from public.training_sessions`)).rejects.toThrow(/permission denied/)
+    await expect(rows(`select public.session_slot('laura')`)).rejects.toThrow(/permission denied/)
+  })
+
+  for (const [label, enter] of [
+    ['a signed-in stranger', () => asPerson(STRANGER)],
+    ['a deactivated coach', () => asPerson(FORMER)],
+    ['a coach still on a temporary password', () => asPerson(NEWBIE)],
+  ] as const) {
+    it(`${label} sees none`, async () => {
+      await show(2)
+      await enter()
+      expect(await count('training_sessions')).toBe(0)
+    })
+  }
+
+  it('anonymous visitors cannot read them', async () => {
+    await show(2)
+    await asAnon()
+    await expect(rows('select * from public.training_sessions')).rejects.toThrow(/permission denied/)
+  })
+
+  it('go away with their person, and a removed class only loses its link', async () => {
+    const slot = await bookLaura(0)
+    await show(2)
+    await asSuperuser()
+    await rows(`delete from public.class_slots where id = $1`, [slot])
+    expect((await recorded())[0].slot_id).toBeNull()
+    await rows(`delete from public.clients where id = $1`, [LAURA])
+    expect(await recorded()).toEqual([])
+  })
+
+  it('running the whole file again keeps them', async () => {
+    await show(2)
+    await asSuperuser()
+    const before = await rows('select * from public.training_sessions')
+    await db.exec(SCHEMA)
+    expect(await rows('select * from public.training_sessions')).toEqual(before)
   })
 })

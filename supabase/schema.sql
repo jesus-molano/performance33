@@ -1478,6 +1478,116 @@ create policy class_slots_select on public.class_slots for select to authenticat
 drop policy if exists bookings_select on public.bookings;
 create policy bookings_select on public.bookings for select to authenticated using (public.is_active_staff());
 
+-- ── El día que le toca ──────────────────────────────────────────────────────
+-- Qué día de su rutina hizo cada uno en cada fecha del gimnasio. Lo apunta solo la pantalla: al salir alguien en una
+-- sección (record_training_session, más abajo). De la última sale el día que le toca (shared/routine/nextDay.ts).
+-- Una por persona y día. Como las clases, fuera del historial de cambios y de las copias.
+create table if not exists public.training_sessions (
+  id uuid primary key default gen_random_uuid(),
+  client_id text not null references public.clients (id) on delete cascade,
+  gym_date date not null,
+  program_id text not null,
+  day_id text,
+  day_number integer not null,
+  slot_id uuid references public.class_slots (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null,
+  unique (client_id, gym_date)
+);
+
+create index if not exists training_sessions_gym_date_idx on public.training_sessions (gym_date);
+
+alter table public.training_sessions drop constraint if exists training_sessions_day_check;
+alter table public.training_sessions add constraint training_sessions_day_check check (day_number between 1 and 99) not valid;
+do $$
+begin
+  alter table public.training_sessions validate constraint training_sessions_day_check;
+exception when check_violation then
+  raise notice 'Hay filas antiguas en training_sessions que no cumplen training_sessions_day_check: se quedan.';
+end;
+$$;
+
+drop trigger if exists stamp_row on public.training_sessions;
+create trigger stamp_row before insert or update on public.training_sessions for each row execute function public.stamp_row();
+
+-- La clase en la que esa persona tiene plaza ahora: desde FILL_LEAD_MINUTES = 15 min antes hasta que termina
+-- (sessionSlotFor en shared/routine/sessionRule.ts).
+create or replace function public.session_slot(p_client_id text)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select s.id
+  from public.bookings b
+  join public.class_slots s on s.id = b.slot_id
+  where b.client_id = p_client_id and b.status = 'booked' and s.status <> 'cancelled'
+    and now() >= s.starts_at - interval '15 minutes'
+    and now() < s.starts_at + make_interval(mins => s.duration_minutes)
+  order by s.starts_at desc
+  limit 1
+$$;
+
+-- La regla, igual que applySessionRule (shared/routine/sessionRule.ts; los mismos casos se prueban en los dos):
+-- - Alguien sale en una sección (nuevo ahí, u otro día): su sesión de hoy es ese día de su rutina actual (pasado el
+--   último, el último), con la clase en la que tiene plaza ahora. Mandarlo otra vez cambia el día y no la hora en que
+--   se apuntó. Archivados y quien no tiene rutina con días no se apuntan.
+-- - Alguien deja una sección y no está en ninguna otra, antes de SESSION_UNDO_MINUTES = 10 min desde que se apuntó hoy:
+--   fue un error y la sesión de hoy se borra. Después, se queda (ha entrenado).
+-- Se ejecuta al final de cada petición, así quien solo cambia de sección en la misma petición no pierde su sesión.
+create or replace function public.record_training_session()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_new text := case when tg_op <> 'DELETE' then new.data ->> 'clientId' end;
+  v_old text := case when tg_op <> 'INSERT' then old.data ->> 'clientId' end;
+  v_program text;
+  v_days jsonb;
+  v_number integer;
+begin
+  if v_new is not null
+    and (tg_op = 'INSERT' or v_new is distinct from v_old or (new.data -> 'day') is distinct from (old.data -> 'day')) then
+    select p.id, p.data -> 'days' into v_program, v_days
+    from public.clients c
+    join public.programs p on p.id = c.data ->> 'currentProgramId' and p.data ->> 'clientId' = c.id
+    where c.id = v_new and (c.data ->> 'archived') is distinct from 'true';
+    if v_program is not null and jsonb_typeof(v_days) = 'array' and jsonb_array_length(v_days) > 0 then
+      v_number := least((new.data ->> 'day')::integer, jsonb_array_length(v_days));
+      insert into public.training_sessions as t (client_id, gym_date, program_id, day_id, day_number, slot_id)
+      values (v_new, public.gym_today(), v_program, v_days -> (v_number - 1) ->> 'id', v_number, public.session_slot(v_new))
+      on conflict (client_id, gym_date) do update
+        set program_id = excluded.program_id, day_id = excluded.day_id, day_number = excluded.day_number,
+          slot_id = coalesce(excluded.slot_id, t.slot_id);
+    end if;
+  end if;
+  if v_old is not null and v_old is distinct from v_new
+    and not exists (select 1 from public.screen_sections s where s.data ->> 'clientId' = v_old) then
+    delete from public.training_sessions t
+    where t.client_id = v_old and t.gym_date = public.gym_today() and t.created_at > now() - interval '10 minutes';
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists record_training_session on public.screen_sections;
+create trigger record_training_session after insert or update or delete on public.screen_sections
+  for each row execute function public.record_training_session();
+
+revoke all on function public.session_slot(text) from public, anon, authenticated;
+revoke all on function public.record_training_session() from public, anon, authenticated;
+
+-- El equipo activo las lee; nadie las escribe desde la app (solo la pantalla, con la regla de arriba).
+alter table public.training_sessions enable row level security;
+revoke all on public.training_sessions from public, anon, authenticated;
+grant select on public.training_sessions to authenticated;
+drop policy if exists training_sessions_select on public.training_sessions;
+create policy training_sessions_select on public.training_sessions for select to authenticated using (public.is_active_staff());
+
 -- ── Tiempo real ─────────────────────────────────────────────────────────────
 
 do $$
@@ -1486,7 +1596,7 @@ declare
 begin
   foreach t in array array[
     'profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections',
-    'booking_settings', 'class_templates', 'class_slots', 'bookings'
+    'booking_settings', 'class_templates', 'class_slots', 'bookings', 'training_sessions'
   ] loop
     if not exists (
       select 1 from pg_publication_tables

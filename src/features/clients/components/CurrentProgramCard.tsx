@@ -6,6 +6,7 @@ import type { Program } from '@/types'
 import type { ProgramActionsApi } from '@/features/clients/hooks/useProgramActions'
 import { formatProgramShape } from '@/features/clients/utils/programSummary'
 import { ExpiryCallout } from './ExpiryCallout'
+import { NextDayLine } from './NextDayLine'
 import { ProgramDayList } from './ProgramDayList'
 import { ProgramProgressBar } from './ProgramProgressBar'
 
@@ -42,6 +43,7 @@ export function CurrentProgramCard({ program, status, actions, onNewProgram }: C
         <ProgramProgressBar status={status} />
         <p className="text-sm text-fg-subtle">{status.detail}</p>
       </div>
+      <NextDayLine clientId={program.clientId} />
       <ExpiryCallout status={status} onDuplicate={() => actions.duplicateAsNext(program)} />
       <ProgramDayList program={program} />
       <div className="flex items-center gap-2">

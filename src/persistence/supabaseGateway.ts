@@ -47,15 +47,21 @@ function throwWriteError(error: DbError): never {
 
 type Payload = RealtimePostgresChangesPayload<Record<string, unknown>>
 
-/** Every row of a table, page by page, in id order. */
-export async function fetchTableRows<R extends TableRow>(client: SupabaseClient, table: string, columns: string): Promise<R[]> {
+/** Only the rows whose `column` is `value` or later. */
+export interface RowsFrom {
+  column: string
+  value: string
+}
+
+/**
+ * Every row of a table (or those from `since` on), page by page, in id order: the server cuts each answer at
+ * CLOUD_PAGE_SIZE rows, so a single read would silently miss the rest. The table needs an `id` column, selected or not.
+ */
+export async function fetchTableRows<R>(client: SupabaseClient, table: string, columns: string, since?: RowsFrom): Promise<R[]> {
   const rows: R[] = []
   for (let from = 0; ; from += CLOUD_PAGE_SIZE) {
-    const { data, error } = await client
-      .from(table)
-      .select(columns)
-      .order('id')
-      .range(from, from + CLOUD_PAGE_SIZE - 1)
+    const query = client.from(table).select(columns)
+    const { data, error } = await (since ? query.gte(since.column, since.value) : query).order('id').range(from, from + CLOUD_PAGE_SIZE - 1)
     if (error) throw new Error(error.message)
     rows.push(...(data as unknown as R[]))
     if (data.length < CLOUD_PAGE_SIZE) return rows

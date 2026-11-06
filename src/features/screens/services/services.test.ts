@@ -60,6 +60,21 @@ describe('local screens (test mode)', () => {
     await service.saveScreens([{ id: 1, name: 'P', sections: 2 }])
     expect((await service.load()).sections).toEqual([SECTION])
   })
+
+  it('tells every change of the sections, before and after, like the trigger that records the sessions', async () => {
+    const changes: Array<[number, number]> = []
+    const service = createLocalScreens(NO_PRESENCE, (before, after) => changes.push([before.length, after.length]))
+    await service.saveScreens([{ id: 1, name: 'P', sections: 3 }])
+    await service.saveSections([SECTION, { ...SECTION, section: 3 }])
+    await service.saveScreens([{ id: 1, name: 'P', sections: 2 }])
+    await service.removeScreen(1)
+    expect(changes).toEqual([
+      [0, 0],
+      [0, 2],
+      [2, 1],
+      [1, 0],
+    ])
+  })
 })
 
 describe('cloud screens', () => {

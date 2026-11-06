@@ -3,4 +3,5 @@
 export { ClassesPage, type ClassesPageProps } from './pages/ClassesPage'
 export { ClassesSettingsPanel } from './components/ClassesSettingsPanel'
 export { ClientClassesCard } from './components/ClientClassesCard'
+export { ScreensFillActions, type ScreensFillActionsProps } from './components/ScreensFillActions'
 export { usePlanDescriptions } from './hooks/useClassesData'

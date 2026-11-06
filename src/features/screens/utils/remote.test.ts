@@ -112,12 +112,17 @@ describe('placesByPerson', () => {
 describe('startDayFor', () => {
   const laura = buildRemotePeople(clients, programs).find((p) => p.id === 'laura')!
 
-  it('keeps the day the person shows elsewhere now', () => {
-    expect(startDayFor(laura, [view(1, [shows('laura', 2)])])).toBe(2)
+  it('keeps the day the person shows elsewhere now, even when another day is next', () => {
+    expect(startDayFor(laura, [view(1, [shows('laura', 2)])], 1)).toBe(2)
   })
 
-  it('starts on Día 1 when the person shows nowhere, or on a day the routine no longer has', () => {
-    expect(startDayFor(laura, [view(1, [shows(null)])])).toBe(1)
-    expect(startDayFor(laura, [view(1, [shows('laura', 4)])])).toBe(1)
+  it('else starts on the day that is next for her', () => {
+    expect(startDayFor(laura, [view(1, [shows(null)])], 2)).toBe(2)
+  })
+
+  it('starts on Día 1 with no next day, or on a day the routine no longer has', () => {
+    expect(startDayFor(laura, [view(1, [shows(null)])], null)).toBe(1)
+    expect(startDayFor(laura, [view(1, [shows('laura', 4)])], null)).toBe(1)
+    expect(startDayFor(laura, [view(1, [shows(null)])], 9)).toBe(1)
   })
 })

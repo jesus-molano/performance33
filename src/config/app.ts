@@ -16,6 +16,8 @@ export const STORAGE_KEYS = {
   screensCache: 'p33:screens:cache:v1',
   /** Local test mode only: timetable, classes, bookings and booking rules. */
   classes: 'p33:classes:v1',
+  /** Local test mode only: which day of their routine each person did each day (the cloud's training_sessions). */
+  sessions: 'p33:sessions:v1',
   /** This computer only: which detected TV each Pantalla opens on. */
   tvDisplays: 'p33:tv:displays',
   /** This computer only: the screen each automatic Pantalla got, shared by its windows (one opened again keeps it). */

@@ -14,15 +14,20 @@ function parseSnapshot(raw: string | null): (ChangeMeta & { data: AppData }) | n
   return envelope && data ? { ...metaOf(envelope), data } : null
 }
 
+/** Local test mode: the dataset as this browser last saved it (null when there is none or it cannot be read). */
+export function readLocalData(): AppData | null {
+  try {
+    return parseSnapshot(localStorage.getItem(STORAGE_KEYS.data))?.data ?? null
+  } catch {
+    return null
+  }
+}
+
 export class LocalStorageRepository implements Repository {
   readonly sharesDataAcrossTabs = true
 
   async load(): Promise<AppData | null> {
-    try {
-      return parseSnapshot(localStorage.getItem(STORAGE_KEYS.data))?.data ?? null
-    } catch {
-      return null
-    }
+    return readLocalData()
   }
 
   /** Writes synchronously, so it is also safe inside a pagehide handler. */

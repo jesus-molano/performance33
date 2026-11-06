@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Program } from '@/types'
+import { useNextDay } from '@/features/sessions'
 import {
   initialScreenDay,
   pickedScreenDay,
@@ -26,7 +27,8 @@ export interface ClientScreenSend {
 
 /**
  * 'Pantalla' on a user of the list: the picker first asks which day of the current routine, then the section. It
- * starts on the day the person shows on a TV now (Día 1 when on none), so moving her to another section keeps her day;
+ * starts on the day the person shows on a TV now, so moving her to another section keeps her day, else on the day that
+ * is next for her ('Le toca', Día 1 with no session in this routine yet);
  * Ctrl+clic or a long press sends that same day to the last section used. A day chosen by hand lasts until the picker
  * closes, so a Ctrl+clic never sends an old choice.
  */
@@ -34,7 +36,8 @@ export function useClientScreenSend(clientId: string, program: Program): ClientS
   const days = useMemo(() => screenDayOptions(program.days), [program.days])
   const { screens } = useScreens()
   const [chosen, setChosen] = useState<number | null>(null)
-  const startDay = initialScreenDay(days, shownScreenDay(screens, clientId))
+  const nextDay = useNextDay(clientId)?.day ?? null
+  const startDay = initialScreenDay(days, shownScreenDay(screens, clientId), nextDay)
   const picked = pickedScreenDay(days, chosen ?? startDay)
   const day = picked?.day ?? startDay
   const send = useSendToScreen({ clientId, day, dayLabel: picked?.label ?? '' })

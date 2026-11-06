@@ -1,4 +1,5 @@
 import { useToast } from '@/hooks'
+import { useNextDayLookup } from '@/features/sessions'
 import { REMOTE_COPY } from '@/features/screens/config/remote'
 import { SEND_COPY } from '@/features/screens/config/copy'
 import type { ScreenView, SectionChange } from '@/features/screens/types'
@@ -7,7 +8,7 @@ import { startDayFor, type RemotePerson, type RemoteTile } from '@/features/scre
 import { useScreenActions } from './useScreenActions'
 
 export interface SectionEdits {
-  /** Puts that person there (on the day they show elsewhere, else Día 1), taking them out of any other section. */
+  /** Puts that person there (on the day they show elsewhere, else their next day), taking them out of any other section. */
   putPerson: (tile: RemoteTile, person: RemotePerson) => void
   changeDay: (tile: RemoteTile, day: number) => void
   clear: (tile: RemoteTile) => void
@@ -23,6 +24,7 @@ export function useSectionEdits(views: readonly ScreenView[], people: readonly R
   const actions = useScreenActions()
   const { toast, toastUndoAction } = useToast()
   const names = new Map(people.map((person) => [person.id, person.firstName]))
+  const nextDayOf = useNextDayLookup()
 
   const warnIfFailed = (saved: Promise<boolean>) =>
     void saved.then((ok) => {
@@ -45,7 +47,7 @@ export function useSectionEdits(views: readonly ScreenView[], people: readonly R
 
   const putPerson = (tile: RemoteTile, person: RemotePerson) => {
     if (tile.person?.id === person.id) return
-    const day = startDayFor(person, views)
+    const day = startDayFor(person, views, nextDayOf(person.id))
     const replaced = replacedOccupant(views, tile.ref, person.id, names)
     const from = movedFromSection(views, tile.ref, person.id)
     const movedFrom = from ? SEND_COPY.where(screenNameOf(views, from.screen), from.section) : null

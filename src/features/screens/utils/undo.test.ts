@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ScreenSection } from '@/features/screens/types'
 import { planSend, previousOf, toSectionMap } from './sections'
+import { planClearAll } from './fill'
 import { planUndo } from './undo'
 
 const BEFORE = '2026-11-06T10:00:00.000Z'
@@ -32,5 +33,18 @@ describe('planUndo', () => {
     const plan = planUndo(changed, change)
     expect(plan.skipped).toBe(1)
     expect(plan.writes.map((w) => w.ref)).toEqual([{ screen: 1, section: 1 }])
+  })
+})
+
+describe('planUndo after "Vaciar pantallas"', () => {
+  it('never puts back someone shown elsewhere since: one screen at a time', () => {
+    const start = toSectionMap([row(1, 1, 'ana'), row(1, 2, 'luis')])
+    const written = planClearAll(start, [{ id: 1, name: 'Pantalla 1', sections: 2 }, { id: 2, name: 'Pantalla 2', sections: 3 }], SENT)
+    const change = { written, previous: previousOf(start, written) }
+    const cleared = { ...start, ...toSectionMap(written.map(({ ref, content }) => ({ ...ref, ...content }))) }
+    const anaSentAgain = { ...cleared, '2:3': row(2, 3, 'ana', LATER) }
+    const plan = planUndo(anaSentAgain, change)
+    expect(plan.writes.map((w) => w.content.clientId)).toEqual(['luis'])
+    expect(plan.skipped).toBe(1)
   })
 })

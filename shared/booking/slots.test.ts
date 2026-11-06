@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BOOKING_DEFAULTS } from './constants.ts'
-import { isLateCancel, isTooFar, pickFillSlot, slotState, spotsLeft, waitlistOpenAt, type SlotSnapshot } from './slots.ts'
+import { canFillFrom, isLateCancel, isTooFar, pickFillSlot, slotState, spotsLeft, waitlistOpenAt, type SlotSnapshot } from './slots.ts'
 
 const at = (iso: string) => Date.parse(iso)
 
@@ -90,5 +90,26 @@ describe('pickFillSlot', () => {
     const afterMidnight = [slot('2026-08-03T23:30:00Z')]
     expect(pickFillSlot(afterMidnight, at('2026-08-03T22:00:00Z'))).toBeNull()
     expect(pickFillSlot(afterMidnight, at('2026-08-03T23:16:00Z'))?.id).toBe('2026-08-03T23:30:00Z')
+  })
+})
+
+describe('canFillFrom', () => {
+  const nine = slot('2026-11-10T09:00:00Z')
+
+  it('takes a class under way or later today, as pickFillSlot', () => {
+    expect(canFillFrom(nine, at('2026-11-10T07:00:00Z'))).toBe(true)
+    expect(canFillFrom(nine, at('2026-11-10T09:59:00Z'))).toBe(true)
+  })
+
+  it('never a class that ended, a cancelled one, or one of another day', () => {
+    expect(canFillFrom(nine, at('2026-11-10T10:00:00Z'))).toBe(false)
+    expect(canFillFrom(slot('2026-11-10T09:00:00Z', { status: 'cancelled' }), at('2026-11-10T08:00:00Z'))).toBe(false)
+    expect(canFillFrom(nine, at('2026-11-09T18:00:00Z'))).toBe(false)
+    expect(canFillFrom(slot('2026-11-13T18:00:00Z'), at('2026-11-10T08:00:00Z'))).toBe(false)
+  })
+
+  it('agrees with pickFillSlot just before midnight (summer, UTC+1)', () => {
+    expect(canFillFrom(slot('2026-08-03T23:30:00Z'), at('2026-08-03T22:00:00Z'))).toBe(false)
+    expect(canFillFrom(slot('2026-08-03T23:30:00Z'), at('2026-08-03T23:16:00Z'))).toBe(true)
   })
 })

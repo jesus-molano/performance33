@@ -10,7 +10,7 @@ export interface ScreenDayOption {
   label: string
 }
 
-/** The app has no 'next session' yet: someone on no TV starts on Día 1. */
+/** Someone on no TV and with no next day known (no session yet in this routine) starts on Día 1. */
 export const DEFAULT_SCREEN_DAY = 1
 
 export function screenDayOptions(days: readonly Pick<Day, 'name' | 'label'>[]): ScreenDayOption[] {
@@ -38,7 +38,12 @@ export function shownScreenDay(screens: ReadonlyArray<{ contents: readonly Shown
   return latest?.day ?? null
 }
 
-/** Where the day chips start: the day she shows on a TV now, so moving her to another section keeps it; else Día 1. */
-export function initialScreenDay(options: readonly ScreenDayOption[], shownDay: number | null): number {
-  return shownDay !== null && options.some((option) => option.day === shownDay) ? shownDay : DEFAULT_SCREEN_DAY
+/**
+ * Where the day chips start: the day she shows on a TV now, so moving her to another section keeps it; else the day
+ * that is next for her (`nextDay`, from her sessions); else Día 1.
+ */
+export function initialScreenDay(options: readonly ScreenDayOption[], shownDay: number | null, nextDay: number | null = null): number {
+  const exists = (day: number | null): day is number => day !== null && options.some((option) => option.day === day)
+  if (exists(shownDay)) return shownDay
+  return exists(nextDay) ? nextDay : DEFAULT_SCREEN_DAY
 }

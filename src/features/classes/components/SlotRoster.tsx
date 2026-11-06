@@ -1,6 +1,8 @@
-import { UserPlus } from 'lucide-react'
+import { MonitorUp, UserPlus } from 'lucide-react'
 import { Button, DropdownMenu, type MenuItem } from '@/components/ui'
+import { FILL_COPY } from '@/features/screens'
 import { ROSTER_COPY } from '@/features/classes/config/copy'
+import { useSendClassToScreens } from '@/features/classes/hooks/useFillFromClass'
 import { useSlotRoster, type SlotRosterHandlers } from '@/features/classes/hooks/useSlotRoster'
 import type { Booking, SlotSummary } from '@/features/classes/types'
 import type { RosterEntry } from '@/features/classes/utils/slotView'
@@ -34,16 +36,29 @@ function RosterList({ title, entries, menuFor }: { title: string; entries: Roste
 /** Who comes to a class, the waitlist numbered, and what can be done with the class and each person. */
 export function SlotRoster({ slot, bookings, now, onAddPerson, onEdit, onMove, showHead = false }: SlotRosterProps) {
   const { state, roster, canManage, note, slotMenu, personMenu } = useSlotRoster(slot, bookings, now, { onEdit, onMove })
+  const sendToScreens = useSendClassToScreens(slot, bookings, now)
   return (
     <div className="flex flex-col gap-4">
       {showHead && <SlotSummaryLine slot={slot} state={state} large />}
       {note && <p className="text-sm text-fg-muted">{note}</p>}
       {canManage && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button leftIcon={UserPlus} onClick={onAddPerson} className="flex-1 sm:flex-none">
             {ROSTER_COPY.addPerson}
           </Button>
           <DropdownMenu items={slotMenu} label={ROSTER_COPY.slotMenu} />
+          {sendToScreens.shown && roster.booked.length > 0 && (
+            <Button
+              variant="secondary"
+              leftIcon={MonitorUp}
+              onClick={sendToScreens.run}
+              disabled={sendToScreens.hint !== null}
+              title={sendToScreens.hint ?? undefined}
+              className="order-last w-full sm:order-none sm:w-auto"
+            >
+              {FILL_COPY.fromSlot}
+            </Button>
+          )}
         </div>
       )}
       {roster.booked.length ? (

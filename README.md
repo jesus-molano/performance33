@@ -238,6 +238,8 @@ de Canarias, aunque el móvil o el portátil estén en otra zona.
   que pide confirmación y no se puede deshacer. Bajar las plazas por debajo de los apuntados avisa de que nadie sale de
   la clase. Más plazas o volver a abrir hace entrar a los primeros de la espera.
 - **Añadir clase este día** crea una clase suelta, fuera del horario (no sale en días pasados).
+- **Mandar a pantallas** (en la clase abierta, si tiene apuntados): los apuntados entran en las secciones libres con el
+  día que les toca. Igual que «Rellenar», abajo.
 
 **Ajustes → Clases** (lo cambia un administrador; los monitores solo lo ven):
 
@@ -332,14 +334,26 @@ abre también `tools/teles/quitar-pantalla-completa-local.reg`.
 - El aviso dice a quién has mandado, qué día y a quién sustituye. **Deshacer** (o Ctrl+Z mientras se ve el aviso)
   lo deja como estaba, sin tocar lo que otro monitor haya cambiado después.
 - En la **lista de usuarios** cada persona tiene también su botón **Pantalla**: primero eliges el día (sale el que ya
-  tiene en pantalla, o el Día 1 si no está en ninguna) y luego la sección. Si no tiene rutina, el botón sale gris («Sin rutina»).
+  tiene en pantalla o, si no está en ninguna, el que le toca) y luego la sección. Si no tiene rutina, el botón sale gris («Sin rutina»).
 - En la lista, quien sale ahora en una pantalla lleva la etiqueta **Pantalla 1 · Sección 2 · Día 3** (en el móvil, solo «Pantalla 1»),
   y el botón **En pantalla** de arriba deja ver solo a esas personas. Se actualiza solo, mande quien mande y desde donde sea.
 - En la ficha de la persona sale lo mismo bajo su nombre, con un botón redondo al lado para **Quitar de la pantalla** (con **Deshacer**).
   **Editar datos** está en los tres puntos (⋯) junto al nombre.
 - **Ctrl+clic** en **Pantalla** (o mantenerlo pulsado en el móvil) la manda directamente a la última sección que usaste
-  (desde la lista, con el día que ya tiene en pantalla, o el Día 1).
+  (desde la lista, con el día que ya tiene en pantalla, o el que le toca).
 - Funciona igual desde el móvil, en cualquier red: solo hace falta que la ventana de la pantalla esté abierta en el portátil.
+
+### El día que le toca, Rellenar y Vaciar
+
+- Cada vez que alguien sale en una sección, la app apunta qué día de su rutina hizo hoy. Si se quita de todas las
+  pantallas en menos de 10 minutos, se entiende que fue un error y no cuenta. Al día siguiente **le toca** el día
+  siguiente de su rutina (después del último, otra vez el Día 1); si ya entrenó hoy, el mismo. Con una rutina nueva
+  empieza en el Día 1. La ficha lo dice en la rutina actual: «Le toca: Día 3 · Pierna».
+- En el menú **Pantallas** (y en el móvil) **Rellenar con la clase de 18:00** usa la clase en curso (desde 15 minutos
+  antes) o la siguiente de hoy: sus apuntados entran en las **secciones libres**, en orden de llegada y con el día que
+  les toca. No quita a nadie ni mueve a quien ya sale. Una sección con alguien archivado cuenta como libre. El aviso
+  dice, por ejemplo, «6 en pantalla · No caben: Ana, Luis · Sin rutina: Marta», con **Deshacer**.
+- **Vaciar pantallas** deja todas las secciones libres, con **Deshacer** («Pantallas vaciadas»).
 
 ### Desde el móvil
 
@@ -350,7 +364,9 @@ cambia **qué sale en cada pantalla**, desde cualquier red y al momento. Pulsa *
   del nombre pone si su ventana está **Abierta** o **Sin abrir en el portátil** (lo que cambies se verá al abrirla).
 - **Toca una sección** y elige: **Cambiar persona** (o **Poner a alguien** si está libre; busca por nombre y apellido,
   solo salen quienes tienen rutina, y cada uno dice dónde sale ahora), **Cambiar día**, **Cambiar de sitio con** otra
-  sección de la misma pantalla, o **Quitar**. Si la persona ya salía en otra sección, sale de allí y mantiene su día.
+  sección de la misma pantalla, o **Quitar**. Si la persona ya salía en otra sección, sale de allí y mantiene su día;
+  si no, entra con el día que le toca.
+- **Rellenar con la clase de 18:00** y **Vaciar pantallas**, igual que en el portátil (ver abajo).
 - Cada cambio avisa con **Deshacer**, que lo deja como estaba sin tocar lo que otro monitor haya cambiado después.
 - «− 3 +» cambia cuántas secciones tiene esa pantalla, con el mismo **Deshacer** que en el portátil.
 - **Ajustes de pantallas** (abajo del todo, o Ajustes → Pantallas) deja cambiar el nombre y las secciones de cada una.

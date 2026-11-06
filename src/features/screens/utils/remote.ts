@@ -99,6 +99,6 @@ export function placesByPerson(screens: readonly RemoteScreen[]): Map<string, st
   return places
 }
 
-/** The day a person starts on when put in a section: the one they show elsewhere now, else Día 1. */
-export const startDayFor = (person: Pick<RemotePerson, 'id' | 'days'>, views: readonly ScreenView[]): number =>
-  initialScreenDay(person.days, shownScreenDay(views, person.id))
+/** The day a person starts on when put in a section: the one they show elsewhere now, else their next day, else Día 1. */
+export const startDayFor = (person: Pick<RemotePerson, 'id' | 'days'>, views: readonly ScreenView[], nextDay: number | null): number =>
+  initialScreenDay(person.days, shownScreenDay(views, person.id), nextDay)

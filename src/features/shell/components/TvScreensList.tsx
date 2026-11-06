@@ -1,6 +1,7 @@
 import { Plus, Settings } from 'lucide-react'
 import { ScreenDetectionNotice } from '@/components/ScreenDetectionNotice'
 import { paths } from '@/lib/routes'
+import { ScreensFillActions } from '@/features/classes'
 import { TvWindowsActions } from '@/features/screens'
 import { TV_LAUNCHER } from '@/features/shell/config'
 import { useTvLauncher } from '@/features/shell/hooks/useTvLauncher'
@@ -37,6 +38,8 @@ export function TvScreensList({ onDone }: { onDone: () => void }) {
         ))}
       </ul>
       <TvWindowsActions onDone={onDone} className="px-3 py-2" />
+      <div className="my-1 h-px bg-line" aria-hidden />
+      <ScreensFillActions onDone={onDone} />
       <div className="my-1 h-px bg-line" aria-hidden />
       {launcher.showAdd && (
         <button type="button" onClick={run(launcher.add)} disabled={!launcher.canAdd} className={FOOT_ITEM}>

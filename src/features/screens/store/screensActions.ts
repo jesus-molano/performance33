@@ -3,6 +3,7 @@
 
 import { screensService } from '@/features/screens/services/instance'
 import type { ScreenConfig, SectionChange, SectionRef, SectionTarget, SectionWrite, UndoResult } from '@/features/screens/types'
+import { planClearAll, planFillFromClass, type FillPerson, type FillPlan } from '@/features/screens/utils/fill'
 import { screenKey, sectionKey } from '@/features/screens/utils/pendingWrites'
 import { sectionsResizedAway, writableWrites } from '@/features/screens/utils/sectionLimits'
 import {
@@ -105,6 +106,13 @@ function fillScreen(screen: number, targets: readonly SectionTarget[]): SectionC
   return writeSections(planFill(get().sections, screen, targets, nowIso()))
 }
 
+/** The people of a class in the free sections, on their next day (`hidden`: archived, shown as nobody). */
+function fillFromClass(people: readonly FillPerson[], hidden: ReadonlySet<string>): { plan: FillPlan; change: SectionChange } {
+  const { screens, sections } = get()
+  const plan = planFillFromClass(sections, screens, people, hidden, nowIso())
+  return { plan, change: writeSections(plan.writes) }
+}
+
 /** Puts back what a change replaced, in the sections nobody has changed since. */
 function undo(change: Pick<SectionChange, 'previous' | 'written'>): UndoResult {
   const { writes, skipped } = planUndo(get().sections, change)
@@ -125,6 +133,10 @@ export const screensActions = {
   restore: (previous: SectionWrite[]) => writeSections(previous),
   undo,
   fillScreen,
+  /** "Rellenar con la clase": only free sections, nobody moved or replaced; undo with `undo(change)`. */
+  fillFromClass,
+  /** "Vaciar pantallas": every section of every screen; undo with `undo(change)`. */
+  clearAll: () => writeSections(planClearAll(get().sections, get().screens, nowIso())),
   /** Name and number of sections; the sections past the new count are emptied. Creates the screen if it is new. */
   saveScreen,
   /** Creates only the screens that do not exist (one per TV detected), never touching one that does. */

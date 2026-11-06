@@ -93,3 +93,13 @@ export function pickFillSlot<T extends SlotTiming & { status: SlotStatus }>(
     .sort(byStart)
   return laterToday[0] ?? null
 }
+
+/**
+ * Whether a class's people can go to the screens now ("Mandar a pantallas"): the same classes pickFillSlot would take,
+ * under way (from `leadMinutes` before) or later today. Never a class of another day, one that ended or a cancelled one.
+ */
+export function canFillFrom(slot: SlotTiming & { status: SlotStatus }, now: Instant, leadMinutes: number = FILL_LEAD_MINUTES): boolean {
+  const nowMs = toMs(now)
+  if (slot.status === 'cancelled' || nowMs >= slotEndMs(slot)) return false
+  return nowMs >= slotStartMs(slot) - leadMinutes * MINUTE_MS || toGymDate(slotStartMs(slot)) === toGymDate(nowMs)
+}

@@ -1,6 +1,7 @@
 import type { RealtimePostgresChangesPayload, SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import { createSupabaseGateway, subscribeTableRows, toTableEvent } from './supabaseGateway'
+import { CLOUD_PAGE_SIZE } from '@/config/app'
+import { createSupabaseGateway, fetchTableRows, subscribeTableRows, toTableEvent } from './supabaseGateway'
 
 vi.mock('@/lib/ids', () => ({ newId: () => 'tab' }))
 
@@ -81,5 +82,30 @@ describe('subscribeTableRows', () => {
 
     stop()
     expect(fake.client.removeChannel).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('fetchTableRows', () => {
+  /** A table of `total` rows; records the filters and ranges asked for. */
+  function pagedClient(total: number) {
+    const calls: string[] = []
+    const builder = (filters: string[]) => ({
+      select: () => builder(filters),
+      gte: (column: string, value: string) => builder([...filters, `${column}>=${value}`]),
+      order: () => builder(filters),
+      range: async (from: number, to: number) => {
+        calls.push(`${filters.join(',')}|${from}-${to}`)
+        const ids = Array.from({ length: Math.max(0, Math.min(to + 1, total) - from) }, (_, i) => ({ id: String(from + i) }))
+        return { data: ids, error: null }
+      },
+    })
+    return { client: { from: () => builder([]) } as unknown as SupabaseClient, calls }
+  }
+
+  it('reads every page, not only the first the server cuts at CLOUD_PAGE_SIZE rows', async () => {
+    const { client, calls } = pagedClient(CLOUD_PAGE_SIZE + 5)
+    const rows = await fetchTableRows<{ id: string }>(client, 'training_sessions', 'id', { column: 'gym_date', value: '2026-09-07' })
+    expect(rows).toHaveLength(CLOUD_PAGE_SIZE + 5)
+    expect(calls).toEqual([`gym_date>=2026-09-07|0-${CLOUD_PAGE_SIZE - 1}`, `gym_date>=2026-09-07|${CLOUD_PAGE_SIZE}-${2 * CLOUD_PAGE_SIZE - 1}`])
   })
 })
