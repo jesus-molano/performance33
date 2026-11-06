@@ -1,4 +1,5 @@
 import { CircleAlert, CircleCheck, LoaderCircle, Settings, Users, type LucideIcon } from 'lucide-react'
+import { TV_MAX_SECTIONS } from '@/config/app'
 import { paths, type RouteName } from '@/lib/routes'
 import type { SaveStatus } from '@/store'
 
@@ -18,13 +19,11 @@ export const NAV_LINKS: readonly NavLinkItem[] = [
 
 export const TV_LAUNCHER = {
   label: 'Pantallas',
-  hint: 'Una ventana por tele · hasta 4 personas en cada una',
+  hint: `Una ventana por tele · hasta ${TV_MAX_SECTIONS} personas en cada una`,
   add: 'Añadir pantalla',
   isOpen: 'Abierta',
   open: 'Abrir',
   nobody: 'Sin personas todavía',
-  focusLabel: (title: string) => `Ir a ${title}`,
-  openLabel: (title: string) => `Abrir ${title}`,
   removeLabel: (title: string) => `Quitar ${title}`,
   removeConfirm: {
     title: (title: string) => `¿Quitar ${title}?`,

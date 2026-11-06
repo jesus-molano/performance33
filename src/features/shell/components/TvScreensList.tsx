@@ -1,4 +1,5 @@
 import { Monitor, Plus, Trash2 } from 'lucide-react'
+import { ScreenDetectionNotice } from '@/components/ScreenDetectionNotice'
 import { IconButton } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { TV_LAUNCHER } from '@/features/shell/config'
@@ -12,14 +13,17 @@ interface TvScreenRowProps {
 }
 
 function TvScreenRow({ entry, canRemove, onOpen, onRemove }: TvScreenRowProps) {
-  const label = entry.isOpen ? TV_LAUNCHER.focusLabel(entry.title) : TV_LAUNCHER.openLabel(entry.title)
+  const { placement } = entry
   return (
     <li className="flex items-center gap-1">
-      <button type="button" onClick={onOpen} aria-label={label} className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-1.5 text-left hover:bg-fg/5">
+      <button type="button" onClick={onOpen} aria-label={placement.openLabel} className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-1.5 text-left hover:bg-fg/5">
         <Monitor size={18} aria-hidden className="shrink-0 text-fg-muted" />
         <span className="min-w-0 flex-1">
           <span className="block text-md font-semibold text-fg">{entry.title}</span>
           <span className="block truncate text-sm text-fg-muted">{entry.people}</span>
+          {placement.note && (
+            <span className={cn('block truncate text-sm', placement.disconnected ? 'font-medium text-red-700' : 'text-fg-subtle')}>{placement.note}</span>
+          )}
         </span>
         <span className={cn('shrink-0 text-sm font-medium', entry.isOpen ? 'text-emerald-700' : 'text-brand-strong')}>
           {entry.isOpen ? TV_LAUNCHER.isOpen : TV_LAUNCHER.open}
@@ -40,6 +44,7 @@ export function TvScreensList({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="flex flex-col">
+      <ScreenDetectionNotice state={launcher.detection.state} tvCount={launcher.tvCount} onRequest={launcher.detection.request} className="m-1.5" />
       <p className="px-3 pt-2 pb-1 text-sm text-fg-muted">{TV_LAUNCHER.hint}</p>
       <ul>
         {launcher.entries.map((entry) => (

@@ -3,7 +3,7 @@
 //   #/ or #/clientes                         → clients
 //   #/clientes/:clientId                     → client
 //   #/clientes/:clientId/programa/:programId → program (editor)
-//   #/ajustes?tab=marca|biblioteca|equipo|datos → settings
+//   #/ajustes?tab=marca|biblioteca|pantallas|equipo|datos → settings
 //   #/pantalla/:clientId?dia=2&programa=pid  → display (single client, no app chrome)
 //   #/tv?pantalla=2                          → tv (Pantalla N, default 1, no app chrome; its sections live in the database)
 //   #/tv?slots=cid:1,-,cid:2&pantalla=2      → old TV links: the list fills that screen once, if it was empty
@@ -17,7 +17,7 @@ export interface TvSlot {
   day: number
 }
 
-export const SETTINGS_TABS = ['marca', 'biblioteca', 'equipo', 'datos'] as const
+export const SETTINGS_TABS = ['marca', 'biblioteca', 'pantallas', 'equipo', 'datos'] as const
 export type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 export type Route =

@@ -12,3 +12,6 @@ export const SCREENS_COLUMNS: Record<ScreensTable, string> = {
 export const SCREENS_CHANNEL = 'p33-screens'
 /** Which TV windows are open: one topic shared by every window of the gym, so it is never recreated. */
 export const SCREENS_PRESENCE_TOPIC = 'p33-screens-presence'
+
+/** Last section this device sent someone to ('N:M'), for Ctrl+clic and long press. */
+export const SCREENS_LAST_SEND_KEY = 'p33:screens:last-send:v1'

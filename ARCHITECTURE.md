@@ -34,14 +34,14 @@ src/
   types.ts                     domain types
   config/  app.ts backend.ts (cloud | local | invalid, from env vars) blockTypes.ts capacity.ts branding.ts colors.ts exerciseFields.ts exerciseTags.ts plans.ts synonyms.ts
   data/    exercises.ts (EXERCISE_LIBRARY, 322 exercises: only the initial seed)  seed/ (createSeedData, SEED_TEAM, LOCAL_TEST_PASSWORDS)
-  lib/     accountRules (re-exports functions/_shared/accounts) accountMessages arrays blocks branding calendar capacity cloudClient cn color dataRows dates dateText debounce deepEqual displayWindow exerciseLibrary factories files ids numbers ownership pagination
+  lib/     accountRules (re-exports functions/_shared/accounts) accountMessages arrays blocks branding calendar capacity cloudClient cn color dataRows dates dateText debounce deepEqual displayWindow screenDetails tvDisplays tvDisplayStore tvPlacement exerciseLibrary factories files ids numbers ownership pagination
            plans program programDates progression routes search  format/  display/
   auth/    types instance session messages signInMethods edgeFunctions supabaseAuth supabaseTeam localBackend localAccounts localTeam
   store/   appStore history rebase hooks selectors locate types undoGroup uiStore sessionStore toastStore confirmStore slices/*
   persistence/ repository repositoryInstance localStorageRepository supabaseRepository rowGateway supabaseGateway dbRows
            cloudDisplayFeed displayCache migrate libraryTags backup channels sync dashboardSync tabId
   hooks/   usePagination useExerciseBrowser useHashRoute useDisclosure useMediaQuery(useIsMobile) useDebouncedValue useClickOutside useToast
-           useConfirm useUndoRedo useUndoShortcuts useDisplayWindow useDisplayData useBrandingStyles
+           useConfirm useUndoRedo useUndoShortcuts useDisplayWindow useDisplayData useBrandingStyles useScreenDetails useTvDisplays
            useDashboardBootstrap useSessionBootstrap useModalBehavior
   components/ui/  Button IconButton Input DateField CalendarDialog Textarea Select Field SegmentedControl Chip Badge Avatar Card
                   EmptyState Switch HelpTip Privacy(PrivacyLabel, PrivateSurface) Modal ConfirmDialog(ConfirmHost)
@@ -60,7 +60,7 @@ supabase/  schema.sql (tables, RLS, triggers, realtime; run once)  schema.test.t
 | `#/`, `#/clientes` | `clients` | `ClientsPage` |
 | `#/clientes/:clientId` | `client` | `ClientDetailPage { clientId }` |
 | `#/clientes/:clientId/programa/:programId` | `program` | `ProgramEditorPage { clientId, programId }` |
-| `#/ajustes?tab=marca\|biblioteca\|equipo\|datos` | `settings` | `SettingsPage { tab: SettingsTab }` (default `marca`; monitors only get `biblioteca`, see `useSettingsTabs`) |
+| `#/ajustes?tab=marca\|biblioteca\|pantallas\|equipo\|datos` | `settings` | `SettingsPage { tab: SettingsTab }` (default `marca`; monitors only get `biblioteca` and `pantallas`, see `useSettingsTabs`) |
 | `#/pantalla/:clientId?dia=N&programa=pid` | `display` | `DisplayPage { clientId, day: number\|null, programId: string\|null }` (phone: normal page with scroll) |
 | `#/tv?pantalla=2` | `tv` | `TvPage { screen: number, legacySlots: TvSlot[] \| null }` (phone: list of people; no or invalid `pantalla` = Pantalla 1; its sections live in the database, see Screens). Old links `#/tv?slots=cid:1,-,cid:2&pantalla=2` still open: `legacySlots` fills that screen once if it shows nobody, then the address loses `slots` |
 
@@ -118,6 +118,9 @@ Pure selectors: `findClient`, `findProgram`, `sortClients`, `selectClientNotes`,
 | `features/auth` | `LoginPage`, `CreatePasswordPage`, `NoAccessPage`, `SessionOfflinePage` | none |
 | `features/auth` | `DataLoadFailedPage` | `{ onRetry: () => void }` |
 | `features/team` | `TeamPanel` | none (Ajustes → Equipo) |
+| `features/screens` | `ScreensPanel` | none (Ajustes → Pantallas: add up to `TV_MAX_SCREENS`, remove with confirmation (one always stays), name saved on blur, 1-6 sections with a mini preview from `gridFor` and an undo toast when fewer sections empty someone, readability warning above `TV_READABLE_SECTIONS`, "Abrir" via `useDisplayWindow().openTv`; `useScreensPanel`, pure rules in `utils/panel.ts`. Above the list, computers only, `DetectedDisplaysCard` ("Teles detectadas en este portátil": `ScreenDetectionNotice` and, with more than one screen seen, a select per screen of the TV it opens on, kept on this computer; `useDetectedDisplays`, `utils/detectedDisplays.ts`)) |
+| `features/screens` | `ScreenSendButton` | `{ clientId: string; day: number; dayLabel: string; className?: string }` ("Pantalla" on each day of the current routine: click opens `ScreenPicker` (one card per TV with its sections in the TV grid, "Libre" or the first name, offline TVs grey with "Abrir"); one tap sends, moving the person out of any other section, replacing with "Deshacer"; Ctrl/Cmd+click or a long press sends to the last section used on this device (`store/lastDestination.ts`). `useSendToScreen`, `useLongPress`, pure rules in `utils/picker.ts`; also in the editor day ⋯ menu (`DayMenu`, current routine only)) |
+| `features/screens` | `ScreensStatusChip` | `{ summary, expanded, onClick }` (top bar, via `shell/ScreensStatusMenu`: "Pantallas 2/2", "1 sin conexión", "Ninguna abierta → Abrir"; the menu is `TvScreensList`; `useTvDisconnectAlert` toasts "Pantalla 2 desconectada…" when the TV of an open screen goes away) |
 | `features/team` | `ProfileModal` | `{ profile: Profile; onClose: () => void }` (Mi perfil; render only while open) |
 | `features/display` | `ScreenSignInRequired` | none (TV window without a session) |
 | `features/shell` | `AppLayout` | `{ route: Route; children: ReactNode }` |
@@ -137,6 +140,8 @@ shows a toast with an "Abrir pantalla" retry. On a phone (`isPhoneScreen`) there
 `{ data: DisplayData | null, version }` and format with `buildDisplayRoutine(data, clientId, {programId?})`,
 `getDisplayableClients(data)`, `clampDayNumber(routine, day)` from `lib/display`. They must apply branding with
 `useBrandingStyles(data.branding)` when data exists. TV section changes go through `useScreenActions()` (Screens below), never the URL.
+
+TVs on their own screen (Window Management API, Chrome/Edge): `lib/screenDetails.ts` `createScreenDetector(env)` (browser passed in, tested with `screenDetails.fakes.ts`) follows `window.screen.isExtended` and its `change`, the `window-management` permission (`WINDOW_MANAGEMENT_PERMISSIONS`, also the old name) and `getScreenDetails()` + `screenschange`. States: `unsupported` (Firefox/Safari/phones: today's flow, open + drag + F11, with the guide), `needs-permission` (never asks by itself: "Buscar teles" must be clicked), `denied` (how to unblock it), `single` ("No hay ninguna tele conectada: pulsa Win+K y elige Extender"), `ok`. One detector per window: `useScreenDetails()`. `lib/tvDisplays.ts`: every screen but the main one is a TV, given to Pantalla 1, 2… left to right unless chosen on this computer (`STORAGE_KEYS.tvDisplays`, `lib/tvDisplayStore.ts`); a Pantalla whose chosen TV is missing gets none ("desconectada") instead of taking another's. `useTvDisplays()` → `{detection, tvCount, displayFor(screen), choices, choose}`. `useDisplayWindow().openTv` passes `displayFor(screen).area` to `openTvWindow(screen, target)`: the popup fills that TV (`popupFeatures`), an open one is moved there. The TV window goes fullscreen on its TV with `requestFullscreen({ screen })` (`useFullscreen(target)`), offered by a big "Pantalla completa" button when it opens (`TvFullscreenPrompt`, `useFullscreenPrompt`; the drag hint only where unsupported). Copy in `config/screenDetection.ts`; the menu rows say "En «tele»" or "Pantalla 2 desconectada" (`lib/tvPlacement.ts`). `vercel.json` sends no Permissions-Policy and its CSP does not cover window placement or fullscreen.
 
 Named screens: Pantalla 1, 2… (up to `TV_MAX_SCREENS`), one window per TV, each with its own window name (`tvWindowName`), URL and A-/A+ (Pantalla 1 keeps the older key). Rules in `utils/tvScreens.ts`, this device's menu list in `utils/tvScreenStore.ts` (`p33:tv:screens`), `useTvScreenList`. The 'Pantallas' sidebar menu (`TvScreensMenu`, `useTvLauncher`) opens or focuses each one, adds the lowest free number and removes one (not the last); who each shows and whether it is open come from `useScreens` / `useScreenPresence`. Over BroadcastChannel `p33-tv-screens` a window closes itself when removed (`useTvScreenPresence`). The title (the screen's saved name) shows in the toolbar and in the tab. Columns that older versions kept on the device (`tvSlotsKey`) fill their screen once, like an old link, and are forgotten.
 

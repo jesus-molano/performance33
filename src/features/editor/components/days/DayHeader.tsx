@@ -1,21 +1,24 @@
 import { Tag } from 'lucide-react'
-import { Chip, DropdownMenu, type MenuItem } from '@/components/ui'
+import { Chip, type MenuItem } from '@/components/ui'
 import { useDisclosure, useIsMobile } from '@/hooks'
 import type { Day } from '@/types'
+import type { SendToScreenInput } from '@/features/screens'
 import { DAY_LABEL_SUGGESTIONS } from '@/features/editor/config'
 import { useDayFields } from '@/features/editor/hooks/useDayFields'
 import { InlineInput } from '@/features/editor/components/common/InlineInput'
+import { DayMenu } from './DayMenu'
 
 export interface DayHeaderProps {
   day: Day
   menuItems: MenuItem[]
+  screenTarget: SendToScreenInput | null
 }
 
 /**
  * Day name and '⋯', then the optional focus label ('Pierna', 'Empuje') with one-tap suggestions:
  * on phones only while editing it, so they do not push the blocks down on every day.
  */
-export function DayHeader({ day, menuItems }: DayHeaderProps) {
+export function DayHeader({ day, menuItems, screenTarget }: DayHeaderProps) {
   const { rename, finishRename, setLabel } = useDayFields(day.id)
   const labelFocus = useDisclosure()
   const isMobile = useIsMobile()
@@ -44,7 +47,7 @@ export function DayHeader({ day, menuItems }: DayHeaderProps) {
             className="font-medium"
           />
         </div>
-        <DropdownMenu items={menuItems} label="Opciones del día" />
+        <DayMenu menuItems={menuItems} screenTarget={screenTarget} />
       </div>
       {showSuggestions && (
         <div className="flex flex-wrap gap-2 px-2">

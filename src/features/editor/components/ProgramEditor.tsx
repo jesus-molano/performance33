@@ -11,6 +11,7 @@ import { usePreviewPanel } from '@/features/editor/hooks/usePreviewPanel'
 import { useProgramHeader } from '@/features/editor/hooks/useProgramHeader'
 import { useSelectedDay } from '@/features/editor/hooks/useSelectedDay'
 import { useWeekContext } from '@/features/editor/hooks/useWeekContext'
+import { dayScreenTarget } from '@/features/editor/utils'
 import { DayEditor } from './days/DayEditor'
 import { DayTabs } from './days/DayTabs'
 import { MobileExerciseSheet } from './exercises/MobileExerciseSheet'
@@ -58,7 +59,12 @@ export function ProgramEditor({ client, program }: ProgramEditorProps) {
               onAdd={dayActions.addDay}
             />
             {day ? (
-              <DayEditor key={day.id} day={day} menuItems={dayActions.menuItems(day.id, dayIndex)} />
+              <DayEditor
+                key={day.id}
+                day={day}
+                menuItems={dayActions.menuItems(day.id, dayIndex)}
+                screenTarget={dayScreenTarget(client, program, day, dayIndex)}
+              />
             ) : (
               <EmptyState
                 icon={CalendarPlus}

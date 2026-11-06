@@ -14,6 +14,8 @@ export const STORAGE_KEYS = {
   screens: 'p33:screens:v1',
   /** Last screens and sections read from the cloud (no private data): a TV reopened without connection has something to show. */
   screensCache: 'p33:screens:cache:v1',
+  /** This computer only: which detected TV each Pantalla opens on. */
+  tvDisplays: 'p33:tv:displays',
 } as const
 
 /** Left by older versions (dataset with coach profiles, picked profile, team without passwords). Removed on start-up. */
@@ -90,6 +92,10 @@ export const TV_DEFAULT_SCREEN_COUNT = 2
 export const TV_SCREEN_NAME_MAX_LENGTH = 30
 /** A section written here ignores other copies of it for this long, unless one is what was written (older echoes). */
 export const SCREENS_ECHO_WINDOW_MS = 5000
+/** Holding the 'Pantalla' button this long (touch) sends to the last section used, like Ctrl+clic. */
+export const SCREEN_SEND_LONG_PRESS_MS = 500
+/** A finger that moves further than this is scrolling, not holding. */
+export const SCREEN_SEND_LONG_PRESS_TOLERANCE_PX = 10
 /** Named TV windows (Pantalla 1, Pantalla 2…), one per TV. Old URLs without a number are Pantalla 1. */
 export const TV_DEFAULT_SCREEN = 1
 export const TV_MAX_SCREENS = 8
@@ -97,6 +103,8 @@ export const TV_MAX_SCREENS = 8
 export const TV_WINDOW_CASCADE_PX = 40
 /** window.name of the popups: it also tells a TV window from a phone, whatever its width (see isScreenPopup). */
 export const SCREEN_WINDOW_NAMES = { display: 'p33-pantalla-', tv: 'p33-tv-' } as const
+/** Permission that lets a window see the other screens and open windows on them (older Chrome called it 'window-placement'). */
+export const WINDOW_MANAGEMENT_PERMISSIONS = ['window-management', 'window-placement'] as const
 /** Old TV URLs (?slots=): token for an empty column ('-' keeps a single empty column distinct from a missing list). */
 export const TV_EMPTY_SLOT_TOKEN = '-'
 /** Pixels the pointer must move on a column grip before a drag starts (a click stays a click). */

@@ -8,7 +8,7 @@ export interface SettingsTabsApi {
   active: SettingsTab
 }
 
-/** Marca, Equipo and Datos are for administrators (hidden here, enforced by the database). */
+/** Ejercicios and Pantallas are for every coach; Marca, Equipo and Datos are for administrators (hidden here, enforced by the database). */
 export function useSettingsTabs(requested: SettingsTab): SettingsTabsApi {
   const tabs = useIsAdmin() ? SETTINGS_TABS : MONITOR_SETTINGS_TABS
   return { tabs, active: tabs.includes(requested) ? requested : tabs[0] }

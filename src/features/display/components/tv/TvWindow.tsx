@@ -9,6 +9,7 @@ import { useSharedTextSize } from '@/features/display/hooks/useSharedTextSize'
 import { useTvScreen } from '@/features/display/hooks/useTvScreen'
 import { TvColumnControls } from './TvColumnControls'
 import { TvColumns } from './TvColumns'
+import { TvFullscreenPrompt } from './TvFullscreenPrompt'
 import { TvSlotView } from './TvSlotView'
 
 interface TvWindowProps {
@@ -50,7 +51,10 @@ export function TvWindow({ screen: screenNumber, legacySlots }: TvWindowProps) {
           ))}
         </TvColumns>
       )}
-      <WindowHint visible={chrome.hintVisible} theme={theme} />
+      <WindowHint visible={chrome.hintVisible && !screen.canPlace} theme={theme} />
+      {screen.fullscreenPrompt.visible && (
+        <TvFullscreenPrompt theme={theme} onFullscreen={chrome.toggleFullscreen} onDismiss={screen.fullscreenPrompt.dismiss} />
+      )}
       <FadingOverlay visible={chrome.controlsVisible} position="inset-x-0 bottom-5 justify-center">
         <ScreenToolbar
           theme={theme}

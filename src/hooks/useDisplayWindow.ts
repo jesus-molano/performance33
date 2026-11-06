@@ -5,11 +5,12 @@ import { navigate, paths } from '@/lib/routes'
 import { flushDashboardSaves } from '@/persistence/dashboardSync'
 import { useHistoryState } from '@/store/hooks'
 import { useToast } from './useToast'
+import { useTvDisplays } from './useTvDisplays'
 
 export interface DisplayWindowApi {
   /** Opens a client's Pantalla popup. Call directly inside a click handler. */
   openDisplay: (clientId: string, day?: number | null, programId?: string | null) => void
-  /** Opens (or focuses) the popup of a named TV screen. */
+  /** Opens (or focuses) the popup of a named TV screen, on its TV when the browser can see it. */
   openTv: (screen: number) => void
 }
 
@@ -22,6 +23,7 @@ export interface DisplayWindowApi {
 export function useDisplayWindow(): DisplayWindowApi {
   const { toast } = useToast()
   const { canUndo } = useHistoryState()
+  const { displayFor } = useTvDisplays()
 
   const fallback = useCallback(
     (retry: () => void) =>
@@ -59,10 +61,14 @@ export function useDisplayWindow(): DisplayWindowApi {
 
   const openTv = useCallback<DisplayWindowApi['openTv']>(
     (screen) => {
-      if (isPhoneScreen()) goOnPhone(paths.tv(screen))
-      else if (!openTvWindow(screen)) fallback(() => openTvWindow(screen))
+      if (isPhoneScreen()) {
+        goOnPhone(paths.tv(screen))
+        return
+      }
+      const target = displayFor(screen)?.area ?? null
+      if (!openTvWindow(screen, target)) fallback(() => openTvWindow(screen, target))
     },
-    [fallback, goOnPhone],
+    [displayFor, fallback, goOnPhone],
   )
 
   return { openDisplay, openTv }

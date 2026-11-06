@@ -1,4 +1,4 @@
-import { Contact, Database, Dumbbell, Moon, Palette, Sun, type LucideIcon } from 'lucide-react'
+import { Contact, Database, Dumbbell, MonitorPlay, Moon, Palette, Sun, type LucideIcon } from 'lucide-react'
 import { BACKEND } from '@/config/backend'
 import type { SettingsTab } from '@/lib/routes'
 import type { DisplayTheme, MeasureType } from '@/types'
@@ -13,12 +13,13 @@ export interface SettingsTabMeta {
 export const SETTINGS_TAB_META: Record<SettingsTab, SettingsTabMeta> = {
   marca: { label: 'Marca', icon: Palette, description: 'Nombre, logotipo y colores del gimnasio.' },
   biblioteca: { label: 'Ejercicios', icon: Dumbbell, description: 'La biblioteca que aparece al escribir un ejercicio.' },
+  pantallas: { label: 'Pantallas', icon: MonitorPlay, description: 'Las teles del gimnasio: su nombre y en cuántas secciones se divide cada una.' },
   equipo: { label: 'Equipo', icon: Contact, description: 'Las cuentas del equipo: quién puede entrar en la aplicación.' },
   datos: { label: 'Datos', icon: Database, description: 'Copias de seguridad y datos de demostración.' },
 }
 
 /** Tabs a monitor can use; administrators see them all. */
-export const MONITOR_SETTINGS_TABS: readonly SettingsTab[] = ['biblioteca']
+export const MONITOR_SETTINGS_TABS: readonly SettingsTab[] = ['biblioteca', 'pantallas']
 
 export const DATA_STORAGE_HINT =
   BACKEND.mode === 'cloud'

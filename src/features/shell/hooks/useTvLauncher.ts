@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { TV_DEFAULT_SCREEN } from '@/config/app'
-import { useConfirm, useDisplayWindow } from '@/hooks'
+import { useConfirm, useDisplayWindow, useTvDisplays, type ScreenDetailsApi } from '@/hooks'
+import { describeTvPlacement, type TvPlacement } from '@/lib/tvPlacement'
 import { useClients } from '@/store'
 import { describeScreenClients, tvScreenTitle, useTvScreenList } from '@/features/display'
 import { useScreenPresence, useScreens } from '@/features/screens'
@@ -12,10 +13,14 @@ export interface TvScreenEntry {
   /** People on it ('Laura, Javier'), or a short note. */
   people: string
   isOpen: boolean
+  /** Where it opens and the label of its button. */
+  placement: TvPlacement
 }
 
 export interface TvLauncher {
   entries: TvScreenEntry[]
+  detection: ScreenDetailsApi
+  tvCount: number
   canAdd: boolean
   canRemove: boolean
   open: (screen: number) => void
@@ -31,6 +36,7 @@ export function useTvLauncher(): TvLauncher {
   const list = useTvScreenList()
   const online = useScreenPresence()
   const { screens: views } = useScreens()
+  const { detection, tvCount, displayFor } = useTvDisplays()
 
   const add = useCallback(() => {
     const screen = list.add()
@@ -49,15 +55,18 @@ export function useTvLauncher(): TvLauncher {
 
   const entries = list.screens.map((screen) => {
     const view = views.find((v) => v.id === screen)
+    const title = view?.name ?? tvScreenTitle(screen)
+    const isOpen = online.has(screen)
     return {
       screen,
-      title: view?.name ?? tvScreenTitle(screen),
+      title,
       people: describeScreenClients(view?.contents ?? null, clients) || TV_LAUNCHER.nobody,
-      isOpen: online.has(screen),
+      isOpen,
+      placement: describeTvPlacement({ title, isOpen, display: displayFor(screen), tvsDetected: detection.state === 'ok' && tvCount > 0 }),
     }
   })
 
-  return { entries, canAdd: list.canAdd, canRemove: list.canRemove, open: openTv, add, remove }
+  return { entries, detection, tvCount, canAdd: list.canAdd, canRemove: list.canRemove, open: openTv, add, remove }
 }
 
 /** 'Pantallas' in the phone bar: there is no menu of TVs on a phone, it goes straight to the list of people. */
