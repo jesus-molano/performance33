@@ -1,4 +1,4 @@
-// Days of the current routine that the users list offers to send to a TV.
+// Days of the current routine that can be sent to a TV (the users list and the phone remote control).
 
 import { formatDayTitle } from '@/lib/format'
 import type { Day } from '@/types'

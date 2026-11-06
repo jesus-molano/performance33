@@ -303,7 +303,24 @@ abre también `tools/teles/quitar-pantalla-completa-local.reg`.
   (desde la lista, con el día que ya tiene en pantalla, o el Día 1).
 - Funciona igual desde el móvil, en cualquier red: solo hace falta que la ventana de la pantalla esté abierta en el portátil.
 
-Desde el móvil, **Pantallas** es una lista de personas para abrir la rutina de cada una como una página normal.
+### Desde el móvil
+
+Desde el móvil no se abren ventanas ni se buscan pantallas (eso se hace en el portátil del gimnasio), pero sí se
+cambia **qué sale en cada pantalla**, desde cualquier red y al momento. Pulsa **Pantallas** en la barra de abajo:
+
+- Sale cada pantalla con sus secciones colocadas como en la tele: en cada una, la persona y el día, o «Libre». Debajo
+  del nombre pone si su ventana está **Abierta** o **Sin abrir en el portátil** (lo que cambies se verá al abrirla).
+- **Toca una sección** y elige: **Cambiar persona** (o **Poner a alguien** si está libre; busca por nombre y apellido,
+  solo salen quienes tienen rutina, y cada uno dice dónde sale ahora), **Cambiar día**, **Cambiar de sitio con** otra
+  sección de la misma pantalla, o **Quitar**. Si la persona ya salía en otra sección, sale de allí y mantiene su día.
+- Cada cambio avisa con **Deshacer**, que lo deja como estaba sin tocar lo que otro monitor haya cambiado después.
+- «− 3 +» cambia cuántas secciones tiene esa pantalla, con el mismo **Deshacer** que en el portátil.
+- **Ajustes de pantallas** (abajo del todo, o Ajustes → Pantallas) deja cambiar el nombre y las secciones de cada una.
+  Abrir, colocar, añadir o quitar pantallas, «Traer al portátil», «Cerrar todas» y la pantalla completa automática
+  solo salen en el portátil.
+
+Si alguien abre en el móvil un enlace antiguo de una pantalla, ve una lista de personas para abrir la rutina de cada
+una como una página normal.
 
 Las ventanas de las pantallas comparten la sesión del navegador y solo guardan los datos que se pueden
 ver en público: nunca notas, objetivos ni comentarios internos. Si se cierra la sesión, muestran

@@ -1,7 +1,7 @@
 import type { TvSlot } from '@/lib/routes'
 import { MobileTvPage } from '@/features/display/components/mobile/MobileTvPage'
 import { TvWindow } from '@/features/display/components/tv/TvWindow'
-import { usePhoneScreen } from '@/features/display/hooks/usePhoneScreen'
+import { usePhoneScreen } from '@/hooks'
 
 export interface TvPageProps {
   /** Number of the named screen (Pantalla N), from #/tv?pantalla=; old URLs are Pantalla 1. */

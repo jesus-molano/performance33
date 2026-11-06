@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react'
-import { useDisclosure, useDisplayWindow, useIsMobile, useToast } from '@/hooks'
+import { useDisclosure, useDisplayWindow, useIsMobile, usePhoneScreen, useToast } from '@/hooks'
 import { useClient, useClients } from '@/store'
 import type { ScreenPickerProps } from '@/features/screens/components/ScreenPicker'
 import { SEND_COPY } from '@/features/screens/config/copy'
@@ -40,6 +40,7 @@ export function useSendToScreen({ clientId, day, dayLabel }: SendToScreenInput):
   const { toast, toastUndoAction } = useToast()
   const { openTv } = useDisplayWindow()
   const isMobile = useIsMobile()
+  const phone = usePhoneScreen()
   const { isOpen, open: openPicker, close: closePicker } = useDisclosure()
   const lastRaw = useSyncExternalStore(subscribeLastDestination, readLastDestination)
   const name = client?.firstName ?? ''
@@ -99,7 +100,7 @@ export function useSendToScreen({ clientId, day, dayLabel }: SendToScreenInput):
       dayLabel,
       status,
       screens: pickerScreens,
-      canOpenScreens: !isMobile,
+      canOpenScreens: !phone,
       hint: last ? SEND_COPY.lastHint(whereOf(last), isMobile) : null,
       onPick: send,
       onOpenScreen: openTv,

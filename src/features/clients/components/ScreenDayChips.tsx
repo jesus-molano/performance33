@@ -1,6 +1,6 @@
 import { Chip } from '@/components/ui'
 import { CLIENT_SCREEN_COPY } from '@/features/clients/config'
-import type { ScreenDayOption } from '@/features/clients/utils/screenDays'
+import type { ScreenDayOption } from '@/features/screens'
 
 export interface ScreenDayChipsProps {
   days: ScreenDayOption[]

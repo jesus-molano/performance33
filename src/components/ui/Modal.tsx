@@ -31,13 +31,15 @@ export interface ModalProps {
   focusFirstField?: boolean
   /** Only its own buttons close it: for what would be lost for good if it closed by accident. */
   persistent?: boolean
+  /** Keep its full height whatever the content: what is tapped doesn't move when the content grows or shrinks. */
+  fill?: boolean
 }
 
 /**
  * Centered dialog on desktop, bottom sheet on mobile (< 768 px). Escape / backdrop / X close it.
  * Its content keeps native Ctrl+Z unless nativeUndo is false, see NATIVE_UNDO_ATTRIBUTE.
  */
-export function Modal({ open, onClose, title, description, footer, size = 'md', children, nativeUndo = true, focusFirstField = true, persistent = false }: ModalProps) {
+export function Modal({ open, onClose, title, description, footer, size = 'md', children, nativeUndo = true, focusFirstField = true, persistent = false, fill = false }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const dismiss = persistent ? NO_DISMISS : onClose
@@ -58,6 +60,7 @@ export function Modal({ open, onClose, title, description, footer, size = 'md', 
           'relative flex max-h-[92dvh] w-full flex-col bg-surface shadow-pop outline-none',
           'animate-slide-up rounded-t-3xl md:animate-pop-in md:rounded-2xl',
           SIZES[size],
+          fill && 'h-[92dvh] md:h-full',
         )}
       >
         <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-line-strong md:hidden" aria-hidden />

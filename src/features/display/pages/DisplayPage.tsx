@@ -1,6 +1,6 @@
 import { MobileDisplayPage } from '@/features/display/components/mobile/MobileDisplayPage'
 import { DisplayWindow } from '@/features/display/components/screen/DisplayWindow'
-import { usePhoneScreen } from '@/features/display/hooks/usePhoneScreen'
+import { usePhoneScreen } from '@/hooks'
 
 export interface DisplayPageProps {
   clientId: string

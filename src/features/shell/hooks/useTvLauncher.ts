@@ -1,5 +1,4 @@
 import { useCallback } from 'react'
-import { TV_DEFAULT_SCREEN } from '@/config/app'
 import { useDisplayWindow, useTvDisplays, type ScreenDetailsApi } from '@/hooks'
 import { describeTvPlacement, type TvPlacement } from '@/lib/tvPlacement'
 import { useClients } from '@/store'
@@ -100,8 +99,3 @@ export function useTvLauncher(): TvLauncher {
   }
 }
 
-/** 'Pantallas' in the phone bar: there is no menu of screens on a phone, it goes straight to the list of people. */
-export function usePhoneTvButton(): () => void {
-  const { openTv } = useDisplayWindow()
-  return useCallback(() => openTv(TV_DEFAULT_SCREEN), [openTv])
-}

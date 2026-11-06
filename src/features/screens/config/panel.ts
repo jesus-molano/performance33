@@ -6,6 +6,8 @@ import type { SegmentOption } from '@/components/ui'
 export const SCREENS_PANEL_COPY = {
   title: 'Pantallas del gimnasio',
   description: `Cada pantalla tiene su nombre y sus secciones (hasta ${TV_MAX_SCREENS} pantallas). Los cambios se guardan solos y se ven al momento.`,
+  /** On a phone screens can't be added, so no limit to mention. */
+  phoneDescription: 'Cada pantalla tiene su nombre y sus secciones. Los cambios se guardan solos y se ven al momento.',
   loading: 'Cargando las pantallas…',
   empty: 'Todavía no hay ninguna pantalla.',
   add: 'Añadir pantalla',

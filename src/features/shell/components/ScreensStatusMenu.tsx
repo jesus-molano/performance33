@@ -1,4 +1,6 @@
+import { usePhoneScreen } from '@/hooks'
 import { ScreensStatusChip, useAutoTvScreens, useScreensSummary } from '@/features/screens'
+import { useCloseOnPhoneChange } from '@/features/shell/hooks/useCloseOnPhoneChange'
 import { usePopover } from '@/features/shell/hooks/usePopover'
 import { useTvDisconnectAlert } from '@/features/shell/hooks/useTvDisconnectAlert'
 import { TvScreensList } from './TvScreensList'
@@ -9,7 +11,10 @@ export function ScreensStatusMenu() {
   const { isOpen, toggle, close, rootRef } = usePopover()
   useTvDisconnectAlert()
   useAutoTvScreens()
-  if (!summary) return null
+  // A phone opens no TV window: its 'Pantallas' is the remote control of the bottom bar or the sidebar.
+  const phone = usePhoneScreen()
+  useCloseOnPhoneChange(phone, close)
+  if (!summary || phone) return null
 
   return (
     <div ref={rootRef} className="relative hidden sm:block">

@@ -1,7 +1,17 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Program } from '@/types'
-import { useScreens, useSendButton, useSendToScreen, type ScreenPickerProps, type SendButtonWiring } from '@/features/screens'
-import { initialScreenDay, pickedScreenDay, screenDayOptions, shownScreenDay, type ScreenDayOption } from '@/features/clients/utils/screenDays'
+import {
+  initialScreenDay,
+  pickedScreenDay,
+  screenDayOptions,
+  shownScreenDay,
+  useScreens,
+  useSendButton,
+  useSendToScreen,
+  type ScreenDayOption,
+  type ScreenPickerProps,
+  type SendButtonWiring,
+} from '@/features/screens'
 
 export interface ClientScreenSend {
   pickerProps: ScreenPickerProps

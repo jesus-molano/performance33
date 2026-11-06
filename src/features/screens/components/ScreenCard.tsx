@@ -15,10 +15,12 @@ export interface ScreenCardProps {
   onSectionsChange: (screen: ScreenView, sections: number) => void
   onRemove: (screen: ScreenView) => void
   onOpen: (screen: ScreenView) => void
+  /** 'Abrir' and 'Quitar': off on a phone, which opens no window (and cannot add a screen back). */
+  laptopControls?: boolean
 }
 
 /** One TV: its name, how many sections it has and a live picture of how they are laid out. */
-export function ScreenCard({ screen, canRemove, removeBlockedLabel = SCREENS_PANEL_COPY.lastScreen, onRename, onSectionsChange, onRemove, onOpen }: ScreenCardProps) {
+export function ScreenCard({ screen, canRemove, removeBlockedLabel = SCREENS_PANEL_COPY.lastScreen, onRename, onSectionsChange, onRemove, onOpen, laptopControls = true }: ScreenCardProps) {
   return (
     <Card padding="lg" className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
@@ -30,18 +32,20 @@ export function ScreenCard({ screen, canRemove, removeBlockedLabel = SCREENS_PAN
             </Badge>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <Button variant="secondary" size="sm" leftIcon={MonitorPlay} aria-label={SCREENS_PANEL_COPY.openLabel(screen.name)} onClick={() => onOpen(screen)}>
-            {SCREENS_PANEL_COPY.open}
-          </Button>
-          <IconButton
-            icon={Trash2}
-            size="sm"
-            label={canRemove ? SCREENS_PANEL_COPY.remove(screen.name) : removeBlockedLabel}
-            disabled={!canRemove}
-            onClick={() => onRemove(screen)}
-          />
-        </div>
+        {laptopControls && (
+          <div className="flex shrink-0 items-center gap-1">
+            <Button variant="secondary" size="sm" leftIcon={MonitorPlay} aria-label={SCREENS_PANEL_COPY.openLabel(screen.name)} onClick={() => onOpen(screen)}>
+              {SCREENS_PANEL_COPY.open}
+            </Button>
+            <IconButton
+              icon={Trash2}
+              size="sm"
+              label={canRemove ? SCREENS_PANEL_COPY.remove(screen.name) : removeBlockedLabel}
+              disabled={!canRemove}
+              onClick={() => onRemove(screen)}
+            />
+          </div>
+        )}
       </div>
       <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,15rem)] sm:items-start">
         <div className="flex min-w-0 flex-col gap-4">

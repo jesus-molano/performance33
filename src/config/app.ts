@@ -77,8 +77,12 @@ export const MAX_PROGRAM_WEEKS = 52
 /** Media query used for the mobile layout (bottom sheets, one column). */
 export const MOBILE_MEDIA_QUERY = '(max-width: 767px)'
 
-/** Phones, also held sideways: the screen routes become normal scrolling pages. A TV popup is never one (see isScreenPopup). */
-export const PHONE_SCREEN_QUERY = '(max-width: 767px), (max-height: 500px)'
+/**
+ * Phones, also held sideways: the screen routes become normal scrolling pages and 'Pantallas' is the remote control.
+ * A short window counts only with a touch screen, so a laptop with a low viewport (zoom, scaling, devtools) stays a
+ * laptop. A TV popup is never one (see isScreenPopup).
+ */
+export const PHONE_SCREEN_QUERY = '(max-width: 767px), (max-height: 500px) and (pointer: coarse)'
 
 /** Maximum size of a TV window opened without a detected TV (shrunk to fit the screen). */
 export const TV_WINDOW_SIZE = { width: 1600, height: 900 } as const
