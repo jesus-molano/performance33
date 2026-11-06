@@ -40,12 +40,12 @@ describe('section ids', () => {
 })
 
 describe('gridFor', () => {
-  it('puts 1-3 side by side, 4 in 2 × 2 and 5-6 in 3 × 2', () => {
+  it('puts 1-4 side by side, one full-height column each, and 5-6 in 3 × 2', () => {
     expect([1, 2, 3, 4, 5, 6].map(gridFor)).toEqual([
       { columns: 1, rows: 1 },
       { columns: 2, rows: 1 },
       { columns: 3, rows: 1 },
-      { columns: 2, rows: 2 },
+      { columns: 4, rows: 1 },
       { columns: 3, rows: 2 },
       { columns: 3, rows: 2 },
     ])

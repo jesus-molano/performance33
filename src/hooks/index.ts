@@ -1,3 +1,4 @@
+export { useAutoFullscreenPermission, type AutoFullscreenStatus } from './useAutoFullscreenPermission'
 export { useBrandingStyles } from './useBrandingStyles'
 export { useClickOutside } from './useClickOutside'
 export { useConfirm } from './useConfirm'

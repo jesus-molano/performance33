@@ -1,4 +1,4 @@
-import { CopyPlus, MonitorPlay, Star, Trash2 } from 'lucide-react'
+import { CopyPlus, Star, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 import { Badge, Button, DropdownMenu, type MenuItem } from '@/components/ui'
 import { formatDateRange } from '@/lib/dates'
@@ -17,7 +17,6 @@ export function ProgramHistoryRow({ program, actions }: ProgramHistoryRowProps) 
   const menu: MenuItem[] = [
     { label: 'Marcar como actual', icon: Star, onSelect: () => actions.makeCurrent(program) },
     { label: 'Duplicar como nueva rutina', icon: CopyPlus, onSelect: () => actions.duplicateAsNext(program) },
-    { label: 'Abrir en pantalla', icon: MonitorPlay, onSelect: () => actions.showOnScreen(program) },
     'separator',
     { label: 'Eliminar rutina…', icon: Trash2, danger: true, onSelect: () => actions.remove(program) },
   ]

@@ -32,7 +32,8 @@ export function ProgramEditor({ client, program }: ProgramEditorProps) {
   const headerApi = useProgramHeader(client, program)
   const context = useMemo(() => ({ days: program.days, weeks }), [program.days, weeks])
   useDiscardEmptyRows()
-  const previewProps = { programId: program.id, dayId: day?.id ?? null, onOpenScreen: () => headerApi.openOnScreen(dayIndex) }
+  const previewProps = { programId: program.id, dayId: day?.id ?? null }
+  const screenTarget = dayScreenTarget(client, program, day, dayIndex)
 
   return (
     <EditorContext value={context}>
@@ -41,7 +42,7 @@ export function ProgramEditor({ client, program }: ProgramEditorProps) {
           client={client}
           program={program}
           api={headerApi}
-          dayIndex={dayIndex}
+          screenTarget={screenTarget}
           previewVisible={preview.isWide ? preview.showAside : preview.sheetOpen}
           onTogglePreview={preview.toggle}
         />
@@ -63,7 +64,7 @@ export function ProgramEditor({ client, program }: ProgramEditorProps) {
                 key={day.id}
                 day={day}
                 menuItems={dayActions.menuItems(day.id, dayIndex)}
-                screenTarget={dayScreenTarget(client, program, day, dayIndex)}
+                screenTarget={screenTarget}
               />
             ) : (
               <EmptyState

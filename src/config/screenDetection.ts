@@ -52,6 +52,7 @@ export const SCREEN_DETECTION_COPY = {
   on: (label: string) => `En «${label}»`,
   open: (title: string) => `Abrir ${title}`,
   focus: (title: string) => `Ir a ${title}`,
+  placeOn: (title: string, label: string) => `Colocar ${title} en su tele («${label}»)`,
   openOn: (title: string, label: string) => `Abrir ${title} en «${label}»`,
   disconnected: (name: string) => `${name} desconectada`,
   disconnectedToast: (name: string) => `${name} desconectada. Pulsa Win+K y vuelve a conectar la tele.`,
@@ -61,4 +62,11 @@ export const TV_FULLSCREEN_COPY = {
   button: 'Pantalla completa',
   hint: 'Pulsa una vez para que la rutina ocupe toda la tele.',
   later: 'Ahora no',
+} as const
+
+/** A TV window told to close that the browser does not let close itself (it was not opened by the app). */
+export const TV_CLOSE_BLOCKED_COPY = {
+  title: 'Cierra esta ventana con la X',
+  body: 'Esta ventana no se puede cerrar sola. Usa la X de arriba a la derecha.',
+  keep: 'Seguir mostrándola',
 } as const

@@ -21,6 +21,8 @@ export interface TvLauncher {
   entries: TvScreenEntry[]
   detection: ScreenDetailsApi
   tvCount: number
+  /** 'Añadir pantalla' is offered only when the TVs cannot be seen (each TV seen gets its screen by itself). */
+  showAdd: boolean
   canAdd: boolean
   canRemove: boolean
   open: (screen: number) => void
@@ -30,7 +32,7 @@ export interface TvLauncher {
 
 /**
  * The 'Pantallas' menu: the gym's screens (the same list as Ajustes → Pantallas, so adding or removing one here does
- * it for everybody). Opening one only touches its own window.
+ * it for everybody). Opening one only touches its own window; one already open goes back to its TV, fullscreen.
  */
 export function useTvLauncher(): TvLauncher {
   const { openTv } = useDisplayWindow()
@@ -64,7 +66,7 @@ export function useTvLauncher(): TvLauncher {
     }),
   }))
 
-  return { entries, detection, tvCount, canAdd: panel.canAdd, canRemove: panel.canRemove, open: openTv, add, remove }
+  return { entries, detection, tvCount, showAdd: !panel.followsTvs, canAdd: panel.canAdd, canRemove: panel.canRemove, open: openTv, add, remove }
 }
 
 /** 'Pantallas' in the phone bar: there is no menu of TVs on a phone, it goes straight to the list of people. */

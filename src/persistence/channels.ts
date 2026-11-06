@@ -1,10 +1,12 @@
 // BroadcastChannel transport (same browser, instant). Two channels:
 //   data    → full AppData, for other DASHBOARD tabs (local test mode only; in the cloud each tab syncs with the server).
 //   display → sanitised DisplayData (no private fields), for Pantalla / TV windows.
-// And tvScreens: which named TV windows are open, and the order to close one. No client data.
+// And tvScreens: which named TV windows are open, and the order to close one; tvControl: orders to all TV windows
+// (bring them to the laptop, close them, put one back on its TV). No client data.
 
 import { SYNC_CHANNELS } from '@/config/app'
 import { toDisplayData } from '@/lib/display'
+import { parseTvControlMessage, type TvControlMessage } from '@/lib/tvControl'
 import type { AppData, DisplayData } from '@/types'
 import type { ChangeMeta, DisplayChange, RemoteChange } from './repository'
 
@@ -67,4 +69,16 @@ export function broadcastTvScreen(message: TvScreenMessage): void {
 
 export function listenTvScreens(listener: (message: TvScreenMessage) => void): () => void {
   return listen<TvScreenMessage>(SYNC_CHANNELS.tvScreens, listener)
+}
+
+/** Orders to every TV window of this browser (see lib/tvControl): they hear it even after the dashboard was reloaded. */
+export function broadcastTvControl(message: TvControlMessage): void {
+  post(SYNC_CHANNELS.tvControl, message)
+}
+
+export function listenTvControl(listener: (message: TvControlMessage) => void): () => void {
+  return listen<unknown>(SYNC_CHANNELS.tvControl, (data) => {
+    const message = parseTvControlMessage(data)
+    if (message) listener(message)
+  })
 }

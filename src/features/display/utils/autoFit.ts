@@ -60,6 +60,11 @@ export interface FitPlanInput {
   /** May split in two parts when one column does not fit at a good size (only one client on a landscape screen). */
   canSplit: boolean
   measure: MeasureFit
+  /**
+   * True when the fit just measured is too big to grow into: a name or prescription past AUTO_FIT.maxMainLines lines,
+   * or something sticking out sideways. Asked right after `measure`, and only above the target size.
+   */
+  wrapsTooMuch?: (fit: FitResult) => boolean
 }
 
 /** One way to lay out a day. A strict stage only counts if everything fits at the target size; else the next one is tried. */
@@ -99,7 +104,8 @@ export interface UnitLimits {
  */
 export function getUnitBounds(width: number, height: number, density: DisplayDensity, limits: UnitLimits = {}): UnitBounds {
   const { fontScale = 1, referenceHeight = height, maxUnit = Infinity } = limits
-  const max = Math.min(Math.min(width * AUTO_FIT.maxUnitPerWidth, referenceHeight * AUTO_FIT.maxUnitPerHeight) * fontScale, maxUnit)
+  const largest = Math.min(width * AUTO_FIT.maxUnitPerWidth, referenceHeight * AUTO_FIT.maxUnitPerHeight[density])
+  const max = Math.min(largest * fontScale, maxUnit)
   const target = Math.min(width * AUTO_FIT.targetUnitPerWidth, referenceHeight * AUTO_FIT.targetUnitPerHeight[density], max)
   return { min: Math.min(height * AUTO_FIT.lastResortUnitPerHeight[density], target), target, max }
 }
@@ -129,15 +135,31 @@ export function findFittingUnit(measure: (unit: number) => number, target: numbe
   return { unit: low, fits: true }
 }
 
-function planOneColumn({ height, measure }: FitPlanInput, bounds: FitBounds, detail: number): PlannedFit {
-  const { unit, fits } = findFittingUnit((candidate) => measure({ unit: candidate, columns: 1, detail }), height, bounds)
+/**
+ * Height of the content at a fit, for the search. Above the target size a fit that wraps a name onto too many lines
+ * counts as too tall: a short day grows only while its names keep their shape. At or below the target it never does,
+ * so this can not hide anything or shrink the text.
+ */
+function growthHeight(input: FitPlanInput): MeasureFit {
+  const { target } = getUnitBounds(input.width, input.height, input.density, input)
+  return (fit) => {
+    const height = input.measure(fit)
+    return fit.unit > target && input.wrapsTooMuch?.(fit) ? Infinity : height
+  }
+}
+
+function planOneColumn(input: FitPlanInput, bounds: FitBounds, detail: number): PlannedFit {
+  const measure = growthHeight(input)
+  const { unit, fits } = findFittingUnit((candidate) => measure({ unit: candidate, columns: 1, detail }), input.height, bounds)
   return { unit, columns: 1, detail, fits }
 }
 
 /** Two parts, or null when the slot is too narrow for them or may not split. */
-function planTwoParts({ width, height, canSplit, measure }: FitPlanInput, bounds: FitBounds, detail: number): PlannedFit | null {
+function planTwoParts(input: FitPlanInput, bounds: FitBounds, detail: number): PlannedFit | null {
+  const { width, height, canSplit } = input
   const partBounds = canSplit && width > height ? getColumnBounds(bounds, width, 2) : null
   if (!partBounds) return null
+  const measure = growthHeight(input)
   const { unit, fits } = findFittingUnit((candidate) => measure({ unit: candidate, columns: 2, detail }), height, partBounds)
   return { unit, columns: 2, detail, fits }
 }
@@ -206,6 +228,24 @@ export function applyFitToElement(el: HTMLElement, fit: FitResult): void {
 /** Marks one exercise line of a routine view (counted when the day does not fit). */
 export const FIT_ROW_ATTRIBUTE = 'data-fit-row'
 export const FIT_ROW_PROPS = { [FIT_ROW_ATTRIBUTE]: '' } as const
+/** Marks the main texts of an exercise line, name and prescription (their lines are counted while the text grows). */
+export const FIT_MAIN_ATTRIBUTE = 'data-fit-main'
+export const FIT_MAIN_PROPS = { [FIT_MAIN_ATTRIBUTE]: '' } as const
+
+/** Lines of a text element, from its height and line height. */
+const linesOf = (el: Element): number => {
+  const lineHeight = parseFloat(getComputedStyle(el).lineHeight)
+  return lineHeight > 0 ? Math.round(el.getBoundingClientRect().height / lineHeight) : 1
+}
+
+/**
+ * The fit on screen right now is too big to grow into: something sticks out sideways, or an exercise name or
+ * prescription takes more than AUTO_FIT.maxMainLines lines. Only asked above the target size (FitPlanInput.wrapsTooMuch).
+ */
+export function wrapsTooMuch(container: HTMLElement, content: HTMLElement): boolean {
+  if (container.scrollWidth > container.clientWidth) return true
+  return [...content.querySelectorAll(`[${FIT_MAIN_ATTRIBUTE}]`)].some((text) => linesOf(text) > AUTO_FIT.maxMainLines)
+}
 
 /** Exercise lines that end outside the container (below it, or right of it when split): what the TV cannot show. */
 export function countHiddenRows(container: HTMLElement, content: HTMLElement): number {

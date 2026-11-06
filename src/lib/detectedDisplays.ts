@@ -14,6 +14,7 @@ export function toDetectedDisplays(screens: readonly ScreenLike[]): DetectedDisp
       isPrimary: screen.isPrimary,
       isInternal: screen.isInternal,
       area: { left: screen.availLeft, top: screen.availTop, width: screen.availWidth, height: screen.availHeight },
+      bounds: { left: screen.left, top: screen.top, width: screen.width || screen.availWidth, height: screen.height || screen.availHeight },
       source: screen,
     }
   })

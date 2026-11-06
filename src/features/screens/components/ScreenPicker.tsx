@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Modal } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { SEND_COPY } from '@/features/screens/config/copy'
@@ -17,13 +18,16 @@ export interface ScreenPickerProps {
   hint: string | null
   onPick: (ref: SectionRef) => void
   onOpenScreen: (screen: number) => void
+  /** Shown above the screens, e.g. the day chips of the users list. */
+  children?: ReactNode
 }
 
 /** 'Mandar a pantalla': one card per TV with its sections; a tap on a section sends there. Bottom sheet on phones. */
-export function ScreenPicker({ open, onClose, clientName, dayLabel, status, screens, canOpenScreens, hint, onPick, onOpenScreen }: ScreenPickerProps) {
+export function ScreenPicker({ open, onClose, clientName, dayLabel, status, screens, canOpenScreens, hint, onPick, onOpenScreen, children }: ScreenPickerProps) {
   const empty = status === 'idle' ? SEND_COPY.loading : screens.length ? null : SEND_COPY.noScreens
   return (
     <Modal open={open} onClose={onClose} size="lg" title={SEND_COPY.title(clientName)} description={SEND_COPY.description(dayLabel)}>
+      {children}
       {empty ? (
         <p role="status" className="py-6 text-center text-md text-fg-muted">
           {empty}

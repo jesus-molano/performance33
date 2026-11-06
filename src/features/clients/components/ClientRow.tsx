@@ -1,14 +1,14 @@
-import { MonitorPlay } from 'lucide-react'
-import { Avatar, Badge, DropdownMenu, IconButton } from '@/components/ui'
+import { Avatar, Badge, DropdownMenu } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { formatFullName } from '@/lib/format'
 import { planLabel } from '@/lib/plans'
 import type { ProgramStatus } from '@/lib/program'
 import { paths } from '@/lib/routes'
 import type { Client } from '@/types'
-import { CLIENT_ROW_COLUMNS } from '@/features/clients/config'
+import { CLIENT_ROW_ACTIONS_WIDTH, CLIENT_ROW_COLUMNS } from '@/features/clients/config'
 import { useClientEntry } from '@/features/clients/hooks/useClientEntry'
 import { elapsedWeeks } from '@/features/clients/utils/programSummary'
+import { ClientScreenButton } from './ClientScreenButton'
 import { ImportantBadge } from './ImportantBadge'
 import { ProgramProgressBar } from './ProgramProgressBar'
 
@@ -32,7 +32,7 @@ function WeekProgress({ status }: { status: ProgramStatus }) {
 
 /** One line per client on wide screens; below lg it stacks: name and plan, then status and progress. */
 export function ClientRow({ client, importantCount, onEdit }: ClientRowProps) {
-  const { program, status, menu, openOnScreen } = useClientEntry(client, onEdit)
+  const { program, status, menu } = useClientEntry(client, onEdit)
   const plan = planLabel(client.plan, client.trainingDays)
 
   return (
@@ -57,8 +57,8 @@ export function ClientRow({ client, importantCount, onEdit }: ClientRowProps) {
           </div>
         </div>
       </a>
-      <div className="flex w-[5.75rem] shrink-0 items-center justify-end gap-1">
-        {program && <IconButton icon={MonitorPlay} label={`Abrir la rutina de ${client.firstName} en pantalla`} onClick={openOnScreen} />}
+      <div className={cn(CLIENT_ROW_ACTIONS_WIDTH, 'flex shrink-0 items-center justify-end gap-1')}>
+        <ClientScreenButton client={client} program={program} iconOnPhones />
         <DropdownMenu items={menu} label={`Opciones de ${client.firstName}`} />
       </div>
     </li>

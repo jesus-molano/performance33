@@ -1,6 +1,6 @@
 import { Cast } from 'lucide-react'
 import type { MouseEvent } from 'react'
-import { Button } from '@/components/ui'
+import { Button, type ButtonSize } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { SEND_COPY } from '@/features/screens/config/copy'
 import { useLongPress } from '@/features/screens/hooks/useLongPress'
@@ -9,13 +9,15 @@ import { ScreenPicker } from './ScreenPicker'
 
 export interface ScreenSendButtonProps extends SendToScreenInput {
   className?: string
+  /** 'sm' on day rows (default); 'md' beside other full-size buttons. */
+  size?: ButtonSize
 }
 
 /**
  * 'Pantalla' on a day ('Mandar' on phones, so it does not look like the preview icon beside it): a click opens the picker; Ctrl+clic (or holding it on a phone) sends to
  * the last section used.
  */
-export function ScreenSendButton({ className, ...input }: ScreenSendButtonProps) {
+export function ScreenSendButton({ className, size = 'sm', ...input }: ScreenSendButtonProps) {
   const send = useSendToScreen(input)
   const longPress = useLongPress(send.sendToLast)
 
@@ -28,7 +30,7 @@ export function ScreenSendButton({ className, ...input }: ScreenSendButtonProps)
   return (
     <>
       <Button
-        size="sm"
+        size={size}
         variant="secondary"
         leftIcon={Cast}
         onClick={onClick}

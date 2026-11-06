@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useConfirm, useDisplayWindow, useToast } from '@/hooks'
+import { useConfirm, useToast } from '@/hooks'
 import { getProgramDisplayName } from '@/lib/program'
 import { navigate, paths } from '@/lib/routes'
 import { useAppActions } from '@/store'
@@ -12,13 +12,11 @@ export interface ProgramActionsApi {
   duplicateAsNext: (program: Program, startDate?: ISODate) => void
   makeCurrent: (program: Program) => void
   remove: (program: Program) => Promise<void>
-  showOnScreen: (program: Program, day?: number) => void
 }
 
 /** Routine actions on the client page. Every create/duplicate opens the editor. */
 export function useProgramActions(clientId: string): ProgramActionsApi {
   const actions = useAppActions()
-  const { openDisplay } = useDisplayWindow()
   const { toast, toastUndo } = useToast()
   const confirm = useConfirm()
 
@@ -65,10 +63,5 @@ export function useProgramActions(clientId: string): ProgramActionsApi {
     [actions, confirm, toastUndo],
   )
 
-  const showOnScreen = useCallback(
-    (program: Program, day?: number) => openDisplay(clientId, day ?? null, program.id),
-    [clientId, openDisplay],
-  )
-
-  return { open: (program) => openEditor(program.id), create, duplicateAsNext, makeCurrent, remove, showOnScreen }
+  return { open: (program) => openEditor(program.id), create, duplicateAsNext, makeCurrent, remove }
 }

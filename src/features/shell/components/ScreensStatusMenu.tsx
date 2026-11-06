@@ -1,13 +1,14 @@
-import { ScreensStatusChip, useScreensSummary } from '@/features/screens'
+import { ScreensStatusChip, useAutoTvScreens, useScreensSummary } from '@/features/screens'
 import { usePopover } from '@/features/shell/hooks/usePopover'
 import { useTvDisconnectAlert } from '@/features/shell/hooks/useTvDisconnectAlert'
 import { TvScreensList } from './TvScreensList'
 
-/** The screens status in the top bar; a click lists the TVs, each one opening or coming to the front. It also says when the TV of an open screen goes away. */
+/** The screens status in the top bar; a click lists the TVs, each one opening or coming to the front. It also says when the TV of an open screen goes away, and gives each TV seen its screen (useAutoTvScreens). */
 export function ScreensStatusMenu() {
   const summary = useScreensSummary()
   const { isOpen, toggle, close, rootRef } = usePopover()
   useTvDisconnectAlert()
+  useAutoTvScreens()
   if (!summary) return null
 
   return (

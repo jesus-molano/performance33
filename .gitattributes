@@ -1,0 +1,2 @@
+# Registry files for the TV laptops: regedit wants Windows line endings, keep them byte for byte.
+public/teles/*.reg -text

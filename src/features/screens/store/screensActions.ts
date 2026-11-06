@@ -73,6 +73,20 @@ function saveScreen(config: ScreenConfig): Promise<boolean> {
   return persist(marks, () => screensService.saveScreens([screen]))
 }
 
+/**
+ * Creates the screens the gym does not have yet and leaves any existing one as it is (another tab or computer may
+ * have created or renamed it meanwhile), then reads back what the server kept.
+ */
+function ensureScreens(configs: readonly ScreenConfig[]): Promise<boolean> {
+  const { screens } = get()
+  const fresh = configs.map(normalizeScreen).filter((config) => !screens.some((s) => s.id === config.id))
+  if (!fresh.length) return Promise.resolve(true)
+  useScreensStore.setState({ screens: fresh.reduce<ScreenConfig[]>(upsertScreen, [...screens]) })
+  const saved = persist([], () => screensService.saveScreens(fresh, true))
+  void saved.then((ok) => ok && reloadScreens())
+  return saved
+}
+
 function removeScreen(id: number): Promise<boolean> {
   const { screens, sections } = get()
   const gone = Object.values(sections)
@@ -113,6 +127,8 @@ export const screensActions = {
   fillScreen,
   /** Name and number of sections; the sections past the new count are emptied. Creates the screen if it is new. */
   saveScreen,
+  /** Creates only the screens that do not exist (one per TV detected), never touching one that does. */
+  ensureScreens,
   removeScreen,
 }
 

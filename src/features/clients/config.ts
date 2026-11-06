@@ -16,6 +16,9 @@ export const CLIENT_VIEW_OPTIONS: ReadonlyArray<{ value: ClientView; label: stri
 export const CLIENT_ROW_COLUMNS =
   'grid items-center gap-x-4 gap-y-2 xl:grid-cols-[minmax(0,1.9fr)_minmax(0,1.6fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)]'
 
+/** Width of the row actions ('Pantalla' and '⋯'), shared by the list heading and its rows. */
+export const CLIENT_ROW_ACTIONS_WIDTH = 'w-[6.25rem] sm:w-[9.5rem]'
+
 export const CLIENT_LIST_COLUMN_TITLES = ['Usuario', 'Plan', 'Rutina', 'Semana', 'Importante'] as const
 
 export type PlanFilter = PlanId | 'all'
@@ -27,6 +30,14 @@ export const PLAN_FILTER_OPTIONS: ReadonlyArray<{ value: PlanFilter; label: stri
 
 /** Quick choices for a new routine's length. */
 export const PROGRAM_WEEK_CHOICES = [3, 4, 5, 6] as const
+
+/** 'Pantalla' on each user of the list: which day of the current routine goes to the TV. */
+export const CLIENT_SCREEN_COPY = {
+  noRoutine: 'Sin rutina',
+  buttonLabel: (name: string) => `Mandar a ${name} a una pantalla`,
+  dayGroup: '¿Qué día?',
+  dayChip: (day: number) => `Día ${day}`,
+} as const
 
 export const CLIENT_TEXT = {
   notePlaceholder: 'Ej.: Molestia en el hombro derecho, evitar press por encima de la cabeza.',

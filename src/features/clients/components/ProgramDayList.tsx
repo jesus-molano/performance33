@@ -1,5 +1,3 @@
-import { MonitorPlay } from 'lucide-react'
-import { IconButton } from '@/components/ui'
 import { formatDayTitle } from '@/lib/format'
 import type { Program } from '@/types'
 import { ScreenSendButton } from '@/features/screens'
@@ -7,12 +5,10 @@ import { formatDayContent } from '@/features/clients/utils/programSummary'
 
 export interface ProgramDayListProps {
   program: Program
-  /** 1-based day number. */
-  onShowDay: (dayNumber: number) => void
 }
 
-/** Days of a routine: 'Pantalla' sends a day to a section of a TV; the other button opens it in a window of its own. */
-export function ProgramDayList({ program, onShowDay }: ProgramDayListProps) {
+/** Days of a routine: 'Pantalla' sends a day to a section of a TV. */
+export function ProgramDayList({ program }: ProgramDayListProps) {
   return (
     <ol className="divide-y divide-line overflow-hidden rounded-xl border border-line">
       {program.days.map((day, index) => (
@@ -25,7 +21,6 @@ export function ProgramDayList({ program, onShowDay }: ProgramDayListProps) {
             <p className="truncate text-sm text-fg-muted">{formatDayContent(day)}</p>
           </div>
           <ScreenSendButton clientId={program.clientId} day={index + 1} dayLabel={formatDayTitle(day)} />
-          <IconButton icon={MonitorPlay} label={`Abrir ${day.name} en una ventana aparte`} onClick={() => onShowDay(index + 1)} />
         </li>
       ))}
     </ol>

@@ -229,22 +229,47 @@ con su nombre como texto libre.
 **Una ventana por tele.** Cada tele es una pantalla (Pantalla 1, Pantalla 2…) con su nombre y de 1 a 6 secciones,
 una persona en cada una. Se configuran en **Ajustes → Pantallas** (o en el menú **Pantallas**), y es lo mismo para
 todo el equipo. Más de 3 secciones en una tele de 27″ se lee pequeño a 3-4 m, y una rutina larga puede no caber
-entera: lo dice una franja abajo («+3 ejercicios más abajo, no caben»).
+entera: lo dice una franja abajo («+3 ejercicios más abajo, no caben»). Hasta 4 secciones van una al lado de otra, cada
+rutina de arriba abajo; con 5 o 6 se ponen en dos filas. Si una rutina es corta, la letra crece para llenar su sección.
 
 ### Cada mañana: abrir las teles
 
 1. Enciende las teles y en el portátil pulsa **Win+K**: conecta cada tele y elige **Extender** (no «Duplicar»).
 2. Abre la app en Chrome o Edge, entra y abre el menú **Pantallas** de la barra lateral.
 3. La primera vez pulsa **Buscar teles** y, cuando el navegador pregunte, **Permitir**. Si sale «No hay ninguna tele
-   conectada», vuelve al paso 1.
-4. Pulsa cada pantalla («Abrir Pantalla 1 en «tele»»): la ventana se abre ya en su tele. Allí pulsa una vez
+   conectada», vuelve al paso 1. Cada tele conectada tiene ya su pantalla: si conectas una tele más, la app crea
+   sola la pantalla que falta (y si apagas una, su pantalla se queda como «desconectada», no se borra).
+4. Pulsa cada pantalla («Abrir Pantalla 1 en «tele»»): la ventana se abre ya en su tele y ocupa toda la tele. Con la
+   pantalla completa automática activada (abajo) se pone sola en pantalla completa; si no, pulsa allí una vez
    **Pantalla completa** (o la tecla F).
 5. Si una tele se coloca en la que no toca, en **Ajustes → Pantallas → Teles detectadas** elige en qué tele se abre
    cada pantalla. Se guarda en ese portátil.
 
 En Firefox, o si el navegador no ve las teles, la ventana se abre en el portátil: arrástrala a su tele y pulsa F11.
+Solo entonces el menú **Pantallas** ofrece **Añadir pantalla** (en Ajustes → Pantallas sigue como opción avanzada).
 Arriba, «Pantallas 2/2» dice cuántas están abiertas; «1 sin abrir» quiere decir que esa ventana está cerrada, y
 «Pantalla 2 desconectada», que su tele se ha apagado o se ha caído Win+K.
+
+Con alguna pantalla abierta, el menú **Pantallas** (y Ajustes → Pantallas) tiene dos botones:
+
+- **Traer todas**: todas las ventanas de las teles salen de pantalla completa y vienen al portátil, una al lado de
+  otra, para revisarlas. **Devolver a sus teles** (en el aviso) o **Colocar Pantalla N en su tele** las devuelve.
+- **Cerrar todas**: cierra las ventanas de las teles. **Abrir otra vez** (en el aviso) las vuelve a abrir. Si una
+  ventana no se deja cerrar (no la abrió la app), dice «Cierra esta ventana con la X».
+
+Funcionan aunque hayas recargado la página.
+
+### Pantalla completa automática (una vez por portátil, lo hace un admin)
+
+Chrome solo deja que una ventana se ponga sola en pantalla completa en las direcciones que permite una regla del
+portátil. **Ajustes → Pantallas** dice «Pantalla completa automática: Activada ✓» o «Sin activar»; si no lo está,
+un admin ve allí los dos archivos para descargar (están en `public/teles/`):
+
+1. Descarga y abre **activar-pantalla-completa.reg** y acepta (Windows pide permiso de administrador).
+2. Reinicia Chrome: escribe `chrome://restart` en la barra de direcciones.
+
+**quitar-pantalla-completa.reg** lo deshace. La regla vale para `https://performance33.vercel.app` y
+`http://localhost:5173`; si la app cambia de dirección, cambia también los dos archivos.
 
 ### Mandar a alguien a una sección
 
@@ -253,7 +278,10 @@ Arriba, «Pantallas 2/2» dice cuántas están abiertas; «1 sin abrir» quiere 
   tenía a otra persona, se sustituye.
 - El aviso dice a quién has mandado, qué día y a quién sustituye. **Deshacer** (o Ctrl+Z mientras se ve el aviso)
   lo deja como estaba, sin tocar lo que otro monitor haya cambiado después.
-- **Ctrl+clic** en **Pantalla** (o mantenerlo pulsado en el móvil) la manda directamente a la última sección que usaste.
+- En la **lista de usuarios** cada persona tiene también su botón **Pantalla**: primero eliges el día (sale el Día 1)
+  y luego la sección. Si no tiene rutina, el botón sale gris («Sin rutina»).
+- **Ctrl+clic** en **Pantalla** (o mantenerlo pulsado en el móvil) la manda directamente a la última sección que usaste
+  (desde la lista, con el Día 1).
 - Funciona igual desde el móvil, en cualquier red: solo hace falta que la ventana de la tele esté abierta en el portátil.
 
 Desde el móvil, el Modo TV es una lista de personas para abrir la rutina de cada una como una página normal.

@@ -2,6 +2,7 @@ import { Monitor, Plus, Trash2 } from 'lucide-react'
 import { ScreenDetectionNotice } from '@/components/ScreenDetectionNotice'
 import { IconButton } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { TvWindowsActions } from '@/features/screens'
 import { TV_LAUNCHER } from '@/features/shell/config'
 import { useTvLauncher, type TvScreenEntry } from '@/features/shell/hooks/useTvLauncher'
 
@@ -34,7 +35,10 @@ function TvScreenRow({ entry, canRemove, onOpen, onRemove }: TvScreenRowProps) {
   )
 }
 
-/** Content of the 'Pantallas' menu: each screen opens or comes to the front, and 'Añadir pantalla' adds and opens the next. */
+/**
+ * Content of the 'Pantallas' menu: each screen opens or goes back to its TV; 'Traer todas' / 'Cerrar todas' while some
+ * are open; 'Añadir pantalla' (adds and opens the next) only when the TVs cannot be seen.
+ */
 export function TvScreensList({ onDone }: { onDone: () => void }) {
   const launcher = useTvLauncher()
   const run = (action: () => void) => () => {
@@ -57,16 +61,21 @@ export function TvScreensList({ onDone }: { onDone: () => void }) {
           />
         ))}
       </ul>
-      <div className="my-1 h-px bg-line" aria-hidden />
-      <button
-        type="button"
-        onClick={run(launcher.add)}
-        disabled={!launcher.canAdd}
-        className="flex h-11 items-center gap-3 rounded-lg px-3 text-left text-md font-medium text-fg hover:bg-fg/5 disabled:opacity-40"
-      >
-        <Plus size={18} aria-hidden className="text-fg-muted" />
-        {TV_LAUNCHER.add}
-      </button>
+      <TvWindowsActions onDone={onDone} className="px-3 py-2" />
+      {launcher.showAdd && (
+        <>
+          <div className="my-1 h-px bg-line" aria-hidden />
+          <button
+            type="button"
+            onClick={run(launcher.add)}
+            disabled={!launcher.canAdd}
+            className="flex h-11 items-center gap-3 rounded-lg px-3 text-left text-md font-medium text-fg hover:bg-fg/5 disabled:opacity-40"
+          >
+            <Plus size={18} aria-hidden className="text-fg-muted" />
+            {TV_LAUNCHER.add}
+          </button>
+        </>
+      )}
     </div>
   )
 }

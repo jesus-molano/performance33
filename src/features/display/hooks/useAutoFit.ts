@@ -7,6 +7,7 @@ import {
   planFit,
   planStage,
   readableMinUnit,
+  wrapsTooMuch,
   type DisplayDensity,
   type FitResult,
   type FitStatus,
@@ -59,9 +60,9 @@ const FIT_KEYS = ['unit', 'fittedUnit', 'columns', 'detail', 'density', 'overflo
 const sameFit = (a: FitState, b: FitState) => FIT_KEYS.every((key) => a[key] === b[key])
 
 /**
- * Scales a routine view to fill its container without scrolling: binary-searches the root
- * font-size (all inner sizes are em), hiding secondary content before going below the target
- * size (see planFit), and picks the compact or comfortable density from the container's shape, or tries them in turn
+ * Scales a routine view to fill its container without scrolling: binary-searches the largest root
+ * font-size (all inner sizes are em) that holds the day, hiding secondary content before going below the target
+ * size and growing a short day above it while no name or prescription takes a third line (see planFit), and picks the compact or comfortable density from the container's shape, or tries them in turn
  * on a landscape slot that may split (see getFitStages). With a shared size (unitCap) below its own, the detail level
  * is chosen again at that size, so every section hides the same things at the same size. Re-fits on container resize,
  * content resize (late web fonts, live edits), content change, density change, shared size change and font loading.
@@ -94,6 +95,8 @@ export function useAutoFit({ canSplit, fontScale, fitKey, unitCap = Infinity, re
       applyFitToElement(content, candidate)
       return content.offsetHeight
     }
+    // The planner asks right after measuring, so this reads the candidate on screen.
+    const tooWrapped = () => wrapsTooMuch(container, content)
     const stages = getFitStages(width, height, canSplit)
     let density: DisplayDensity
     let best: FitResult | null = null
@@ -107,11 +110,12 @@ export function useAutoFit({ canSplit, fontScale, fitKey, unitCap = Infinity, re
         setFit((prev) => ({ ...prev, density: nextDensity }))
         return
       }
-      best = planStage({ width, height, referenceHeight, density, fontScale, canSplit, measure }, stage)
+      best = planStage({ width, height, referenceHeight, density, fontScale, canSplit, measure, wrapsTooMuch: tooWrapped }, stage)
       if (!best) stageIndex.current++
     } while (!best)
     const cap = unitCapRef.current
-    const shown = cap < best.unit ? planFit({ width, height, referenceHeight, density, fontScale, canSplit, measure, maxUnit: cap }) : best
+    const input = { width, height, referenceHeight, density, fontScale, canSplit, measure, wrapsTooMuch: tooWrapped, maxUnit: cap }
+    const shown = cap < best.unit ? planFit(input) : best
     applyFitToElement(content, shown)
     fittedHeight.current = content.offsetHeight
     const overflowing = fittedHeight.current > height || content.scrollWidth > container.clientWidth

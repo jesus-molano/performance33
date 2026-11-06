@@ -1,9 +1,8 @@
 import { Card } from '@/components/ui'
 import { cn } from '@/lib/cn'
-import { CLIENT_LIST_COLUMN_TITLES, CLIENT_ROW_COLUMNS } from '@/features/clients/config'
+import { CLIENT_LIST_COLUMN_TITLES, CLIENT_ROW_ACTIONS_WIDTH, CLIENT_ROW_COLUMNS } from '@/features/clients/config'
 import type { ClientGridProps } from './ClientGrid'
 import { ClientRow } from './ClientRow'
-
 
 /** Lista view: same data as the cards, one compact row per client. */
 export function ClientList({ clients, pinnedCounts, onEdit }: ClientGridProps) {
@@ -15,7 +14,7 @@ export function ClientList({ clients, pinnedCounts, onEdit }: ClientGridProps) {
             <span key={title}>{title}</span>
           ))}
         </div>
-        <div className="w-[5.75rem] shrink-0" />
+        <div className={cn(CLIENT_ROW_ACTIONS_WIDTH, 'shrink-0')} />
       </div>
       <ul className="divide-y divide-line">
         {clients.map((client) => (

@@ -6,10 +6,17 @@
  * Reference: 27 inch 1080p TV read from 3-4 m. Compact exercise names are 1.5 units, comfortable ones 1.9.
  */
 export const AUTO_FIT = {
-  /** Largest unit as a fraction of the container width (480 px column → ~19 px, 640 px → ~26 px). */
-  maxUnitPerWidth: 0.04,
-  /** Largest unit as a fraction of the container height (1080 px → ~28 px). */
-  maxUnitPerHeight: 0.026,
+  /**
+   * Largest unit as a fraction of the container width (470 px column → 24,4 px, names 37 px): an outer bound only, the
+   * fit also stops growing before a name or its prescription takes a third line, or anything sticks out sideways (maxMainLines).
+   */
+  maxUnitPerWidth: 0.052,
+  /**
+   * Largest unit as a fraction of the screen height: a short day grows to fill the screen, up to names of 56 px on 1080p
+   * in both densities (compact 37,8 px, comfortable 29,7 px), twice the 28 px target. Past that a short routine reads
+   * like a poster and long names wrap more than they gain.
+   */
+  maxUnitPerHeight: { compact: 0.035, comfortable: 0.0275 },
   /**
    * Size a day should keep at 1080 px, same exercise name in both: compact 18,9 px and comfortable 14,8 px → names 28 px.
    * Secondary content hides before going below it; on a landscape screen, one column below it splits in two parts.
@@ -25,6 +32,8 @@ export const AUTO_FIT = {
   compactMaxAspect: 1,
   /** Each part of a split screen must be at least this many units wide (one exercise line: name + prescription). */
   minColumnWidthUnits: 30,
+  /** Above the target size, text grows only while every exercise name and prescription keeps to this many lines. */
+  maxMainLines: 2,
   /** Binary search iterations. */
   iterations: 9,
 } as const

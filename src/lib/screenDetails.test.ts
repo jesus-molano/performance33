@@ -12,10 +12,16 @@ async function watch(detector: ScreenDetector): Promise<() => void> {
 }
 
 describe('toDetectedDisplays', () => {
-  it('names each screen by its label and keeps its available area', () => {
+  it('names each screen by its label and keeps its available area and its whole size', () => {
     const [laptop, first] = toDetectedDisplays([LAPTOP, tv(1920, 'LG TV')])
     expect(laptop.key).toBe('Pantalla integrada')
-    expect(first).toMatchObject({ key: 'LG TV', label: 'LG TV', isPrimary: false, area: { left: 1920, top: 0, width: 1920, height: 1080 } })
+    expect(first).toMatchObject({
+      key: 'LG TV',
+      label: 'LG TV',
+      isPrimary: false,
+      area: { left: 1920, top: 0, width: 1920, height: 1032 },
+      bounds: { left: 1920, top: 0, width: 1920, height: 1080 },
+    })
   })
 
   it('tells two identical TVs apart by their position', () => {

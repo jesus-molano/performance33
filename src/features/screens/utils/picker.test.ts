@@ -23,7 +23,7 @@ describe('buildPickerScreens', () => {
     const [first, second] = buildPickerScreens(views, names, { clientId: 'laura', day: 1 }, null)
     expect(first).toMatchObject({ id: 1, name: 'Pantalla 1', online: true, columns: 3, rows: 1 })
     expect(first.tiles.map((t) => t.occupant)).toEqual(['Javier', null, 'Laura'])
-    expect(second).toMatchObject({ online: false, columns: 2, rows: 2 })
+    expect(second).toMatchObject({ online: false, columns: 4, rows: 1 })
     expect(second.tiles.map((t) => t.ref)).toEqual([1, 2, 3, 4].map((section) => ({ screen: 2, section })))
   })
 

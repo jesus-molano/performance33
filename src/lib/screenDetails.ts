@@ -23,6 +23,8 @@ export interface ScreenLike {
   availHeight: number
   left: number
   top: number
+  width: number
+  height: number
   isPrimary: boolean
   isInternal: boolean
   label: string
@@ -50,7 +52,10 @@ export interface DetectedDisplay {
   label: string
   isPrimary: boolean
   isInternal: boolean
+  /** Without the taskbar: where windows are tiled. */
   area: ScreenArea
+  /** The whole screen: what a TV window covers, even before it goes fullscreen. */
+  bounds: ScreenArea
   source: ScreenLike
 }
 

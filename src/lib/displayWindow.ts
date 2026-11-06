@@ -1,19 +1,13 @@
-// window.open helpers for the Pantalla (one client) and Modo TV (named screens, 1-6 sections each) windows.
+// window.open helpers for the TV windows (named screens, 1-6 sections each).
 // MUST be called synchronously inside a click handler, otherwise popup blockers kick in.
 
-import { DISPLAY_WINDOW_SIZE, PHONE_SCREEN_QUERY, POPUP_SCREEN_MARGIN, SCREEN_WINDOW_NAMES, TV_DEFAULT_SCREEN, TV_WINDOW_CASCADE_PX, TV_WINDOW_SIZE } from '@/config/app'
+import { PHONE_SCREEN_QUERY, POPUP_SCREEN_MARGIN, SCREEN_WINDOW_NAMES, TV_DEFAULT_SCREEN, TV_WINDOW_CASCADE_PX, TV_WINDOW_SIZE } from '@/config/app'
 import { absoluteHashUrl, paths } from './routes'
 import type { ScreenArea } from './screenDetails'
 
 export interface WindowSize {
   width: number
   height: number
-}
-
-/** Pantalla: as tall as the screen allows (max 1080) with the 16:27 ratio of a TV third. */
-export function displayWindowSize(availHeight: number): WindowSize {
-  const height = Math.min(DISPLAY_WINDOW_SIZE.height, availHeight - POPUP_SCREEN_MARGIN)
-  return { height, width: Math.round((height * 16) / 27) }
 }
 
 /** Modo TV: as wide as the screen allows (max 1600) with a 16:9 ratio. */
@@ -25,9 +19,7 @@ export function tvWindowSize(availWidth: number, availHeight: number): WindowSiz
 /** Each named screen has its own window, so opening one never touches another. */
 export const tvWindowName = (screen: number): string => `${SCREEN_WINDOW_NAMES.tv}${screen}`
 
-const displayWindowName = (clientId: string): string => `${SCREEN_WINDOW_NAMES.display}${clientId}`
-
-/** This window was opened as a TV window from a computer (a phone never opens popups, see isPhoneScreen). */
+/** This window was opened as a TV window from a computer (old one-client 'p33-pantalla-' popups count too) (a phone never opens popups, see isPhoneScreen). */
 export function isScreenPopup(windowName: string): boolean {
   return Object.values(SCREEN_WINDOW_NAMES).some((prefix) => windowName.startsWith(prefix))
 }
@@ -61,27 +53,17 @@ export function openPopup(url: string, name: string, size: WindowSize, area: Scr
   }
 }
 
-/** URL of the single-client display (use as fallback link href when the popup is blocked). */
-export function displayWindowUrl(clientId: string, day?: number | null, programId?: string | null): string {
-  return absoluteHashUrl(paths.display(clientId, day ?? null, programId ?? null))
-}
-
 export function tvWindowUrl(screen: number): string {
   return absoluteHashUrl(paths.tv(screen))
-}
-
-/** Single-client display: tall narrow column ≈ a third of a 16:9 TV. One window per client. */
-export function openDisplayWindow(clientId: string, day?: number | null, programId?: string | null): Window | null {
-  const size = displayWindowSize(window.screen.availHeight)
-  return openPopup(displayWindowUrl(clientId, day, programId), displayWindowName(clientId), size)
 }
 
 const tvWindows = new Map<number, Window>()
 
 /**
- * Window of a named screen. With a target (the TV detected for it) it fills that TV, so nobody has to drag it; without
- * one it is a 16:9 window on this screen. If this tab already opened it, it is focused (and moved to the target), not
- * reloaded.
+ * Window of a named screen. With a target (the whole TV detected for it, `DetectedDisplay.bounds`) it covers that TV
+ * even before going fullscreen, so nobody has to drag it; without one it is a 16:9 window on this screen. If this tab
+ * already opened it, it is focused (and moved to the target), not reloaded. A window this tab lost track of (the page
+ * was reloaded) is found by its name; it puts itself back on its TV when told (`place` over p33-tv-control).
  */
 export function openTvWindow(screen: number, target: ScreenArea | null = null): Window | null {
   const current = tvWindows.get(screen)
@@ -99,7 +81,20 @@ export function openTvWindow(screen: number, target: ScreenArea | null = null): 
   return opened
 }
 
-function moveWindowTo(win: Window, area: ScreenArea): void {
+/** Closes the TV windows this tab opened ('Cerrar todas'; the others close themselves when told). */
+export function closeTvWindows(): void {
+  for (const win of tvWindows.values()) {
+    try {
+      win.close()
+    } catch {
+      // Already gone.
+    }
+  }
+  tvWindows.clear()
+}
+
+/** Moves and sizes a window (a popup the app opened, or a TV window moving itself). */
+export function moveWindowTo(win: Window, area: ScreenArea): void {
   try {
     win.moveTo(area.left, area.top)
     win.resizeTo(area.width, area.height)

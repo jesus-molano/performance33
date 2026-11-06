@@ -9,6 +9,7 @@ import { useSharedTextSize } from '@/features/display/hooks/useSharedTextSize'
 import { useTvScreen } from '@/features/display/hooks/useTvScreen'
 import { useWindowHeight } from '@/features/display/hooks/useWindowHeight'
 import { TvColumnControls } from './TvColumnControls'
+import { TvCloseBlocked } from './TvCloseBlocked'
 import { TvColumns } from './TvColumns'
 import { TvFullscreenPrompt } from './TvFullscreenPrompt'
 import { TvSlotView } from './TvSlotView'
@@ -24,7 +25,7 @@ interface TvWindowProps {
 /** One named TV window: its 1-6 sections, each an independent client routine. A message until the screens are read. */
 export function TvWindow({ screen: screenNumber, legacySlots }: TvWindowProps) {
   const screen = useTvScreen(screenNumber, legacySlots)
-  const { chrome, theme, slots } = screen
+  const { chrome, theme, slots, placement } = screen
   const textSize = useSharedTextSize(chrome.fontScale)
   const referenceHeight = useWindowHeight()
   const state = screen.windowState
@@ -58,10 +59,11 @@ export function TvWindow({ screen: screenNumber, legacySlots }: TvWindowProps) {
           ))}
         </TvColumns>
       )}
-      <WindowHint visible={chrome.hintVisible && !screen.canPlace} theme={theme} />
-      {screen.fullscreenPrompt.visible && (
-        <TvFullscreenPrompt theme={theme} onFullscreen={chrome.toggleFullscreen} onDismiss={screen.fullscreenPrompt.dismiss} />
+      <WindowHint visible={chrome.hintVisible && !placement.canPlace} theme={theme} />
+      {placement.fullscreenPrompt.visible && (
+        <TvFullscreenPrompt theme={theme} onFullscreen={chrome.toggleFullscreen} onDismiss={placement.fullscreenPrompt.dismiss} />
       )}
+      {placement.closeBlocked && <TvCloseBlocked theme={theme} onKeep={placement.dismissCloseBlocked} />}
       <FadingOverlay visible={chrome.controlsVisible} position="inset-x-0 bottom-5 justify-center">
         <ScreenToolbar
           theme={theme}

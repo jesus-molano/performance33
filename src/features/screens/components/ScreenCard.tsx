@@ -9,6 +9,8 @@ import { SectionCountField } from './SectionCountField'
 export interface ScreenCardProps {
   screen: ScreenView
   canRemove: boolean
+  /** Said by the remove button when it is off (default: the last screen stays). */
+  removeBlockedLabel?: string
   onRename: (screen: ScreenView, name: string) => void
   onSectionsChange: (screen: ScreenView, sections: number) => void
   onRemove: (screen: ScreenView) => void
@@ -16,7 +18,7 @@ export interface ScreenCardProps {
 }
 
 /** One TV: its name, how many sections it has and a live picture of how they are laid out. */
-export function ScreenCard({ screen, canRemove, onRename, onSectionsChange, onRemove, onOpen }: ScreenCardProps) {
+export function ScreenCard({ screen, canRemove, removeBlockedLabel = SCREENS_PANEL_COPY.lastScreen, onRename, onSectionsChange, onRemove, onOpen }: ScreenCardProps) {
   return (
     <Card padding="lg" className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
@@ -35,7 +37,7 @@ export function ScreenCard({ screen, canRemove, onRename, onSectionsChange, onRe
           <IconButton
             icon={Trash2}
             size="sm"
-            label={canRemove ? SCREENS_PANEL_COPY.remove(screen.name) : SCREENS_PANEL_COPY.lastScreen}
+            label={canRemove ? SCREENS_PANEL_COPY.remove(screen.name) : removeBlockedLabel}
             disabled={!canRemove}
             onClick={() => onRemove(screen)}
           />

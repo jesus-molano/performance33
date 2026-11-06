@@ -5,6 +5,8 @@ import { readSessionStorage, writeSessionStorage } from '@/lib/safeStorage'
 export interface FullscreenPrompt {
   visible: boolean
   dismiss: () => void
+  /** Shows it again (the window was just put back on its TV). */
+  reopen: () => void
 }
 
 const promptKey = (screen: number) => `${DISPLAY_STORAGE_KEYS.fullscreenPrompt}${screen}`
@@ -24,6 +26,8 @@ export function useFullscreenPrompt(screen: number, isFullscreen: boolean, enabl
     setDone(true)
   }, [screen])
 
+  const reopen = useCallback(() => setDone(false), [])
+
   useEffect(() => {
     if (!visible) return
     const timer = window.setTimeout(dismiss, FULLSCREEN_PROMPT_MS)
@@ -34,5 +38,5 @@ export function useFullscreenPrompt(screen: number, isFullscreen: boolean, enabl
     }
   }, [visible, dismiss])
 
-  return { visible, dismiss }
+  return { visible, dismiss, reopen }
 }

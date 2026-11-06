@@ -47,7 +47,7 @@ describe('readable floor', () => {
     const bounds = getUnitBounds(480, TV_HEIGHT, 'compact')
     expect(bounds.min).toBeLessThan(readableMinUnit(TV_HEIGHT, 'compact'))
     expect(bounds.target).toBeGreaterThan(readableMinUnit(TV_HEIGHT, 'compact'))
-    expect(bounds.max).toBeCloseTo(19.2)
+    expect(bounds.max).toBeCloseTo(24.96)
     const shrunk = getUnitBounds(480, TV_HEIGHT, 'compact', { fontScale: 0.5 })
     expect(shrunk.min).toBe(shrunk.max)
     expect(shrunk.target).toBe(shrunk.max)
@@ -58,6 +58,67 @@ describe('target size', () => {
   it('asks for 28 px exercise names at 1080 px in both densities', () => {
     expect(getUnitBounds(640, TV_HEIGHT, 'compact').target * 1.5).toBeGreaterThanOrEqual(28)
     expect(getUnitBounds(1920, TV_HEIGHT, 'comfortable').target * 1.9).toBeGreaterThanOrEqual(28)
+  })
+})
+
+describe('growing a short day', () => {
+  it('lets the names grow to about twice the target (56 px at 1080 px) in both densities, never more', () => {
+    for (const [width, density, nameEm] of [[954, 'compact', 1.5], [1920, 'comfortable', 1.9]] as const) {
+      const { target, max } = getUnitBounds(width, TV_HEIGHT, density)
+      expect(max * nameEm).toBeGreaterThan(56)
+      expect(max * nameEm).toBeLessThan(57)
+      expect(max / target).toBeGreaterThan(1.9)
+      expect(max / target).toBeLessThan(2.1)
+    }
+  })
+
+  it('a 4-column TV section (480 × 1080) may grow above its target, within its width', () => {
+    const { target, max } = getUnitBounds(480, TV_HEIGHT, 'compact')
+    expect(max).toBeGreaterThan(target * 1.3)
+    expect(max).toBeCloseTo(480 * 0.052)
+  })
+
+  const plan = (units: number, wrapsAbove = Infinity, saved = 0) =>
+    planFit({
+      width: 640,
+      height: TV_HEIGHT,
+      density: 'compact',
+      fontScale: 1,
+      canSplit: false,
+      measure: contentOf(units, saved),
+      wrapsTooMuch: ({ unit }) => unit > wrapsAbove,
+    })
+  const bounds = getUnitBounds(640, TV_HEIGHT, 'compact')
+
+  it('fills the height with a short day, up to the cap', () => {
+    expect(plan(10).unit).toBe(bounds.max)
+    const fit = plan(40)
+    expect(fit).toMatchObject({ columns: 1, detail: 0 })
+    expect(fit.unit * 40).toBeLessThanOrEqual(TV_HEIGHT)
+    expect(fit.unit * 40).toBeGreaterThan(TV_HEIGHT * 0.99)
+  })
+
+  it('stops growing before a name or prescription would take a third line', () => {
+    const limit = (bounds.target + bounds.max) / 2
+    const fit = plan(10, limit)
+    expect(fit.unit).toBeLessThanOrEqual(limit)
+    expect(fit.unit).toBeGreaterThan(limit - 0.1)
+  })
+
+  it('the line limit never hides anything or shrinks below the target: it only holds the growth back', () => {
+    const atTarget = Math.floor(TV_HEIGHT / bounds.target)
+    expect(plan(atTarget, 0)).toEqual({ unit: bounds.target, columns: 1, detail: 0 })
+    expect(plan(atTarget + 5, 0, 6)).toMatchObject({ detail: 1 })
+  })
+
+  it('shows everything again before growing: a day that fits at the target keeps cues, tempo and icons', () => {
+    expect(plan(Math.floor(TV_HEIGHT / bounds.target) - 2, Infinity, 6).detail).toBe(0)
+  })
+
+  it('never splits a 4-column section (480 × 1080), however long the day', () => {
+    const fit = planFit({ width: 480, height: TV_HEIGHT, density: 'compact', fontScale: 1, canSplit: true, measure: contentOf(300) })
+    expect(fit.columns).toBe(1)
+    expect(getFitStages(480, TV_HEIGHT, true)).toEqual([{ density: 'compact', strict: false }])
   })
 })
 
@@ -221,7 +282,7 @@ describe('fitStyle', () => {
   })
 })
 
-describe('sections of a 2-row grid (4 sections 2 × 2, 5-6 in 3 × 2) on a 1920 × 1080 TV', () => {
+describe('sections of a 2-row grid (5-6 in 3 × 2, or any half-height landscape slot) on a 1920 × 1080 TV', () => {
   const HALF = 534
   const section = (width: number, units: number, saved = 0, maxUnit?: number) =>
     planFit({

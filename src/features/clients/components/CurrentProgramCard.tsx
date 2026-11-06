@@ -1,4 +1,4 @@
-import { CopyPlus, MonitorPlay, Pencil, Plus, Trash2 } from 'lucide-react'
+import { CopyPlus, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, DropdownMenu, type MenuItem } from '@/components/ui'
 import { formatDateRange } from '@/lib/dates'
 import { getProgramDisplayName, type ProgramStatus } from '@/lib/program'
@@ -43,13 +43,10 @@ export function CurrentProgramCard({ program, status, actions, onNewProgram }: C
         <p className="text-sm text-fg-subtle">{status.detail}</p>
       </div>
       <ExpiryCallout status={status} onDuplicate={() => actions.duplicateAsNext(program)} />
-      <ProgramDayList program={program} onShowDay={(day) => actions.showOnScreen(program, day)} />
-      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-        <Button size="lg" leftIcon={Pencil} onClick={() => actions.open(program)} className="w-full sm:w-auto sm:flex-1">
+      <ProgramDayList program={program} />
+      <div className="flex items-center gap-2">
+        <Button size="lg" leftIcon={Pencil} onClick={() => actions.open(program)} className="flex-1">
           Editar rutina
-        </Button>
-        <Button size="lg" variant="dark" leftIcon={MonitorPlay} onClick={() => actions.showOnScreen(program)} className="flex-1">
-          Abrir en pantalla
         </Button>
         <DropdownMenu items={menu} label="Más acciones de la rutina" />
       </div>

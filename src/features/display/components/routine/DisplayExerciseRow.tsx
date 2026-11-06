@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
 import type { DisplayExerciseLine } from '@/lib/display'
-import { FIT_ROW_PROPS, type DisplayDensity } from '@/features/display/utils/autoFit'
+import { FIT_MAIN_PROPS, FIT_ROW_PROPS, type DisplayDensity } from '@/features/display/utils/autoFit'
 import type { DisplayThemeClasses } from '@/features/display/utils/theme'
 import { DENSITY_STYLES } from './densityStyles'
 
@@ -23,10 +23,10 @@ export function DisplayExerciseRow({ line, density, muted, theme }: DisplayExerc
   return (
     <li {...FIT_ROW_PROPS} className={cn('grid grid-cols-[auto_minmax(0,1fr)_fit-content(58%)] items-baseline', styles.row)}>
       <span className={cn(line.label && cn('tabular text-center font-bold whitespace-nowrap', styles.label, theme.badge))}>{line.label}</span>
-      <p className={cn('font-bold text-balance [overflow-wrap:anywhere]', styles.main, muted && theme.secondaryText)}>
+      <p {...FIT_MAIN_PROPS} className={cn('font-bold text-balance [overflow-wrap:anywhere]', styles.main, muted && theme.secondaryText)}>
         {line.name}
       </p>
-      <p className={cn('tabular flex flex-wrap justify-end gap-x-[0.45em] text-right font-bold [overflow-wrap:anywhere]', styles.main)}>
+      <p {...FIT_MAIN_PROPS} className={cn('tabular flex flex-wrap justify-end gap-x-[0.45em] text-right font-bold [overflow-wrap:anywhere]', styles.main)}>
         {line.volume && <span className="min-w-0">{line.volume}</span>}
         {line.load && <span className={cn('min-w-0', theme.accentText)}>{line.load}</span>}
       </p>

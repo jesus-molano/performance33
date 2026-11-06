@@ -2,12 +2,13 @@ import { Card, Select } from '@/components/ui'
 import { ScreenDetectionNotice } from '@/components/ScreenDetectionNotice'
 import { SCREEN_DETECTION_COPY } from '@/config/screenDetection'
 import type { DetectedDisplaysApi } from '@/features/screens/hooks/useDetectedDisplays'
+import { AutoFullscreenStatus } from './AutoFullscreenStatus'
 
 export interface DetectedDisplaysCardProps {
   displays: DetectedDisplaysApi
 }
 
-/** Ajustes → Pantallas: the TVs this computer sees, and the TV each screen opens on (kept on this computer). */
+/** Ajustes → Pantallas: the TVs this computer sees, the TV each screen opens on (kept on this computer) and whether they go fullscreen by themselves. */
 export function DetectedDisplaysCard({ displays }: DetectedDisplaysCardProps) {
   const { detection, tvCount, rows, choose } = displays
   return (
@@ -31,6 +32,7 @@ export function DetectedDisplaysCard({ displays }: DetectedDisplaysCardProps) {
           ))}
         </div>
       )}
+      <AutoFullscreenStatus />
     </Card>
   )
 }

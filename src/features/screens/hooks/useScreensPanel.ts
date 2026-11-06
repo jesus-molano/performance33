@@ -1,8 +1,10 @@
-import { useConfirm, useDisplayWindow, useToast } from '@/hooks'
+import { useConfirm, useDisplayWindow, useToast, useTvDisplays } from '@/hooks'
 import { closeTvScreen } from '@/features/display/utils/tvScreenStore'
 import { canAddTvScreen, canRemoveTvScreen, nextTvScreen } from '@/features/display/utils/tvScreens'
 import { SCREENS_PANEL_COPY } from '@/features/screens/config/panel'
+import { TV_WINDOWS_COPY } from '@/features/screens/config/tvWindows'
 import type { ScreensStatus, ScreenView } from '@/features/screens/types'
+import { canRemoveWithTvs, followsDetectedTvs } from '@/features/screens/utils/autoScreens'
 import { occupiedBeyond } from '@/features/screens/utils/panel'
 import { defaultScreen } from '@/features/screens/utils/sections'
 import { useScreenActions } from './useScreenActions'
@@ -13,6 +15,10 @@ export interface ScreensPanelApi {
   screens: ScreenView[]
   canAdd: boolean
   canRemove: boolean
+  /** The browser sees the TVs: one screen per TV is created by itself, adding one by hand is an advanced option. */
+  followsTvs: boolean
+  /** Why the remove button is off: the last screen, or a screen per connected TV. */
+  removeBlockedLabel: string
   /** Adds the lowest free number for the whole gym; returns it, or null at the maximum. */
   add: () => number | null
   rename: (screen: ScreenView, name: string) => void
@@ -31,6 +37,9 @@ export function useScreensPanel(): ScreensPanelApi {
   const { toast, toastUndoAction } = useToast()
   const { openTv } = useDisplayWindow()
   const ids = screens.map((screen) => screen.id)
+  const { detection, tvCount } = useTvDisplays()
+  const followsTvs = followsDetectedTvs(detection.state)
+  const keepsForTvs = !canRemoveWithTvs(ids.length, tvCount, followsTvs)
 
   const warnIfFailed = (saved: Promise<boolean>) => {
     void saved.then((ok) => {
@@ -76,7 +85,9 @@ export function useScreensPanel(): ScreensPanelApi {
     status,
     screens,
     canAdd: canAddTvScreen(ids),
-    canRemove: canRemoveTvScreen(ids),
+    canRemove: canRemoveTvScreen(ids) && !keepsForTvs,
+    followsTvs,
+    removeBlockedLabel: keepsForTvs && canRemoveTvScreen(ids) ? TV_WINDOWS_COPY.removeKeepsTv : SCREENS_PANEL_COPY.lastScreen,
     add,
     rename,
     setSections,

@@ -25,6 +25,8 @@ export const SYNC_CHANNELS = {
   data: 'p33-data',
   display: 'p33-display',
   tvScreens: 'p33-tv-screens',
+  /** Orders to every TV window of this browser: come to the laptop, close, go back to its TV. */
+  tvControl: 'p33-tv-control',
 } as const
 
 /** Debounce before writing to the repository after a change. */
@@ -76,8 +78,7 @@ export const MOBILE_MEDIA_QUERY = '(max-width: 767px)'
 /** Phones, also held sideways: the screen routes become normal scrolling pages. A TV popup is never one (see isScreenPopup). */
 export const PHONE_SCREEN_QUERY = '(max-width: 767px), (max-height: 500px)'
 
-/** Maximum popup sizes: a third of a 16:9 1080p TV, and the full multi-column TV (shrunk to fit the screen). */
-export const DISPLAY_WINDOW_SIZE = { width: 640, height: 1080 } as const
+/** Maximum size of a TV window opened without a detected TV (shrunk to fit the screen). */
 export const TV_WINDOW_SIZE = { width: 1600, height: 900 } as const
 /** Space left around a popup so it fits within the screen (taskbar, window chrome). */
 export const POPUP_SCREEN_MARGIN = 40
@@ -87,8 +88,8 @@ export const TV_MIN_SECTIONS = 1
 export const TV_MAX_SECTIONS = 6
 /** More sections than this on a 27″ TV read from 3-4 m means smaller text. */
 export const TV_READABLE_SECTIONS = 3
-/** From this many sections a screen uses two rows (4 → 2 × 2, 5-6 → 3 × 2); fewer go side by side. */
-export const TV_TWO_ROWS_FROM = 4
+/** From this many sections a screen uses two rows (5-6 → 3 × 2); fewer go side by side, since a routine is a tall list. */
+export const TV_TWO_ROWS_FROM = 5
 /** Screens created the first time the gym has none (Pantalla 1, Pantalla 2). */
 export const TV_DEFAULT_SCREEN_COUNT = 2
 export const TV_SCREEN_NAME_MAX_LENGTH = 30
@@ -103,6 +104,12 @@ export const TV_DEFAULT_SCREEN = 1
 export const TV_MAX_SCREENS = 8
 /** Each screen opens this far from the previous one, so a new window does not hide the one before it. */
 export const TV_WINDOW_CASCADE_PX = 40
+/** After 'Cerrar todas', a TV window still open this much later could not close itself (the app did not open it). */
+export const TV_CLOSE_CHECK_MS = 600
+/** Wait after leaving fullscreen before moving a TV window: the browser gives it back its size first. */
+export const TV_MOVE_AFTER_EXIT_MS = 250
+/** Space between the TV windows brought to the laptop ('Traer todas'), so each one can be told apart. */
+export const TV_TILE_GAP_PX = 8
 /** window.name of the popups: it also tells a TV window from a phone, whatever its width (see isScreenPopup). */
 export const SCREEN_WINDOW_NAMES = { display: 'p33-pantalla-', tv: 'p33-tv-' } as const
 /** Permission that lets a window see the other screens and open windows on them (older Chrome called it 'window-placement'). */

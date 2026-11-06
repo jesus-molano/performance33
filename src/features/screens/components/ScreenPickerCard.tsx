@@ -24,7 +24,7 @@ function ScreenState({ online }: { online: boolean }) {
   )
 }
 
-/** A TV with its sections drawn in the layout the TV uses (1-3 side by side, 4 in 2 × 2, 5-6 in 3 × 2). */
+/** A TV with its sections drawn in the layout the TV uses (1-4 side by side, 5-6 in 3 × 2). */
 export function ScreenPickerCard({ screen, clientName, canOpen, onPick, onOpen }: ScreenPickerCardProps) {
   return (
     <section

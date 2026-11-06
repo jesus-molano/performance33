@@ -38,7 +38,7 @@ export const defaultScreen = (id: number): ScreenConfig => ({ id, name: defaultS
 /** What the gym gets the first time it has no screens. */
 export const defaultScreens = (): ScreenConfig[] => Array.from({ length: TV_DEFAULT_SCREEN_COUNT }, (_, i) => defaultScreen(i + 1))
 
-/** Columns × rows of a screen: 1-3 side by side, 4 in 2 × 2, 5-6 in 3 × 2. */
+/** Columns × rows of a screen: 1-4 side by side (a routine is a tall list, two rows would halve it), 5-6 in 3 × 2. */
 export function gridFor(count: number): { columns: number; rows: number } {
   const sections = clampSectionCount(count)
   const rows = sections >= TV_TWO_ROWS_FROM ? 2 : 1

@@ -5,7 +5,7 @@ import type { DetectedDisplay } from './screenDetails'
 
 export interface TvPlacementInput {
   title: string
-  /** Its window is already open (the button brings it to the front). */
+  /** Its window is already open (the button puts it back on its TV, or brings it to the front). */
   isOpen: boolean
   /** The TV it opens on now, if any. */
   display: DetectedDisplay | null
@@ -25,7 +25,7 @@ export function describeTvPlacement({ title, isOpen, display, tvsDetected }: TvP
   const disconnected = tvsDetected && !display
   const note = !tvsDetected ? null : display ? SCREEN_DETECTION_COPY.on(display.label) : SCREEN_DETECTION_COPY.disconnected(title)
   let openLabel = SCREEN_DETECTION_COPY.open(title)
-  if (isOpen) openLabel = SCREEN_DETECTION_COPY.focus(title)
+  if (isOpen) openLabel = display ? SCREEN_DETECTION_COPY.placeOn(title, display.label) : SCREEN_DETECTION_COPY.focus(title)
   else if (display) openLabel = SCREEN_DETECTION_COPY.openOn(title, display.label)
   return { note, disconnected, openLabel }
 }

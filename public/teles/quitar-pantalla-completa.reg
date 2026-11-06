@@ -1,0 +1,4 @@
+Windows Registry Editor Version 5.00
+
+; Performance33: quita el permiso de pantalla completa automática.
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\AutomaticFullscreenAllowedForUrls]

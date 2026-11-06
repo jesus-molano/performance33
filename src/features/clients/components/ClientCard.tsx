@@ -1,11 +1,11 @@
-import { MonitorPlay } from 'lucide-react'
-import { Avatar, Badge, Card, DropdownMenu, IconButton } from '@/components/ui'
+import { Avatar, Badge, Card, DropdownMenu } from '@/components/ui'
 import { formatFullName } from '@/lib/format'
 import { getProgramDisplayName } from '@/lib/program'
 import { planLabel } from '@/lib/plans'
 import { paths } from '@/lib/routes'
 import type { Client } from '@/types'
 import { useClientEntry } from '@/features/clients/hooks/useClientEntry'
+import { ClientScreenButton } from './ClientScreenButton'
 import { ImportantBadge } from './ImportantBadge'
 import { ProgramProgressBar } from './ProgramProgressBar'
 
@@ -16,11 +16,11 @@ export interface ClientCardProps {
 }
 
 export function ClientCard({ client, importantCount, onEdit }: ClientCardProps) {
-  const { program, status, menu, openOnScreen } = useClientEntry(client, onEdit)
+  const { program, status, menu } = useClientEntry(client, onEdit)
 
   return (
-    <Card padding="none" className="relative flex w-full flex-col transition-shadow hover:shadow-pop">
-      <a href={paths.client(client.id)} className="flex min-w-0 flex-1 flex-col gap-4 rounded-2xl p-4 pr-14 sm:p-5 sm:pr-14">
+    <Card padding="none" className="flex w-full flex-col transition-shadow hover:shadow-pop">
+      <a href={paths.client(client.id)} className="flex min-w-0 flex-1 flex-col gap-4 rounded-t-2xl p-4 pb-3 sm:p-5 sm:pb-3">
         <div className="flex items-center gap-3">
           <Avatar firstName={client.firstName} lastName={client.lastName} color={client.color} size="lg" />
           <div className="min-w-0">
@@ -42,9 +42,9 @@ export function ClientCard({ client, importantCount, onEdit }: ClientCardProps) 
           )}
         </div>
       </a>
-      <div className="absolute top-2 right-2 flex flex-col items-center gap-1">
+      <div className="flex items-center justify-end gap-1 border-t border-line px-2 py-1.5 sm:px-3">
+        <ClientScreenButton client={client} program={program} />
         <DropdownMenu items={menu} label={`Opciones de ${client.firstName}`} />
-        {program && <IconButton icon={MonitorPlay} label={`Abrir la rutina de ${client.firstName} en pantalla`} onClick={openOnScreen} />}
       </div>
     </Card>
   )

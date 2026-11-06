@@ -17,7 +17,7 @@ interface TvColumnsProps {
 }
 
 /**
- * The sections of a TV (1-3 side by side, 4 in 2 × 2, 5-6 in 3 × 2), reordered by their grips. Between them a gutter in
+ * The sections of a TV (1-4 side by side, 5-6 in 3 × 2), reordered by their grips. Between them a gutter in
  * the theme's gutter colour, so each person's part reads as its own.
  */
 export function TvColumns({ ids, onMove, gutterClassName, fillerClassName, children }: TvColumnsProps) {

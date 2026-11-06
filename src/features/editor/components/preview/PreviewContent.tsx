@@ -1,5 +1,5 @@
-import { Info, Lock, MonitorPlay, TriangleAlert } from 'lucide-react'
-import { Button, Callout } from '@/components/ui'
+import { Info, Lock, TriangleAlert } from 'lucide-react'
+import { Callout } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { RoutinePreview } from '@/features/display'
 import { usePreviewFit } from '@/features/editor/hooks/usePreviewFit'
@@ -7,13 +7,12 @@ import { usePreviewFit } from '@/features/editor/hooks/usePreviewFit'
 export interface PreviewContentProps {
   programId: string
   dayId: string | null
-  onOpenScreen: () => void
   /** Extra classes for the TV frame (e.g. a height-based width in the side panel). */
   frameClassName?: string
 }
 
 /** Live mini TV of the selected day + reminder that private notes never show up there. */
-export function PreviewContent({ programId, dayId, onOpenScreen, frameClassName }: PreviewContentProps) {
+export function PreviewContent({ programId, dayId, frameClassName }: PreviewContentProps) {
   const fit = usePreviewFit()
   return (
     <div className="flex flex-col gap-3">
@@ -28,9 +27,6 @@ export function PreviewContent({ programId, dayId, onOpenScreen, frameClassName 
         <Lock size={15} aria-hidden className="mt-0.5 shrink-0 text-private-icon" />
         Las notas internas nunca aparecen en la pantalla.
       </p>
-      <Button variant="dark" leftIcon={MonitorPlay} onClick={onOpenScreen} fullWidth>
-        Abrir en pantalla
-      </Button>
     </div>
   )
 }

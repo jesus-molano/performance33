@@ -1,9 +1,10 @@
-import { ArrowLeft, Eye, EyeOff, MonitorPlay, Star } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Star } from 'lucide-react'
 import { Badge, Button, Card } from '@/components/ui'
 import { planLabel } from '@/lib/plans'
 import { getProgramDisplayName } from '@/lib/program'
 import { paths } from '@/lib/routes'
 import type { Client, Program } from '@/types'
+import { ScreenSendButton, type SendToScreenInput } from '@/features/screens'
 import type { ProgramHeaderApi } from '@/features/editor/hooks/useProgramHeader'
 import { InlineInput } from '@/features/editor/components/common/InlineInput'
 import { ProgramDatesEditor } from './ProgramDatesEditor'
@@ -12,12 +13,13 @@ export interface ProgramHeaderProps {
   client: Client
   program: Program
   api: ProgramHeaderApi
-  dayIndex: number
+  /** The selected day when it belongs to the current routine, so it can go to a TV section. */
+  screenTarget: SendToScreenInput | null
   previewVisible: boolean
   onTogglePreview: () => void
 }
 
-export function ProgramHeader({ client, program, api, dayIndex, previewVisible, onTogglePreview }: ProgramHeaderProps) {
+export function ProgramHeader({ client, program, api, screenTarget, previewVisible, onTogglePreview }: ProgramHeaderProps) {
   return (
     <header className="flex flex-col gap-4">
       <a
@@ -67,10 +69,7 @@ export function ProgramHeader({ client, program, api, dayIndex, previewVisible, 
             <span className="sm:hidden">Vista previa</span>
             <span className="hidden sm:inline">{previewVisible ? 'Ocultar vista previa' : 'Mostrar vista previa'}</span>
           </Button>
-          <Button leftIcon={MonitorPlay} onClick={() => api.openOnScreen(dayIndex)} className="flex-1 lg:flex-none">
-            <span className="sm:hidden">En pantalla</span>
-            <span className="hidden sm:inline">Abrir en pantalla</span>
-          </Button>
+          {screenTarget && <ScreenSendButton {...screenTarget} size="md" className="flex-1 lg:flex-none" />}
         </div>
       </div>
 
