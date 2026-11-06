@@ -3,6 +3,7 @@ import { Button, EmptyState } from '@/components/ui'
 import { useDisclosure } from '@/hooks'
 import { navigate, paths } from '@/lib/routes'
 import { useClient, useCurrentProgram } from '@/store'
+import { ClientClassesCard } from '@/features/classes'
 import { BackLink, PageContainer } from '@/features/shell'
 import { ClientFormModal } from '@/features/clients/components/ClientFormModal'
 import { ClientProfileHeader } from '@/features/clients/components/ClientProfileHeader'
@@ -46,7 +47,10 @@ export function ClientDetailPage({ clientId }: ClientDetailPageProps) {
           <CurrentProgramSection client={client} onNewProgram={newProgram.open} />
           <ProgramHistory client={client} onNewProgram={newProgram.open} />
         </div>
-        <NotesPanel clientId={client.id} />
+        <div className="flex min-w-0 flex-col gap-6">
+          <ClientClassesCard clientId={client.id} />
+          <NotesPanel clientId={client.id} />
+        </div>
       </div>
       {editClient.isOpen && <ClientFormModal client={client} onClose={editClient.close} />}
       {newProgram.isOpen && <NewProgramModal client={client} current={current} onClose={newProgram.close} />}

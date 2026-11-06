@@ -66,3 +66,16 @@ describe('TV route', () => {
     for (const raw of ['0', '-1', 'abc', '1.5', '999', null]) expect(parseTvScreen(raw)).toBe(1)
   })
 })
+
+describe('Clases route', () => {
+  it('reads the day of ?dia= (checked by the page) and builds the link back', () => {
+    expect(parseRoute('#/clases')).toEqual({ name: 'classes', day: null })
+    expect(parseRoute('#/clases?dia=2026-11-06')).toEqual({ name: 'classes', day: '2026-11-06' })
+    expect(paths.classes('2026-11-06')).toBe('#/clases?dia=2026-11-06')
+    expect(paths.classes()).toBe('#/clases')
+  })
+
+  it('has its own settings tab', () => {
+    expect(parseRoute('#/ajustes?tab=clases')).toEqual({ name: 'settings', tab: 'clases' })
+  })
+})

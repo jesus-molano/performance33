@@ -3,7 +3,8 @@
 //   #/ or #/clientes                         → clients
 //   #/clientes/:clientId                     → client
 //   #/clientes/:clientId/programa/:programId → program (editor)
-//   #/ajustes?tab=marca|biblioteca|pantallas|equipo|datos → settings
+//   #/clases?dia=2026-11-06                  → classes (one gym day; no or invalid dia = today)
+//   #/ajustes?tab=marca|biblioteca|clases|pantallas|equipo|datos → settings
 //   #/pantalla/:clientId?dia=2&programa=pid  → display (single client, no app chrome)
 //   #/tv?pantalla=2                          → tv (Pantalla N, default 1, no app chrome; its sections live in the database)
 //   #/tv?slots=cid:1,-,cid:2&pantalla=2      → old TV links: the list fills that screen once, if it was empty
@@ -17,13 +18,15 @@ export interface TvSlot {
   day: number
 }
 
-export const SETTINGS_TABS = ['marca', 'biblioteca', 'pantallas', 'equipo', 'datos'] as const
+export const SETTINGS_TABS = ['marca', 'biblioteca', 'clases', 'pantallas', 'equipo', 'datos'] as const
 export type SettingsTab = (typeof SETTINGS_TABS)[number]
 
 export type Route =
   | { name: 'clients' }
   | { name: 'client'; clientId: string }
   | { name: 'program'; clientId: string; programId: string }
+  /** `day`: the gym day of ?dia= (YYYY-MM-DD), null for today. */
+  | { name: 'classes'; day: string | null }
   | { name: 'settings'; tab: SettingsTab }
   | { name: 'display'; clientId: string; day: number | null; programId: string | null }
   /** `legacySlots`: the list of an old ?slots= link, null when there is none. */
@@ -79,6 +82,7 @@ export const paths = {
   clients: () => '#/clientes',
   client: (clientId: string) => `#/clientes/${enc(clientId)}`,
   program: (clientId: string, programId: string) => `#/clientes/${enc(clientId)}/programa/${enc(programId)}`,
+  classes: (day?: string | null) => (day ? `#/clases?dia=${day}` : '#/clases'),
   settings: (tab?: SettingsTab) => (tab ? `#/ajustes?tab=${tab}` : '#/ajustes'),
   display: (clientId: string, day?: number | null, programId?: string | null) => {
     const query = new URLSearchParams()
@@ -106,6 +110,7 @@ export function parseRoute(hash: string): Route {
     if (seg.length === 2) return { name: 'client', clientId: seg[1] }
     if (seg.length === 4 && seg[2] === 'programa') return { name: 'program', clientId: seg[1], programId: seg[3] }
   }
+  if (seg[0] === 'clases' && seg.length === 1) return { name: 'classes', day: query.get('dia') }
   if (seg[0] === 'ajustes' && seg.length === 1) return { name: 'settings', tab: parseSettingsTab(query.get('tab')) }
   if (seg[0] === 'pantalla' && seg.length === 2) {
     return { name: 'display', clientId: seg[1], day: parseDay(query.get('dia')), programId: query.get('programa') }

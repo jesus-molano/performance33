@@ -41,7 +41,12 @@ export const BOOKING_LIMITS = {
   promoteUntilMinutes: { min: 0, max: 1440 },
   capacity: { min: 1, max: 100 },
   durationMinutes: { min: 15, max: 240 },
+  /** Characters of a class name, once trimmed. */
+  className: { min: 1, max: 40 },
 } as const
+
+/** `class_slots_for` returns at most this many days per call. */
+export const SLOT_LIST_MAX_DAYS = 42
 
 /** "Rellenar con la siguiente clase" picks a class from this many minutes before it starts. */
 export const FILL_LEAD_MINUTES = 15
@@ -52,7 +57,14 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[number]
 /** Holds a place in the class or in its waitlist (one per person and class). */
 export const ACTIVE_BOOKING_STATUSES = ['booked', 'waitlisted'] as const satisfies readonly BookingStatus[]
 
-export const SLOT_STATUSES = ['open', 'closed', 'cancelled'] as const
+/**
+ * Notices the database queues for a member (sent from phase 5): a place from the waitlist, a cancelled class,
+ * a class that changed time, and a move or a removal by a coach.
+ */
+export const NOTIFICATION_KINDS = ['promoted', 'slot_cancelled', 'slot_changed', 'moved', 'removed'] as const
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number]
+
+export const SLOT_STATUSES =['open', 'closed', 'cancelled'] as const
 export type SlotStatus = (typeof SLOT_STATUSES)[number]
 
 export const MINUTE_MS = 60_000

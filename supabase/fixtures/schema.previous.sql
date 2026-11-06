@@ -99,6 +99,73 @@ create table if not exists public.settings (
   updated_by uuid references public.profiles (id) on delete set null
 );
 
+-- Las teles de la sala (Pantalla 1, 2… hasta 8): nombre y cuántas secciones tiene, de 1 a 6.
+-- Sus reglas van aparte, más abajo, para que al repetir el archivo también se actualicen.
+create table if not exists public.screens (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null
+);
+
+-- Qué se ve en cada sección ('pantalla:sección'): un usuario (o nadie) y el día de su rutina. Nada más, nada privado.
+-- Una fila por sección: dos monitores que mandan a la vez a secciones distintas no se pisan.
+create table if not exists public.screen_sections (
+  id text primary key,
+  screen_id text not null references public.screens (id) on delete cascade,
+  data jsonb not null,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null
+);
+
+create index if not exists screen_sections_screen_id_idx on public.screen_sections (screen_id);
+
+-- Reglas de las teles. Se borran y se vuelven a poner en cada ejecución, así un cambio aquí llega también a un
+-- proyecto que ya tiene las tablas. Los límites son los de src/config/app.ts (TV_MAX_SCREENS = 8,
+-- TV_MIN_SECTIONS..TV_MAX_SECTIONS = 1..6, TV_SCREEN_NAME_MAX_LENGTH = 30; schema.test.ts comprueba que coinciden).
+-- El id de usuario tiene la forma de los que crea la app, y la hora es una hora ISO (o nada): ni un texto libre cabe.
+alter table public.screens drop constraint if exists screens_id_check;
+alter table public.screens add constraint screens_id_check check (id ~ '^[1-8]$') not valid;
+alter table public.screens drop constraint if exists screens_data_check;
+alter table public.screens add constraint screens_data_check check (coalesce(
+  data - array['name', 'sections'] = '{}'::jsonb
+  and jsonb_typeof(data -> 'name') = 'string' and char_length(btrim(data ->> 'name')) between 1 and 30
+  and jsonb_typeof(data -> 'sections') = 'number' and (data ->> 'sections') ~ '^[1-6]$',
+  false
+)) not valid;
+alter table public.screen_sections drop constraint if exists screen_sections_id_check;
+alter table public.screen_sections add constraint screen_sections_id_check check (id ~ '^[1-8]:[1-6]$') not valid;
+alter table public.screen_sections drop constraint if exists screen_sections_check;
+alter table public.screen_sections drop constraint if exists screen_sections_screen_check;
+alter table public.screen_sections add constraint screen_sections_screen_check check (split_part(id, ':', 1) = screen_id) not valid;
+alter table public.screen_sections drop constraint if exists screen_sections_data_check;
+alter table public.screen_sections add constraint screen_sections_data_check check (coalesce(
+  data - array['clientId', 'day', 'assignedAt'] = '{}'::jsonb
+  and (data -> 'clientId' = 'null'::jsonb or (jsonb_typeof(data -> 'clientId') = 'string' and (data ->> 'clientId') ~ '^[A-Za-z0-9_-]{1,64}$'))
+  and jsonb_typeof(data -> 'day') = 'number' and (data ->> 'day') ~ '^[1-9][0-9]?$'
+  and jsonb_typeof(data -> 'assignedAt') = 'string'
+  and (data ->> 'assignedAt') ~ '^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,3})?Z)?$',
+  false
+)) not valid;
+
+-- Las filas que ya había se comprueban; si alguna antigua no cumple, se queda (y se avisa), pero ninguna nueva entra.
+do $$
+declare
+  c record;
+begin
+  for c in
+    select conrelid::regclass as tbl, conname from pg_constraint
+    where conrelid in ('public.screens'::regclass, 'public.screen_sections'::regclass) and contype = 'c' and not convalidated
+  loop
+    begin
+      execute format('alter table %s validate constraint %I', c.tbl, c.conname);
+    exception when check_violation then
+      raise notice 'Hay filas antiguas en % que no cumplen %: se quedan, pero las nuevas sí la cumplirán.', c.tbl, c.conname;
+    end;
+  end loop;
+end;
+$$;
+
 -- Copia de lo que había antes de cada cambio o borrado, para poder deshacer un destrozo desde el SQL Editor (README.md).
 -- Nadie la lee desde la app. Las notas no entran: una nota de salud borrada debe desaparecer de verdad.
 create table if not exists public.row_history (
@@ -479,12 +546,32 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['clients', 'programs', 'library_exercises', 'notes', 'settings'] loop
+  foreach t in array array['clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections'] loop
     execute format('drop trigger if exists stamp_row on public.%I', t);
     execute format('create trigger stamp_row before insert or update on public.%I for each row execute function public.stamp_row()', t);
   end loop;
 end;
 $$;
+
+-- Una tele con otro número de secciones: las que quedan fuera, o las que vuelven a aparecer, empiezan vacías.
+-- En el mismo cambio, así nunca reaparece alguien que estaba en una sección escondida.
+create or replace function public.trim_screen_sections()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if (new.data ->> 'sections') is distinct from (old.data ->> 'sections') then
+    delete from public.screen_sections
+    where screen_id = new.id
+      and split_part(id, ':', 2)::int > least((old.data ->> 'sections')::int, (new.data ->> 'sections')::int);
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists trim_screen_sections on public.screens;
+create trigger trim_screen_sections after update on public.screens for each row execute function public.trim_screen_sections();
 
 -- Antes de cambiar o borrar, una copia. Lo de más de 30 días se va solo.
 create or replace function public.keep_row_history()
@@ -527,11 +614,14 @@ alter table public.programs enable row level security;
 alter table public.library_exercises enable row level security;
 alter table public.notes enable row level security;
 alter table public.settings enable row level security;
+alter table public.screens enable row level security;
+alter table public.screen_sections enable row level security;
 
 revoke all on public.row_history from public, anon, authenticated;
 revoke all on public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings from anon, authenticated;
+revoke all on public.screens, public.screen_sections from public, anon, authenticated;
 grant select, insert, update, delete
-  on public.clients, public.programs, public.library_exercises, public.notes, public.settings
+  on public.clients, public.programs, public.library_exercises, public.notes, public.settings, public.screens, public.screen_sections
   to authenticated;
 grant all on public.profiles, public.login_attempts to service_role;
 
@@ -547,12 +637,12 @@ create policy profiles_update on public.profiles for update to authenticated
   using (id = public.current_profile_id())
   with check (id = public.current_profile_id());
 
--- Rutinas y biblioteca: todo el equipo activo.
+-- Rutinas, biblioteca y lo que se ve en las teles: todo el equipo activo.
 do $$
 declare
   t text;
 begin
-  foreach t in array array['programs', 'library_exercises'] loop
+  foreach t in array array['programs', 'library_exercises', 'screens', 'screen_sections'] loop
     execute format('drop policy if exists %I on public.%I', t || '_all', t);
     execute format(
       'create policy %I on public.%I for all to authenticated using (public.is_active_staff()) with check (public.is_active_staff())',
@@ -603,7 +693,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings'] loop
+  foreach t in array array['profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -611,5 +701,20 @@ begin
       execute format('alter publication supabase_realtime add table public.%I', t);
     end if;
   end loop;
+end;
+$$;
+
+-- Qué teles están abiertas viaja por un canal privado ('p33-screens-presence', SCREENS_PRESENCE_TOPIC en la app):
+-- solo el equipo activo lo escucha y lo anuncia. Sin sesión no se ve ni se puede fingir una tele abierta.
+do $$
+begin
+  if to_regclass('realtime.messages') is not null then
+    drop policy if exists p33_screens_presence_read on realtime.messages;
+    create policy p33_screens_presence_read on realtime.messages for select to authenticated
+      using (public.is_active_staff() and realtime.topic() = 'p33-screens-presence' and extension = 'presence');
+    drop policy if exists p33_screens_presence_write on realtime.messages;
+    create policy p33_screens_presence_write on realtime.messages for insert to authenticated
+      with check (public.is_active_staff() and realtime.topic() = 'p33-screens-presence' and extension = 'presence');
+  end if;
 end;
 $$;

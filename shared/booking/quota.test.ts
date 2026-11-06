@@ -13,6 +13,7 @@ describe('weeklyQuotaFor', () => {
     expect(weeklyQuotaFor('custom', 5)).toBe(5)
     expect(weeklyQuotaFor('custom', 2.7)).toBe(2)
     expect(weeklyQuotaFor('custom', -1)).toBe(0)
+    expect(weeklyQuotaFor('custom', 1e12)).toBe(7)
   })
 
   it('follows edited settings', () => {

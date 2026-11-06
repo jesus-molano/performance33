@@ -687,13 +687,807 @@ create policy settings_update on public.settings for update to authenticated usi
 drop policy if exists settings_delete on public.settings;
 create policy settings_delete on public.settings for delete to authenticated using (public.is_admin());
 
+-- ── Clases y reservas ───────────────────────────────────────────────────────
+-- El horario semanal (class_templates) genera las clases concretas (class_slots), y en ellas se reserva (bookings).
+-- Las reglas están en booking_settings. Nadie escribe en class_slots ni en bookings: solo las funciones de aquí.
+-- Las horas son siempre las del gimnasio, 'Atlantic/Canary' (GYM_TIME_ZONE en shared/booking/constants.ts).
+-- Los límites son los de BOOKING_LIMITS, los valores iniciales los de BOOKING_DEFAULTS y los errores los códigos de
+-- shared/booking/errors.ts: schema.test.ts comprueba que coinciden. Como las teles, no entran en el historial de cambios.
+-- Bloqueos, siempre en este orden para que dos peticiones a la vez no se esperen en círculo: primero la ficha del
+-- usuario (clients) y después la clase o clases (por id), con FOR UPDATE.
+
+-- Una sola fila. Cada plan tiene una regla: 'fixed' (el número de al lado), 'unlimited' o 'training_days' (los de su ficha).
+create table if not exists public.booking_settings (
+  id text primary key default 'main' check (id = 'main'),
+  quota_standard_rule text not null default 'fixed',
+  quota_standard integer default 2,
+  quota_plus_rule text not null default 'fixed',
+  quota_plus integer default 3,
+  quota_elite_rule text not null default 'unlimited',
+  quota_elite integer,
+  quota_custom_rule text not null default 'training_days',
+  quota_custom integer,
+  horizon_days integer not null default 14,
+  cancel_until_minutes integer not null default 120,
+  late_cancel_counts boolean not null default true,
+  waitlist_enabled boolean not null default true,
+  promote_until_minutes integer not null default 30,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null
+);
+
+insert into public.booking_settings (id) values ('main') on conflict (id) do nothing;
+
+-- El horario de cada semana: día (1 lunes … 7 domingo), hora, duración, plazas y nombre.
+create table if not exists public.class_templates (
+  id uuid primary key default gen_random_uuid(),
+  weekday integer not null,
+  start_time time not null,
+  duration_minutes integer not null,
+  capacity integer not null,
+  name text not null,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null
+);
+
+-- Las clases de cada día. Las del horario llevan su plantilla y el día para el que se crearon (template_date), que no
+-- cambia aunque un monitor mueva la clase: así nunca se crea otra igual. `edited`: un monitor la cambió a mano.
+create table if not exists public.class_slots (
+  id uuid primary key default gen_random_uuid(),
+  template_id uuid references public.class_templates (id) on delete set null,
+  template_date date,
+  starts_at timestamptz not null,
+  gym_date date generated always as ((starts_at at time zone 'Atlantic/Canary')::date) stored,
+  duration_minutes integer not null,
+  capacity integer not null,
+  name text not null,
+  status text not null default 'open',
+  edited boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null,
+  unique (template_id, template_date)
+);
+
+create index if not exists class_slots_gym_date_idx on public.class_slots (gym_date, starts_at);
+
+-- Una fila por reserva; las anuladas se quedan (una cancelación tarde cuenta en la semana). `queue_order` es el orden de
+-- llegada, el de la lista de espera. `forced`: el monitor la metió por encima del aforo. `moved_to`: la reserva de la otra clase.
+create table if not exists public.bookings (
+  id uuid primary key default gen_random_uuid(),
+  slot_id uuid not null references public.class_slots (id) on delete cascade,
+  client_id text not null references public.clients (id) on delete cascade,
+  status text not null,
+  forced boolean not null default false,
+  added_by uuid references public.profiles (id) on delete set null,
+  moved_to uuid references public.bookings (id) on delete set null,
+  queue_order bigint generated always as identity,
+  created_at timestamptz not null default now(),
+  status_changed_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.profiles (id) on delete set null
+);
+
+-- Nunca dos reservas vivas (con plaza o en espera) de la misma persona en la misma clase, ni a la vez.
+create unique index if not exists bookings_one_active_idx on public.bookings (slot_id, client_id) where status in ('booked', 'waitlisted');
+create index if not exists bookings_slot_idx on public.bookings (slot_id, status, queue_order);
+create index if not exists bookings_client_idx on public.bookings (client_id, status);
+
+-- Avisos pendientes para los usuarios (se envían en la fase 5). Solo ids: nada privado. Nadie los lee desde la app.
+create table if not exists public.notification_outbox (
+  id bigint generated always as identity primary key,
+  kind text not null,
+  client_id text not null references public.clients (id) on delete cascade,
+  slot_id uuid references public.class_slots (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  sent_at timestamptz
+);
+
+create index if not exists notification_outbox_pending_idx on public.notification_outbox (created_at) where sent_at is null;
+
+-- Reglas, reaplicables como las de las teles. Límites de BOOKING_LIMITS (shared/booking/constants.ts):
+-- clases por semana 1..7, reservar con 1..60 días, cancelar 0..2880 min antes, espera hasta 0..1440 min antes,
+-- plazas 1..100, duración 15..240 min, nombre de 1 a 40 letras. Horas en minutos justos.
+alter table public.booking_settings drop constraint if exists booking_settings_quota_check;
+alter table public.booking_settings add constraint booking_settings_quota_check check (coalesce(
+  quota_standard_rule in ('fixed', 'unlimited', 'training_days') and (quota_standard_rule = 'fixed') = (quota_standard is not null)
+  and quota_plus_rule in ('fixed', 'unlimited', 'training_days') and (quota_plus_rule = 'fixed') = (quota_plus is not null)
+  and quota_elite_rule in ('fixed', 'unlimited', 'training_days') and (quota_elite_rule = 'fixed') = (quota_elite is not null)
+  and quota_custom_rule in ('fixed', 'unlimited', 'training_days') and (quota_custom_rule = 'fixed') = (quota_custom is not null)
+  and coalesce(quota_standard, 1) between 1 and 7 and coalesce(quota_plus, 1) between 1 and 7
+  and coalesce(quota_elite, 1) between 1 and 7 and coalesce(quota_custom, 1) between 1 and 7,
+  false
+)) not valid;
+alter table public.booking_settings drop constraint if exists booking_settings_times_check;
+alter table public.booking_settings add constraint booking_settings_times_check check (
+  horizon_days between 1 and 60
+  and cancel_until_minutes between 0 and 2880
+  and promote_until_minutes between 0 and 1440
+) not valid;
+
+alter table public.class_templates drop constraint if exists class_templates_check;
+alter table public.class_templates add constraint class_templates_check check (coalesce(
+  weekday between 1 and 7
+  and extract(second from start_time) = 0
+  and duration_minutes between 15 and 240
+  and capacity between 1 and 100
+  and name = btrim(name) and char_length(name) between 1 and 40
+  and name !~ '[[:cntrl:] ­​-‏ - ⁠-⁯﻿]',
+  false
+)) not valid;
+
+alter table public.class_slots drop constraint if exists class_slots_check;
+alter table public.class_slots add constraint class_slots_check check (coalesce(
+  status in ('open', 'closed', 'cancelled')
+  and (template_id is null or template_date is not null)
+  and extract(second from starts_at) = 0
+  and duration_minutes between 15 and 240
+  and capacity between 1 and 100
+  and name = btrim(name) and char_length(name) between 1 and 40
+  and name !~ '[[:cntrl:] ­​-‏ - ⁠-⁯﻿]',
+  false
+)) not valid;
+
+alter table public.bookings drop constraint if exists bookings_check;
+alter table public.bookings add constraint bookings_check check (coalesce(
+  status in ('booked', 'waitlisted', 'cancelled', 'late_cancelled', 'removed', 'slot_cancelled')
+  and not (forced and status = 'waitlisted'),
+  false
+)) not valid;
+
+alter table public.notification_outbox drop constraint if exists notification_outbox_kind_check;
+alter table public.notification_outbox add constraint notification_outbox_kind_check check (
+  kind in ('promoted', 'slot_cancelled', 'slot_changed', 'moved', 'removed')
+) not valid;
+
+do $$
+declare
+  c record;
+begin
+  for c in
+    select conrelid::regclass as tbl, conname from pg_constraint
+    where conrelid in (
+      'public.booking_settings'::regclass, 'public.class_templates'::regclass, 'public.class_slots'::regclass,
+      'public.bookings'::regclass, 'public.notification_outbox'::regclass
+    ) and contype = 'c' and not convalidated
+  loop
+    begin
+      execute format('alter table %s validate constraint %I', c.tbl, c.conname);
+    exception when check_violation then
+      raise notice 'Hay filas antiguas en % que no cumplen %: se quedan, pero las nuevas sí la cumplirán.', c.tbl, c.conname;
+    end;
+  end loop;
+end;
+$$;
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['booking_settings', 'class_templates', 'class_slots', 'bookings'] loop
+    execute format('drop trigger if exists stamp_row on public.%I', t);
+    execute format('create trigger stamp_row before insert or update on public.%I for each row execute function public.stamp_row()', t);
+  end loop;
+end;
+$$;
+
+-- ── Clases y reservas: funciones internas (sin acceso desde la app) ─────────
+
+-- Una hora del reloj del gimnasio → un momento. Igual que gymTimeToMs (shared/booking/week.ts): cuando la hora se repite
+-- (octubre) gana la primera; cuando no existe (marzo) pasa a la hora siguiente, como el reloj.
+create or replace function public.gym_time_to_instant(p_date date, p_time time)
+returns timestamptz
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when ((p_date + p_time - interval '1 hour') at time zone 'UTC') at time zone 'Atlantic/Canary' = p_date + p_time
+      then (p_date + p_time - interval '1 hour') at time zone 'UTC'
+    else (p_date + p_time) at time zone 'UTC'
+  end
+$$;
+
+create or replace function public.gym_today()
+returns date
+language sql
+stable
+set search_path = ''
+as $$
+  select (now() at time zone 'Atlantic/Canary')::date
+$$;
+
+-- El lunes de la semana del gimnasio de ese día (la semana va de lunes 00:00 a lunes 00:00, hora de Canarias).
+create or replace function public.gym_week_start(p_day date)
+returns date
+language sql
+immutable
+set search_path = ''
+as $$
+  select date_trunc('week', p_day::timestamp)::date
+$$;
+
+-- Las reglas vigentes. Si alguien borró la fila desde el SQL Editor, vuelve con los valores iniciales.
+create or replace function public.booking_rules()
+returns public.booking_settings
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r public.booking_settings;
+begin
+  select * into r from public.booking_settings where id = 'main';
+  if not found then
+    insert into public.booking_settings (id) values ('main') on conflict (id) do nothing;
+    select * into r from public.booking_settings where id = 'main';
+  end if;
+  return r;
+end;
+$$;
+
+-- Clases por semana de esa persona según su plan (null = sin límite). Como weeklyQuotaFor en shared/booking/quota.ts.
+create or replace function public.weekly_quota(p_client_id text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r public.booking_settings := public.booking_rules();
+  v_plan text;
+  v_days integer;
+  v_rule text;
+  v_classes integer;
+begin
+  select coalesce(c.data ->> 'plan', 'standard'),
+    case when jsonb_typeof(c.data -> 'trainingDays') = 'number' then least(7, greatest(0, floor((c.data ->> 'trainingDays')::numeric)))::integer else 0 end
+  into v_plan, v_days
+  from public.clients c where c.id = p_client_id;
+  case v_plan
+    when 'plus' then v_rule := r.quota_plus_rule; v_classes := r.quota_plus;
+    when 'elite' then v_rule := r.quota_elite_rule; v_classes := r.quota_elite;
+    when 'custom' then v_rule := r.quota_custom_rule; v_classes := r.quota_custom;
+    else v_rule := r.quota_standard_rule; v_classes := r.quota_standard;
+  end case;
+  return case v_rule when 'unlimited' then null when 'training_days' then coalesce(v_days, 0) else v_classes end;
+end;
+$$;
+
+-- Clases usadas en la semana de ese día: las que tienen plaza y, si cuentan, las canceladas tarde. La espera y las
+-- clases que cancela el gimnasio no cuentan.
+create or replace function public.week_usage(p_client_id text, p_day date)
+returns integer
+language sql
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer
+  from public.bookings b
+  join public.class_slots s on s.id = b.slot_id
+  where b.client_id = p_client_id
+    and s.gym_date >= public.gym_week_start(p_day)
+    and s.gym_date < public.gym_week_start(p_day) + 7
+    and s.status <> 'cancelled'
+    and (b.status = 'booked' or (b.status = 'late_cancelled' and (public.booking_rules()).late_cancel_counts))
+$$;
+
+create or replace function public.slot_booked_count(p_slot_id uuid)
+returns integer
+language sql
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer from public.bookings b where b.slot_id = p_slot_id and b.status = 'booked'
+$$;
+
+-- Deja un aviso para el usuario. Lo de más de 30 días se va solo.
+create or replace function public.enqueue_notification(p_kind text, p_client_id text, p_slot_id uuid)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into public.notification_outbox (kind, client_id, slot_id) values (p_kind, p_client_id, p_slot_id);
+  delete from public.notification_outbox where created_at < now() - interval '30 days';
+$$;
+
+-- Crea las clases del horario de esos días que aún no existan (nunca dos de la misma plantilla y día), solo las que
+-- todavía no han empezado. Se puede llamar las veces que haga falta. Sin cron: la llaman las funciones que leen clases.
+create or replace function public.ensure_class_slots(p_from date, p_to date)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_created integer;
+begin
+  insert into public.class_slots (template_id, template_date, starts_at, duration_minutes, capacity, name)
+  select t.id, d.day, public.gym_time_to_instant(d.day, t.start_time), t.duration_minutes, t.capacity, t.name
+  from public.class_templates t
+  cross join lateral (select g::date as day from generate_series(p_from::timestamp, p_to::timestamp, interval '1 day') g) d
+  where t.active
+    and extract(isodow from d.day) = t.weekday
+    and public.gym_time_to_instant(d.day, t.start_time) > now()
+  on conflict (template_id, template_date) do nothing;
+  get diagnostics v_created = row_count;
+  return v_created;
+end;
+$$;
+
+-- La clase, bloqueada, para una acción de monitor: tiene que existir, no estar cancelada ni haber terminado.
+create or replace function public.lock_slot_for_staff(p_slot_id uuid)
+returns public.class_slots
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  s public.class_slots;
+begin
+  select * into s from public.class_slots where id = p_slot_id for update;
+  if not found then
+    raise exception 'slot_not_found' using errcode = 'P0001';
+  end if;
+  if s.status = 'cancelled' then
+    raise exception 'slot_cancelled' using errcode = 'P0001';
+  end if;
+  if s.starts_at + make_interval(mins => s.duration_minutes) <= now() then
+    raise exception 'slot_finished' using errcode = 'P0001';
+  end if;
+  return s;
+end;
+$$;
+
+create or replace function public.require_staff()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not public.is_active_staff() then
+    raise exception 'not_allowed' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+-- Si hay sitio, entran los primeros de la espera que aún tengan clases esa semana. Quien llama ya tiene bloqueada la
+-- clase. Para no saltarse el orden de bloqueos (ficha y después clase) no espera por ninguna ficha: SKIP LOCKED salta a
+-- quien en ese momento está reservando otra cosa, que sigue el primero para la próxima plaza.
+-- Solo en clases abiertas y hasta promote_until_minutes antes de empezar.
+create or replace function public.promote_waitlist(p_slot_id uuid)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  s public.class_slots;
+  r public.booking_settings := public.booking_rules();
+  w record;
+  v_free integer;
+  v_quota integer;
+  v_promoted integer := 0;
+begin
+  select * into s from public.class_slots where id = p_slot_id;
+  if not found or s.status <> 'open' or not r.waitlist_enabled
+    or now() >= s.starts_at - make_interval(mins => r.promote_until_minutes) then
+    return 0;
+  end if;
+  v_free := s.capacity - public.slot_booked_count(p_slot_id);
+  if v_free <= 0 then
+    return 0;
+  end if;
+  for w in
+    select b.id, b.client_id from public.bookings b
+    where b.slot_id = p_slot_id and b.status = 'waitlisted'
+    order by b.queue_order
+    for update skip locked
+  loop
+    exit when v_free <= 0;
+    perform 1 from public.clients c where c.id = w.client_id for update skip locked;
+    continue when not found;
+    v_quota := public.weekly_quota(w.client_id);
+    continue when v_quota is not null and public.week_usage(w.client_id, s.gym_date) >= v_quota;
+    update public.bookings set status = 'booked', status_changed_at = now() where id = w.id;
+    perform public.enqueue_notification('promoted', w.client_id, p_slot_id);
+    v_promoted := v_promoted + 1;
+    v_free := v_free - 1;
+  end loop;
+  return v_promoted;
+end;
+$$;
+
+-- Un cambio en el horario rehace sus clases futuras que nadie ha tocado a mano y no tienen a nadie apuntado (ni una
+-- cancelación tarde, que cuenta en la semana). Las que tienen gente se quedan como estaban: el monitor decide.
+create or replace function public.class_templates_sync()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE'
+    and (old.weekday, old.start_time, old.duration_minutes, old.capacity, old.name, old.active)
+      is not distinct from (new.weekday, new.start_time, new.duration_minutes, new.capacity, new.name, new.active) then
+    return null;
+  end if;
+  if tg_op in ('UPDATE', 'DELETE') then
+    -- Bloquear antes de mirar: quien apunta a alguien bloquea la clase, así que el delete (otra sentencia, con otra
+    -- foto) ve las reservas hechas mientras esperaba y no se lleva por delante una recién confirmada.
+    perform 1 from public.class_slots s
+    where s.template_id = old.id and not s.edited and s.starts_at > now()
+    order by s.id
+    for update;
+    delete from public.class_slots s
+    where s.template_id = old.id
+      and not s.edited
+      and s.starts_at > now()
+      and not exists (
+        select 1 from public.bookings b where b.slot_id = s.id and b.status in ('booked', 'waitlisted', 'late_cancelled')
+      );
+  end if;
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  perform public.ensure_class_slots(public.gym_today(), public.gym_today() + (public.booking_rules()).horizon_days);
+  return null;
+end;
+$$;
+
+-- Antes de borrar (después, la plantilla ya no estaría en sus clases); al crear o cambiar, después.
+drop trigger if exists class_templates_unschedule on public.class_templates;
+create trigger class_templates_unschedule before delete on public.class_templates
+  for each row execute function public.class_templates_sync();
+drop trigger if exists class_templates_sync on public.class_templates;
+create trigger class_templates_sync after insert or update on public.class_templates
+  for each row execute function public.class_templates_sync();
+
+-- ── Clases y reservas: lo que llama la app ──────────────────────────────────
+
+-- Las clases de esos días (como mucho SLOT_LIST_MAX_DAYS = 42) con sus plazas ocupadas y la espera.
+-- Antes crea las del horario que falten, desde hoy y hasta 60 días (el máximo de horizon_days).
+drop function if exists public.class_slots_for(date, date);
+create function public.class_slots_for(p_from date, p_to date)
+returns table (
+  id uuid, template_id uuid, starts_at timestamptz, gym_date date, duration_minutes integer, capacity integer,
+  name text, status text, edited boolean, booked_count integer, waitlist_count integer, my_status text
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_to date := least(p_to, p_from + 41);
+begin
+  if not public.is_active_staff() then
+    -- Fase 3: aquí irá la vista del usuario (sus propias reservas en my_status, dentro de horizon_days).
+    raise exception 'not_allowed' using errcode = 'P0001';
+  end if;
+  if v_to >= public.gym_today() then
+    perform public.ensure_class_slots(greatest(p_from, public.gym_today()), least(v_to, public.gym_today() + 60));
+  end if;
+  return query
+  select s.id, s.template_id, s.starts_at, s.gym_date, s.duration_minutes, s.capacity, s.name, s.status, s.edited,
+    (select count(*)::integer from public.bookings b where b.slot_id = s.id and b.status = 'booked'),
+    (select count(*)::integer from public.bookings b where b.slot_id = s.id and b.status = 'waitlisted'),
+    null::text
+  from public.class_slots s
+  where s.gym_date between p_from and v_to
+  order by s.starts_at, s.id;
+end;
+$$;
+
+-- El monitor apunta a alguien. Llena: 'slot_full', salvo con p_force (entra por encima del aforo, marcada `forced`).
+-- La cuota no lo impide: over_quota avisa de que esa semana ya había usado sus clases.
+drop function if exists public.staff_add_booking(uuid, text, boolean);
+create function public.staff_add_booking(p_slot_id uuid, p_client_id text, p_force boolean default false)
+returns table (booking_id uuid, status text, forced boolean, over_quota boolean)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  s public.class_slots;
+  v_forced boolean;
+  v_quota integer;
+  v_used integer;
+  v_id uuid;
+begin
+  perform public.require_staff();
+  perform 1 from public.clients c where c.id = p_client_id for update;
+  if not found then
+    raise exception 'client_not_found' using errcode = 'P0001';
+  end if;
+  s := public.lock_slot_for_staff(p_slot_id);
+  if exists (
+    select 1 from public.bookings b
+    where b.slot_id = s.id and b.client_id = p_client_id and b.status in ('booked', 'waitlisted')
+  ) then
+    raise exception 'already_booked' using errcode = 'P0001';
+  end if;
+  v_forced := public.slot_booked_count(s.id) >= s.capacity;
+  if v_forced and not coalesce(p_force, false) then
+    raise exception 'slot_full' using errcode = 'P0001';
+  end if;
+  v_quota := public.weekly_quota(p_client_id);
+  v_used := public.week_usage(p_client_id, s.gym_date);
+  insert into public.bookings (slot_id, client_id, status, forced, added_by)
+  values (s.id, p_client_id, 'booked', v_forced, public.current_profile_id())
+  returning bookings.id into v_id;
+  return query select v_id, 'booked'::text, v_forced, v_quota is not null and v_used >= v_quota;
+end;
+$$;
+
+-- El monitor quita a alguien (con plaza o en espera). Si deja sitio, entra el primero de la espera.
+drop function if exists public.staff_remove_booking(uuid);
+create function public.staff_remove_booking(p_booking_id uuid)
+returns table (booking_id uuid, slot_id uuid, client_id text, previous_status text, promoted integer)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text;
+  v_slot uuid;
+  v_previous text;
+  s public.class_slots;
+begin
+  perform public.require_staff();
+  select b.client_id, b.slot_id into v_client, v_slot from public.bookings b where b.id = p_booking_id;
+  if not found then
+    raise exception 'booking_not_found' using errcode = 'P0001';
+  end if;
+  perform 1 from public.clients c where c.id = v_client for update;
+  s := public.lock_slot_for_staff(v_slot);
+  select b.status into v_previous from public.bookings b where b.id = p_booking_id for update;
+  if v_previous is null or v_previous not in ('booked', 'waitlisted') then
+    raise exception 'booking_not_found' using errcode = 'P0001';
+  end if;
+  update public.bookings b set status = 'removed', status_changed_at = now() where b.id = p_booking_id;
+  perform public.enqueue_notification('removed', v_client, s.id);
+  return query select p_booking_id, s.id, v_client, v_previous,
+    case when v_previous = 'booked' then public.promote_waitlist(s.id) else 0 end;
+end;
+$$;
+
+-- El monitor pasa a alguien a otra clase: la reserva de la otra clase es nueva (con plaza) y esta queda 'removed' con
+-- `moved_to`. La otra llena: 'slot_full', salvo con p_force. En la clase que deja entra el primero de la espera.
+drop function if exists public.staff_move_booking(uuid, uuid, boolean);
+create function public.staff_move_booking(p_booking_id uuid, p_to_slot_id uuid, p_force boolean default false)
+returns table (booking_id uuid, status text, forced boolean, over_quota boolean, promoted integer)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_client text;
+  v_from uuid;
+  v_previous text;
+  s_from public.class_slots;
+  s_to public.class_slots;
+  v_forced boolean;
+  v_quota integer;
+  v_used integer;
+  v_id uuid;
+begin
+  perform public.require_staff();
+  select b.client_id, b.slot_id into v_client, v_from from public.bookings b where b.id = p_booking_id;
+  if not found then
+    raise exception 'booking_not_found' using errcode = 'P0001';
+  end if;
+  if v_from = p_to_slot_id then
+    raise exception 'already_booked' using errcode = 'P0001';
+  end if;
+  perform 1 from public.clients c where c.id = v_client for update;
+  perform 1 from public.class_slots cs where cs.id in (v_from, p_to_slot_id) order by cs.id for update;
+  s_from := public.lock_slot_for_staff(v_from);
+  s_to := public.lock_slot_for_staff(p_to_slot_id);
+  select b.status into v_previous from public.bookings b where b.id = p_booking_id for update;
+  if v_previous is null or v_previous not in ('booked', 'waitlisted') then
+    raise exception 'booking_not_found' using errcode = 'P0001';
+  end if;
+  if exists (
+    select 1 from public.bookings b
+    where b.slot_id = s_to.id and b.client_id = v_client and b.status in ('booked', 'waitlisted')
+  ) then
+    raise exception 'already_booked' using errcode = 'P0001';
+  end if;
+  v_forced := public.slot_booked_count(s_to.id) >= s_to.capacity;
+  if v_forced and not coalesce(p_force, false) then
+    raise exception 'slot_full' using errcode = 'P0001';
+  end if;
+  update public.bookings b set status = 'removed', status_changed_at = now() where b.id = p_booking_id;
+  v_quota := public.weekly_quota(v_client);
+  v_used := public.week_usage(v_client, s_to.gym_date);
+  insert into public.bookings (slot_id, client_id, status, forced, added_by)
+  values (s_to.id, v_client, 'booked', v_forced, public.current_profile_id())
+  returning bookings.id into v_id;
+  update public.bookings b set moved_to = v_id where b.id = p_booking_id;
+  perform public.enqueue_notification('moved', v_client, s_to.id);
+  return query select v_id, 'booked'::text, v_forced, v_quota is not null and v_used >= v_quota,
+    case when v_previous = 'booked' then public.promote_waitlist(s_from.id) else 0 end;
+end;
+$$;
+
+-- El monitor cambia una clase: lo que no se manda (null) se queda. Desde entonces el horario ya no la toca (`edited`).
+-- Más plazas o volver a abrir: entra la espera. Otra hora: se avisa a los apuntados. Cancelarla anula todas sus
+-- reservas, avisa a todos y no tiene vuelta atrás.
+drop function if exists public.staff_update_slot(uuid, text, timestamptz, integer, integer, text);
+create function public.staff_update_slot(
+  p_slot_id uuid,
+  p_name text default null,
+  p_starts_at timestamptz default null,
+  p_duration_minutes integer default null,
+  p_capacity integer default null,
+  p_status text default null
+)
+returns table (slot_id uuid, status text, capacity integer, promoted integer, notified integer)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  s_old public.class_slots;
+  s public.class_slots;
+  v_notified integer := 0;
+  v_promoted integer := 0;
+  w record;
+begin
+  perform public.require_staff();
+  s_old := public.lock_slot_for_staff(p_slot_id);
+  update public.class_slots cs set
+    name = coalesce(btrim(p_name), cs.name),
+    starts_at = coalesce(p_starts_at, cs.starts_at),
+    duration_minutes = coalesce(p_duration_minutes, cs.duration_minutes),
+    capacity = coalesce(p_capacity, cs.capacity),
+    status = coalesce(p_status, cs.status),
+    edited = true
+  where cs.id = p_slot_id
+  returning cs.* into s;
+  if s.status = 'cancelled' then
+    for w in
+      update public.bookings b set status = 'slot_cancelled', status_changed_at = now()
+      where b.slot_id = p_slot_id and b.status in ('booked', 'waitlisted')
+      returning b.client_id
+    loop
+      perform public.enqueue_notification('slot_cancelled', w.client_id, p_slot_id);
+      v_notified := v_notified + 1;
+    end loop;
+  else
+    if (s.starts_at, s.duration_minutes) is distinct from (s_old.starts_at, s_old.duration_minutes) then
+      for w in
+        select b.client_id from public.bookings b where b.slot_id = p_slot_id and b.status in ('booked', 'waitlisted')
+      loop
+        perform public.enqueue_notification('slot_changed', w.client_id, p_slot_id);
+        v_notified := v_notified + 1;
+      end loop;
+    end if;
+    v_promoted := public.promote_waitlist(p_slot_id);
+  end if;
+  return query select s.id, s.status, s.capacity, v_promoted, v_notified;
+end;
+$$;
+
+-- El monitor añade una clase suelta, fuera del horario. Devuelve su id.
+drop function if exists public.staff_create_slot(timestamptz, integer, integer, text);
+create function public.staff_create_slot(p_starts_at timestamptz, p_duration_minutes integer, p_capacity integer, p_name text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_id uuid;
+begin
+  perform public.require_staff();
+  if p_starts_at + make_interval(mins => p_duration_minutes) <= now() then
+    raise exception 'slot_finished' using errcode = 'P0001';
+  end if;
+  insert into public.class_slots (starts_at, duration_minutes, capacity, name, edited)
+  values (p_starts_at, p_duration_minutes, p_capacity, btrim(p_name), true)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+
+-- Ficha del usuario: "Esta semana: 1 de 2" (quota null = sin límite), para la semana de ese día.
+drop function if exists public.staff_week_usage(text, date);
+create function public.staff_week_usage(p_client_id text, p_week date)
+returns table (week_start date, used integer, quota integer)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform public.require_staff();
+  return query select public.gym_week_start(p_week), public.week_usage(p_client_id, p_week), public.weekly_quota(p_client_id);
+end;
+$$;
+
+-- Fase 3 (usuarios): my_member, my_bookings, my_week_usage, book_class y cancel_booking irán aquí, con el mismo orden de
+-- bloqueos, y la rama del usuario de class_slots_for.
+
+revoke all on function public.gym_time_to_instant(date, time) from public, anon, authenticated;
+revoke all on function public.gym_today() from public, anon, authenticated;
+revoke all on function public.gym_week_start(date) from public, anon, authenticated;
+revoke all on function public.booking_rules() from public, anon, authenticated;
+revoke all on function public.weekly_quota(text) from public, anon, authenticated;
+revoke all on function public.week_usage(text, date) from public, anon, authenticated;
+revoke all on function public.slot_booked_count(uuid) from public, anon, authenticated;
+revoke all on function public.enqueue_notification(text, text, uuid) from public, anon, authenticated;
+revoke all on function public.ensure_class_slots(date, date) from public, anon, authenticated;
+revoke all on function public.lock_slot_for_staff(uuid) from public, anon, authenticated;
+revoke all on function public.require_staff() from public, anon, authenticated;
+revoke all on function public.promote_waitlist(uuid) from public, anon, authenticated;
+revoke all on function public.class_templates_sync() from public, anon, authenticated;
+revoke all on function public.class_slots_for(date, date) from public, anon;
+revoke all on function public.staff_add_booking(uuid, text, boolean) from public, anon;
+revoke all on function public.staff_remove_booking(uuid) from public, anon;
+revoke all on function public.staff_move_booking(uuid, uuid, boolean) from public, anon;
+revoke all on function public.staff_update_slot(uuid, text, timestamptz, integer, integer, text) from public, anon;
+revoke all on function public.staff_create_slot(timestamptz, integer, integer, text) from public, anon;
+revoke all on function public.staff_week_usage(text, date) from public, anon;
+
+grant execute on function public.class_slots_for(date, date) to authenticated;
+grant execute on function public.staff_add_booking(uuid, text, boolean) to authenticated;
+grant execute on function public.staff_remove_booking(uuid) to authenticated;
+grant execute on function public.staff_move_booking(uuid, uuid, boolean) to authenticated;
+grant execute on function public.staff_update_slot(uuid, text, timestamptz, integer, integer, text) to authenticated;
+grant execute on function public.staff_create_slot(timestamptz, integer, integer, text) to authenticated;
+grant execute on function public.staff_week_usage(text, date) to authenticated;
+
+-- Permisos: el equipo activo lo lee todo; el horario y las reglas los cambia el admin; clases y reservas, solo las
+-- funciones de arriba. Los avisos no los lee nadie desde la app.
+alter table public.booking_settings enable row level security;
+alter table public.class_templates enable row level security;
+alter table public.class_slots enable row level security;
+alter table public.bookings enable row level security;
+alter table public.notification_outbox enable row level security;
+
+revoke all on public.booking_settings, public.class_templates, public.class_slots, public.bookings, public.notification_outbox
+  from public, anon, authenticated;
+grant select on public.booking_settings, public.class_templates, public.class_slots, public.bookings to authenticated;
+grant insert, update on public.booking_settings to authenticated;
+grant insert, update, delete on public.class_templates to authenticated;
+
+drop policy if exists booking_settings_select on public.booking_settings;
+create policy booking_settings_select on public.booking_settings for select to authenticated using (public.is_active_staff());
+drop policy if exists booking_settings_insert on public.booking_settings;
+create policy booking_settings_insert on public.booking_settings for insert to authenticated with check (public.is_admin());
+drop policy if exists booking_settings_update on public.booking_settings;
+create policy booking_settings_update on public.booking_settings for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists class_templates_select on public.class_templates;
+create policy class_templates_select on public.class_templates for select to authenticated using (public.is_active_staff());
+drop policy if exists class_templates_insert on public.class_templates;
+create policy class_templates_insert on public.class_templates for insert to authenticated with check (public.is_admin());
+drop policy if exists class_templates_update on public.class_templates;
+create policy class_templates_update on public.class_templates for update to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+drop policy if exists class_templates_delete on public.class_templates;
+create policy class_templates_delete on public.class_templates for delete to authenticated using (public.is_admin());
+
+drop policy if exists class_slots_select on public.class_slots;
+create policy class_slots_select on public.class_slots for select to authenticated using (public.is_active_staff());
+drop policy if exists bookings_select on public.bookings;
+create policy bookings_select on public.bookings for select to authenticated using (public.is_active_staff());
+
 -- ── Tiempo real ─────────────────────────────────────────────────────────────
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections'] loop
+  foreach t in array array[
+    'profiles', 'clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections',
+    'booking_settings', 'class_templates', 'class_slots', 'bookings'
+  ] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

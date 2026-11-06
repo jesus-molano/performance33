@@ -1,5 +1,6 @@
 import { PLANS } from '@/config/plans'
 import { cn } from '@/lib/cn'
+import { usePlanDescriptions } from '@/features/classes'
 import type { PlanId } from '@/types'
 
 export interface PlanPickerProps {
@@ -7,8 +8,9 @@ export interface PlanPickerProps {
   onChange: (plan: PlanId) => void
 }
 
-/** Plan as big radio cards: 'Plus · 3 días/semana'. */
+/** Plan as big radio cards: 'Plus · 3 clases/semana' (from the gym's booking rules). */
 export function PlanPicker({ value, onChange }: PlanPickerProps) {
+  const descriptions = usePlanDescriptions()
   return (
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium text-fg">Plan</span>
@@ -28,7 +30,7 @@ export function PlanPicker({ value, onChange }: PlanPickerProps) {
               )}
             >
               <span className={cn('text-md font-semibold', selected ? 'text-brand-strong' : 'text-fg')}>{plan.label}</span>
-              <span className="text-sm text-fg-muted">{plan.description}</span>
+              <span className="text-sm text-fg-muted">{descriptions[plan.id]}</span>
             </button>
           )
         })}

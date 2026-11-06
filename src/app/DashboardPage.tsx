@@ -1,3 +1,4 @@
+import { ClassesPage } from '@/features/classes'
 import { ClientDetailPage, ClientsPage } from '@/features/clients'
 import { ProgramEditorPage } from '@/features/editor'
 import { SettingsPage } from '@/features/settings'
@@ -13,6 +14,8 @@ export function DashboardPage({ route }: { route: Route }) {
       return <ClientDetailPage clientId={route.clientId} />
     case 'program':
       return <ProgramEditorPage clientId={route.clientId} programId={route.programId} />
+    case 'classes':
+      return <ClassesPage day={route.day} />
     case 'settings':
       return <SettingsPage tab={route.tab} />
     default:

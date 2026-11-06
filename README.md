@@ -200,6 +200,8 @@ Google (nunca su única forma de entrar: sin contraseña propia, primero tiene q
 | Escribir notas firmadas por uno mismo | Sí | Sí |
 | Editar o borrar notas | Solo las suyas | Todas |
 | Su propio nombre, color y contraseña (Mi perfil), sin repetir el nombre de otro | Sí | Sí |
+| Clases: apuntar, quitar y mover gente, abrir, cerrar, editar, cancelar y añadir clases | Sí | Sí |
+| Horario semanal, reglas de reserva y clases por plan (Ajustes → Clases) | Solo verlos | Sí |
 | Marca, equipo, copias de seguridad, restablecer datos | No | Sí |
 
 Nadie puede cambiar su propio rol, desactivarse ni borrarse, y siempre queda al menos un administrador activo.
@@ -216,6 +218,41 @@ where table_name = 'clients' and row_id = 'ID' order by changed_at desc;
 insert into public.clients (id, data) values ('ID', 'DATOS DE ESA FILA')
 on conflict (id) do update set data = excluded.data;
 ```
+
+## Clases y reservas
+
+**Clases** (en el menú, entre Usuarios y Ajustes) enseña un día del gimnasio: arriba la semana (L a D, con flechas
+para cambiar de semana e «Ir a hoy»), y debajo una tarjeta por clase: «18:00–19:00 · Entrenamiento», «8/10 · +2 en
+espera» y su estado (Abierta, Completa, Reservas cerradas, En curso, Terminada, Cancelada). Las horas son siempre las
+de Canarias, aunque el móvil o el portátil estén en otra zona.
+
+- **En el móvil** pulsas una clase y se abre debajo con su gente; hoy se abre sola la clase en curso o la siguiente.
+  **En el portátil** sale al lado, empezando también por esa.
+- Cada persona lleva su plan; «Forzada» marca a quien entró con la clase llena. La lista de espera va numerada.
+- **⋯ de una persona:** «Mover a otra clase» (de cualquier día; las clases donde ya está
+  salen como «Ya está apuntado») y «Quitar». Los dos avisan con **Deshacer**. Si la
+  clase nueva está llena, pregunta «¿Añadir igualmente?».
+- **Añadir usuario** busca por cualquier parte del nombre. Con la clase llena también pregunta. Si esa persona ya
+  había usado sus clases de la semana, entra igual y el aviso lo dice.
+- **⋯ de la clase:** «Editar» (nombre, hora, duración, plazas), «Cerrar reservas» / «Abrir reservas» y «Cancelar clase»,
+  que pide confirmación y no se puede deshacer. Bajar las plazas por debajo de los apuntados avisa de que nadie sale de
+  la clase. Más plazas o volver a abrir hace entrar a los primeros de la espera.
+- **Añadir clase este día** crea una clase suelta, fuera del horario (no sale en días pasados).
+
+**Ajustes → Clases** (lo cambia un administrador; los monitores solo lo ven):
+
+- **Horario semanal:** las clases de cada día. Las clases concretas salen solas de aquí. Una clase nueva se puede poner
+  en varios días a la vez. Cambiar o quitar una del horario rehace las clases futuras que están vacías; las que ya
+  tienen gente o que un monitor editó se quedan como estaban.
+- **Reglas de reserva:** con cuántos días se puede reservar, hasta cuándo se cancela sin que cuente, si cancelar tarde
+  cuenta (nunca si el gimnasio cancela esa clase), y la lista de espera (hasta cuándo funciona). Cada cambio se guarda
+  solo y avisa con «Cambios guardados».
+- **Clases por semana según el plan:** de aquí salen las descripciones de los planes («2 clases/semana»).
+
+En la ficha de cada usuario, la tarjeta **Clases** dice «Esta semana: 1 de 2» y sus próximas clases («En espera · nº 2»
+si está en la lista de espera). En el modo local de pruebas hay un horario de demostración (lunes a viernes, de 7:00 a
+21:00, 8 plazas) con gente en las próximas clases y una clase pequeña llena con lista de espera. Los usuarios todavía
+no reservan solos: eso llega con la app de usuarios.
 
 ## La biblioteca de ejercicios
 

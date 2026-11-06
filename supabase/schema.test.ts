@@ -5,13 +5,31 @@ import { readFileSync } from 'node:fs'
 import { PGlite } from '@electric-sql/pglite'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TV_MAX_SCREENS, TV_MAX_SECTIONS, TV_MIN_SECTIONS, TV_SCREEN_NAME_MAX_LENGTH } from '../src/config/app.ts'
+import {
+  BOOKING_DEFAULTS,
+  BOOKING_ERROR_CODES,
+  BOOKING_LIMITS,
+  BOOKING_STATUSES,
+  GYM_TIME_ZONE,
+  NOTIFICATION_KINDS,
+  SLOT_LIST_MAX_DAYS,
+  SLOT_STATUSES,
+  addGymDays,
+  bookingSettingsFromRow,
+  gymMonday,
+  gymTimeToMs,
+  gymWeekday,
+  toGymDate,
+  type BookingRpcs,
+  type BookingSettingsValues,
+} from '../shared/booking/index.ts'
 
 // Booting Postgres in WASM takes seconds, far more while the whole suite runs in parallel.
 const PGLITE_TIMEOUT_MS = 60_000
 vi.setConfig({ testTimeout: PGLITE_TIMEOUT_MS, hookTimeout: PGLITE_TIMEOUT_MS })
 
 const SCHEMA = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8')
-/** The schema the live project had before the TV screens (commit a094f9a): this file is run over it there. */
+/** The schema the live project has now (commit b6fe693, with the TV screens): this file is run over it there. */
 const PREVIOUS_SCHEMA = readFileSync(new URL('./fixtures/schema.previous.sql', import.meta.url), 'utf8')
 
 const SUPABASE_STUBS = `
@@ -104,6 +122,8 @@ async function seedPeople(): Promise<void> {
   await asSuperuser()
   await db.exec(`
     truncate public.row_history, public.profiles, public.login_attempts, public.clients, public.programs, public.library_exercises, public.notes, public.settings, public.screens, public.screen_sections cascade;
+    truncate public.bookings, public.class_slots, public.class_templates, public.notification_outbox, public.booking_settings cascade;
+    insert into public.booking_settings (id) values ('main');
     delete from auth.users;
     delete from auth.refresh_tokens;
     delete from auth.identities;
@@ -201,12 +221,15 @@ describe('schema.sql', () => {
     await expect(db.exec(`update public.profiles set email = 'ana@p33.test' where username = 'ben'`)).rejects.toThrow(/email/)
   })
 
-  it('publishes every table for realtime, but never the login attempts', async () => {
+  it('publishes every table for realtime, but never the login attempts nor the notices', async () => {
     await asSuperuser()
     const tables = await rows<{ tablename: string }>(
       `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by tablename`,
     )
-    expect(tables.map((t) => t.tablename)).toEqual(['clients', 'library_exercises', 'notes', 'profiles', 'programs', 'screen_sections', 'screens', 'settings'])
+    expect(tables.map((t) => t.tablename)).toEqual([
+      'booking_settings', 'bookings', 'class_slots', 'class_templates', 'clients', 'library_exercises', 'notes', 'profiles', 'programs',
+      'screen_sections', 'screens', 'settings',
+    ])
   })
 })
 
@@ -350,7 +373,10 @@ describe('temporary passwords', () => {
 })
 
 describe('people without access', () => {
-  const TABLES = ['clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections']
+  const TABLES = [
+    'clients', 'programs', 'library_exercises', 'notes', 'settings', 'screens', 'screen_sections',
+    'booking_settings', 'class_templates', 'class_slots', 'bookings',
+  ]
 
   for (const [label, enter] of [
     ['a signed-in stranger', () => asPerson(STRANGER)],
@@ -370,7 +396,7 @@ describe('people without access', () => {
 
   it('anonymous visitors have no permissions at all', async () => {
     await asAnon()
-    for (const table of [...TABLES, 'login_attempts']) await expect(count(table)).rejects.toThrow(/permission denied/)
+    for (const table of [...TABLES, 'login_attempts', 'notification_outbox']) await expect(count(table)).rejects.toThrow(/permission denied/)
     await expect(rows('select id from public.profiles')).rejects.toThrow(/permission denied/)
     await expect(rows('select * from public.my_profile()')).rejects.toThrow(/permission denied/)
     await expect(rows('select * from public.team_accounts()')).rejects.toThrow(/permission denied/)
@@ -983,7 +1009,7 @@ describe('TV screens: limits, cleanup and who sees which TVs are open', () => {
 })
 
 describe('schema.sql over the database of the live project', () => {
-  it('adds the TV screens next to the data in use, twice in a row, without touching it', async () => {
+  it('adds the classes and bookings next to the data in use, twice in a row, without touching it', async () => {
     const live = new PGlite()
     await live.exec(SUPABASE_STUBS)
     await live.exec(PREVIOUS_SCHEMA)
@@ -994,29 +1020,784 @@ describe('schema.sql over the database of the live project', () => {
       insert into public.clients (id, data) values ('c1', '{"firstName":"Laura"}');
       insert into public.programs (id, data) values ('p1', '{"clientId":"c1"}');
       insert into public.settings (id, data) values ('main', '{"gymName":"P33"}');
+      insert into public.screens (id, data) values ('1', '{"name":"Pantalla 1","sections":3}');
+      insert into public.screen_sections (id, screen_id, data) values ('1:1', '1', '{"clientId":"c1","day":2,"assignedAt":""}');
     `)
     const snapshot = async () => ({
       clients: (await live.query('select * from public.clients order by id')).rows,
       programs: (await live.query('select * from public.programs order by id')).rows,
       settings: (await live.query('select * from public.settings')).rows,
       profiles: (await live.query('select * from public.profiles')).rows,
+      screens: (await live.query('select * from public.screens')).rows,
+      sections: (await live.query('select * from public.screen_sections')).rows,
     })
     const before = await snapshot()
     await live.exec(SCHEMA)
     await live.exec(SCHEMA)
     expect(await snapshot()).toEqual(before)
-    const secured = await live.query(`select relname, relrowsecurity from pg_class where relname in ('screens', 'screen_sections') order by relname`)
-    expect(secured.rows).toEqual([
-      { relname: 'screen_sections', relrowsecurity: true },
-      { relname: 'screens', relrowsecurity: true },
-    ])
-    const grants = await live.query(
-      `select grantee, privilege_type from information_schema.role_table_grants
-       where table_name = 'screens' and grantee in ('anon', 'authenticated') order by grantee, privilege_type`,
+    const secured = await live.query<{ relname: string; relrowsecurity: boolean }>(
+      `select relname, relrowsecurity from pg_class
+       where relname in ('booking_settings', 'class_templates', 'class_slots', 'bookings', 'notification_outbox') order by relname`,
     )
-    expect(grants.rows).toEqual(['DELETE', 'INSERT', 'SELECT', 'UPDATE'].map((privilege_type) => ({ grantee: 'authenticated', privilege_type })))
+    expect(secured.rows.map((r) => [r.relname, r.relrowsecurity])).toEqual([
+      ['booking_settings', true],
+      ['bookings', true],
+      ['class_slots', true],
+      ['class_templates', true],
+      ['notification_outbox', true],
+    ])
+    expect((await live.query('select id from public.booking_settings')).rows).toEqual([{ id: 'main' }])
     await live.exec('set role anon')
-    await expect(live.query('select * from public.screens')).rejects.toThrow(/permission denied/)
+    await expect(live.query('select * from public.bookings')).rejects.toThrow(/permission denied/)
     await live.close()
+  })
+})
+
+// ── Classes and bookings ─────────────────────────────────────────────────────
+
+/** Clients with each plan (c1 Laura, from seedPeople, has none: she counts as Standard). */
+const MARTA = 'c2'
+const PABLO = 'c3'
+const SARA = 'c4'
+const LUIS = 'c5'
+const EVA = 'c6'
+
+/** The account error codes schema.sql raised before the bookings; every other code must be a booking code. */
+const ACCOUNT_ERROR_CODES = ['password_not_changed', 'not_admin', 'profile_last_admin']
+
+async function seedBookingClients(): Promise<void> {
+  await asSuperuser()
+  await db.exec(`
+    insert into public.clients (id, data) values
+      ('${MARTA}', '{"firstName":"Marta","plan":"plus","trainingDays":3}'),
+      ('${PABLO}', '{"firstName":"Pablo","plan":"elite","trainingDays":4}'),
+      ('${SARA}', '{"firstName":"Sara","plan":"custom","trainingDays":1}'),
+      ('${LUIS}', '{"firstName":"Luis","plan":"standard","trainingDays":2}'),
+      ('${EVA}', '{"firstName":"Eva","plan":"standard","trainingDays":2}');
+  `)
+}
+
+/** Calls a booking function by its named arguments, as supabase-js does. */
+async function rpc<K extends keyof BookingRpcs>(name: K, args: BookingRpcs[K]['args']): Promise<BookingRpcs[K]['result']> {
+  const keys = Object.keys(args)
+  const call = `select * from public.${name}(${keys.map((key, i) => `${key} => $${i + 1}`).join(', ')})`
+  const result = await rows<Record<string, unknown>>(call, Object.values(args))
+  return (name === 'staff_create_slot' ? result[0][name] : result) as BookingRpcs[K]['result']
+}
+
+/** A class next week (always ahead, all in one gym week): day 0 = Monday, time on the gym clock. */
+async function slotNextWeek(day: number, time: string, capacity = 2, name = 'Funcional'): Promise<string> {
+  await asSuperuser()
+  const [row] = await rows<{ id: string }>(
+    `insert into public.class_slots (starts_at, duration_minutes, capacity, name)
+     values (public.gym_time_to_instant(public.gym_week_start(public.gym_today()) + 7 + $1::int, $2::time), 60, $3, $4) returning id`,
+    [day, time, capacity, name],
+  )
+  return row.id
+}
+
+/** A class starting that many minutes from now (negative: already started). */
+async function slotIn(minutes: number, capacity = 2, duration = 60): Promise<string> {
+  await asSuperuser()
+  const [row] = await rows<{ id: string }>(
+    `insert into public.class_slots (starts_at, duration_minutes, capacity, name)
+     values (date_trunc('minute', now()) + make_interval(mins => $1::int), $2, $3, 'Funcional') returning id`,
+    [minutes, duration, capacity],
+  )
+  return row.id
+}
+
+/** Puts people on the waitlist in this order (only members do it, from phase 3). */
+async function waitlist(slotId: string, ...clientIds: string[]): Promise<string[]> {
+  await asSuperuser()
+  const ids: string[] = []
+  for (const clientId of clientIds) {
+    const [row] = await rows<{ id: string }>(
+      `insert into public.bookings (slot_id, client_id, status) values ($1, $2, 'waitlisted') returning id`,
+      [slotId, clientId],
+    )
+    ids.push(row.id)
+  }
+  return ids
+}
+
+async function bookingsOf(slotId: string): Promise<Array<{ client_id: string; status: string; forced: boolean }>> {
+  await asSuperuser()
+  return rows(`select client_id, status, forced from public.bookings where slot_id = $1 order by queue_order`, [slotId])
+}
+
+async function notices(): Promise<Array<{ kind: string; client_id: string }>> {
+  await asSuperuser()
+  return rows('select kind, client_id from public.notification_outbox order by id')
+}
+
+/** A day of next week as 'YYYY-MM-DD' (0 = Monday). */
+async function nextWeekDay(day: number): Promise<string> {
+  await asSuperuser()
+  return (await rows<{ day: string }>('select (public.gym_week_start(public.gym_today()) + 7 + $1::int)::text as day', [day]))[0].day
+}
+
+async function bookAs(who: string, slotId: string, clientId: string, force = false) {
+  await asPerson(who)
+  return (await rpc('staff_add_booking', { p_slot_id: slotId, p_client_id: clientId, p_force: force }))[0]
+}
+
+describe('classes and bookings: rules shared with the web and the app', () => {
+  it('starts with the defaults of shared/booking', async () => {
+    await asSuperuser()
+    const [row] = await rows<BookingSettingsValues>('select * from public.booking_settings')
+    expect(bookingSettingsFromRow(row)).toEqual(BOOKING_DEFAULTS)
+  })
+
+  it('the rules accept exactly the limits of BOOKING_LIMITS', async () => {
+    await asPerson(ADMIN)
+    const setRule = (column: string, value: number) => rows(`update public.booking_settings set ${column} = $1`, [value])
+    for (const [column, limit] of [
+      ['horizon_days', BOOKING_LIMITS.horizonDays],
+      ['cancel_until_minutes', BOOKING_LIMITS.cancelUntilMinutes],
+      ['promote_until_minutes', BOOKING_LIMITS.promoteUntilMinutes],
+      ['quota_standard', BOOKING_LIMITS.weeklyQuota],
+      ['quota_plus', BOOKING_LIMITS.weeklyQuota],
+    ] as const) {
+      await setRule(column, limit.min)
+      await setRule(column, limit.max)
+      await expect(setRule(column, limit.min - 1), column).rejects.toThrow(/check constraint/)
+      await expect(setRule(column, limit.max + 1), column).rejects.toThrow(/check constraint/)
+    }
+    await expect(rows(`update public.booking_settings set quota_elite_rule = 'fixed'`)).rejects.toThrow(/check constraint/)
+    await expect(rows(`update public.booking_settings set quota_plus_rule = 'unlimited'`)).rejects.toThrow(/check constraint/)
+    await rows(`update public.booking_settings set quota_plus_rule = 'unlimited', quota_plus = null`)
+  })
+
+  it('a class takes exactly the limits of BOOKING_LIMITS, on the timetable and on each day', async () => {
+    await asPerson(ADMIN)
+    const { capacity, durationMinutes, className } = BOOKING_LIMITS
+    const template = (fields: Partial<{ weekday: number; start_time: string; duration_minutes: number; capacity: number; name: string }>) =>
+      rows(
+        `insert into public.class_templates (weekday, start_time, duration_minutes, capacity, name) values ($1, $2, $3, $4, $5)`,
+        [fields.weekday ?? 1, fields.start_time ?? '10:00', fields.duration_minutes ?? 60, fields.capacity ?? 10, fields.name ?? 'Funcional'],
+      )
+    await template({ weekday: 7, capacity: capacity.max, duration_minutes: durationMinutes.max, name: 'a'.repeat(className.max) })
+    await template({ weekday: 1, capacity: capacity.min, duration_minutes: durationMinutes.min, name: 'a'.repeat(className.min) })
+    for (const bad of [
+      { weekday: 0 },
+      { weekday: 8 },
+      { start_time: '10:00:30' },
+      { capacity: capacity.min - 1 },
+      { capacity: capacity.max + 1 },
+      { duration_minutes: durationMinutes.min - 1 },
+      { duration_minutes: durationMinutes.max + 1 },
+      { name: 'a'.repeat(className.max + 1) },
+      { name: '   ' },
+      { name: ' Funcional' },
+      { name: 'Fun​cional' },
+    ]) {
+      await expect(template(bad), JSON.stringify(bad)).rejects.toThrow(/check constraint/)
+    }
+    await asPerson(ANA)
+    await expect(rpc('staff_create_slot', { p_starts_at: new Date(Date.now() + 86_400_000).toISOString(), p_duration_minutes: 60, p_capacity: capacity.max + 1, p_name: 'Extra' })).rejects.toThrow(/check constraint/)
+  })
+
+  it('statuses and notices are the ones in shared/booking', () => {
+    const listIn = (constraint: string) => {
+      const start = SCHEMA.indexOf(`add constraint ${constraint}`)
+      return [...SCHEMA.slice(start, SCHEMA.indexOf('not valid;', start)).matchAll(/in \(([^)]*)\)/g)].map((m) =>
+        m[1].split(',').map((v) => v.trim().replace(/'/g, '')),
+      )
+    }
+    expect(listIn('bookings_check')[0]).toEqual([...BOOKING_STATUSES])
+    expect(listIn('class_slots_check')[0]).toEqual([...SLOT_STATUSES])
+    expect(listIn('notification_outbox_kind_check')[0]).toEqual([...NOTIFICATION_KINDS])
+  })
+
+  it('reads every time in the gym time zone, and only there', () => {
+    const zones = new Set([...SCHEMA.matchAll(/'([A-Z][a-z]+\/[A-Za-z_]+)'/g)].map((m) => m[1]))
+    expect([...zones]).toEqual([GYM_TIME_ZONE])
+  })
+
+  it('raises only codes the web and the app know', () => {
+    const raised = new Set([...SCHEMA.matchAll(/raise exception '([a-z_]+)'/g)].map((m) => m[1]))
+    const known: string[] = [...BOOKING_ERROR_CODES, ...ACCOUNT_ERROR_CODES]
+    for (const code of raised) expect(known, code).toContain(code)
+    expect(raised).toContain('slot_full')
+  })
+
+  it('the gym clock in SQL is the one of shared/booking, also on the days the clock changes', async () => {
+    await asSuperuser()
+    const year = new Date().getUTCFullYear() + 1
+    const lastSunday = (month: number) => {
+      const last = new Date(Date.UTC(year, month + 1, 0))
+      return toGymDate(Date.UTC(year, month, last.getUTCDate() - last.getUTCDay(), 12))
+    }
+    const days = [lastSunday(2), lastSunday(9)].flatMap((sunday) => [addGymDays(sunday, -1), sunday, addGymDays(sunday, 1)])
+    const times = ['00:00', '00:30', '00:59', '01:00', '01:30', '01:59', '02:00', '02:30', '10:00', '23:30']
+    for (const day of days) {
+      for (const time of times) {
+        const [h, m] = time.split(':').map(Number)
+        const [row] = await rows<{ at: Date; gym_date: string; monday: string }>(
+          `select public.gym_time_to_instant($1::date, $2::time) as at,
+             ((public.gym_time_to_instant($1::date, $2::time)) at time zone 'Atlantic/Canary')::date::text as gym_date,
+             public.gym_week_start($1::date)::text as monday`,
+          [day, time],
+        )
+        const expected = gymTimeToMs(day, h * 60 + m)
+        expect(new Date(row.at).getTime(), `${day} ${time}`).toBe(expected)
+        expect(row.gym_date, `${day} ${time}`).toBe(toGymDate(expected))
+        expect(row.monday).toBe(gymMonday(day))
+      }
+    }
+  })
+})
+
+describe('classes and bookings: the timetable', () => {
+  beforeEach(seedBookingClients)
+
+  const templateSlots = async (templateId: string) => {
+    await asSuperuser()
+    return rows<{ id: string; template_date: string; local_time: string; capacity: number; name: string }>(
+      `select id, template_date::text, to_char(starts_at at time zone 'Atlantic/Canary', 'HH24:MI') as local_time, capacity, name
+       from public.class_slots where template_id = $1 order by template_date`,
+      [templateId],
+    )
+  }
+
+  const addTemplate = async (time = '10:00', capacity = 8): Promise<string> => {
+    await asPerson(ADMIN)
+    const tomorrow = gymWeekday(addGymDays(toGymDate(Date.now()), 1))
+    const [row] = await rows<{ id: string }>(
+      `insert into public.class_templates (weekday, start_time, duration_minutes, capacity, name) values ($1, $2, 60, $3, 'Funcional') returning id`,
+      [tomorrow, time, capacity],
+    )
+    return row.id
+  }
+
+  it('makes its classes across a clock change at the right hour, once', async () => {
+    await asSuperuser()
+    const year = new Date().getUTCFullYear() + 1
+    const lastSundayOf = (month: number) => {
+      const last = new Date(Date.UTC(year, month + 1, 0))
+      return toGymDate(Date.UTC(year, month, last.getUTCDate() - last.getUTCDay(), 12))
+    }
+    const [{ id }] = await rows<{ id: string }>(
+      `insert into public.class_templates (weekday, start_time, duration_minutes, capacity, name) values (7, '10:00', 60, 10, 'Domingo') returning id`,
+    )
+    const [{ id: early }] = await rows<{ id: string }>(
+      `insert into public.class_templates (weekday, start_time, duration_minutes, capacity, name) values (7, '01:30', 60, 10, 'Madrugada') returning id`,
+    )
+    for (const sunday of [lastSundayOf(2), lastSundayOf(9)]) {
+      const from = addGymDays(sunday, -7)
+      const to = addGymDays(sunday, 7)
+      await rows('select public.ensure_class_slots($1::date, $2::date)', [from, to])
+      expect((await rows<{ n: number }>('select public.ensure_class_slots($1::date, $2::date) as n', [from, to]))[0].n).toBe(0)
+      for (const [templateId, minutes] of [[id, 600], [early, 90]] as const) {
+        const made = await rows<{ template_date: string; starts_at: Date }>(
+          `select template_date::text, starts_at from public.class_slots
+           where template_id = $1 and template_date between $2::date and $3::date order by template_date`,
+          [templateId, from, to],
+        )
+        expect(made.map((s) => s.template_date)).toEqual([from, sunday, to])
+        for (const slot of made) expect(new Date(slot.starts_at).getTime()).toBe(gymTimeToMs(slot.template_date, minutes))
+      }
+    }
+  })
+
+  it('makes the classes of the coming days by itself, as many as the rules allow', async () => {
+    const template = await addTemplate()
+    const slots = await templateSlots(template)
+    expect(slots).toHaveLength(2)
+    expect(slots.map((s) => s.local_time)).toEqual(['10:00', '10:00'])
+    await asPerson(ANA)
+    await rpc('class_slots_for', { p_from: slots[0].template_date, p_to: slots[1].template_date })
+    expect(await templateSlots(template)).toHaveLength(2)
+  })
+
+  it('a change redoes only the classes nobody touched and nobody booked', async () => {
+    const template = await addTemplate()
+    const [booked, untouched] = await templateSlots(template)
+    await bookAs(ANA, booked.id, LUIS)
+    await asPerson(ADMIN)
+    await rows(`update public.class_templates set start_time = '11:30', capacity = 12 where id = $1`, [template])
+    const after = await templateSlots(template)
+    expect(after.map((s) => [s.template_date, s.local_time, s.capacity])).toEqual([
+      [booked.template_date, '10:00', 8],
+      [untouched.template_date, '11:30', 12],
+    ])
+    expect(after[0].id).toBe(booked.id)
+
+    await asPerson(ANA)
+    await rpc('staff_update_slot', { p_slot_id: after[1].id, p_name: 'Funcional especial' })
+    await asPerson(ADMIN)
+    await rows(`update public.class_templates set name = 'Fuerza' where id = $1`, [template])
+    expect((await templateSlots(template)).map((s) => s.name)).toEqual(['Funcional', 'Funcional especial'])
+  })
+
+  it('locks its future classes before checking who is booked, so a booking made meanwhile is never deleted', async () => {
+    // PGlite has one connection: this checks the order in the function; the two-session run is on real Postgres.
+    await asSuperuser()
+    const [{ def }] = await rows<{ def: string }>(`select pg_get_functiondef('public.class_templates_sync()'::regprocedure) as def`)
+    const lock = def.search(/for update;/i)
+    expect(lock).toBeGreaterThan(-1)
+    expect(lock).toBeLessThan(def.search(/delete from public.class_slots/i))
+  })
+
+  it('switching it off or deleting it removes its empty classes and keeps the ones with people', async () => {
+    const template = await addTemplate()
+    const [booked] = await templateSlots(template)
+    await bookAs(ANA, booked.id, LUIS)
+    await asPerson(ADMIN)
+    await rows('update public.class_templates set active = false where id = $1', [template])
+    expect((await templateSlots(template)).map((s) => s.id)).toEqual([booked.id])
+    await rows('update public.class_templates set active = true where id = $1', [template])
+    expect(await templateSlots(template)).toHaveLength(2)
+    await rows('delete from public.class_templates where id = $1', [template])
+    await asSuperuser()
+    expect(await rows('select id, template_id from public.class_slots')).toEqual([{ id: booked.id, template_id: null }])
+  })
+
+  it('only an admin changes the timetable and the rules; the team reads them', async () => {
+    const template = await addTemplate()
+    for (const who of [ANA, BEN]) {
+      await asPerson(who)
+      expect(await count('class_templates')).toBe(1)
+      expect(await count('booking_settings')).toBe(1)
+      await expect(
+        rows(`insert into public.class_templates (weekday, start_time, duration_minutes, capacity, name) values (1, '10:00', 60, 8, 'X')`),
+      ).rejects.toThrow(/row-level security/)
+      expect(await affected(`update public.class_templates set capacity = 1 where id = $1`, [template])).toBe(0)
+      expect(await affected(`delete from public.class_templates where id = $1`, [template])).toBe(0)
+      expect(await affected(`update public.booking_settings set horizon_days = 1`)).toBe(0)
+      await expect(rows(`insert into public.booking_settings (id) values ('main') on conflict (id) do nothing`)).rejects.toThrow(/row-level security/)
+    }
+    await asPerson(ADMIN)
+    expect(await affected(`update public.booking_settings set horizon_days = 21`)).toBe(1)
+    await expect(rows(`delete from public.booking_settings`)).rejects.toThrow(/permission denied/)
+  })
+})
+
+describe('classes and bookings: what coaches do', () => {
+  beforeEach(seedBookingClients)
+
+  it('lists the classes of some days with their places and waitlist', async () => {
+    const monday = await slotNextWeek(0, '10:00', 1)
+    await slotNextWeek(1, '10:00')
+    await bookAs(ANA, monday, LUIS)
+    await waitlist(monday, EVA)
+    const start = await nextWeekDay(0)
+    await asPerson(BEN)
+    const list = await rpc('class_slots_for', { p_from: start, p_to: start })
+    expect(list).toHaveLength(1)
+    expect(list[0]).toMatchObject({ id: monday, capacity: 1, booked_count: 1, waitlist_count: 1, my_status: null, status: 'open' })
+    expect(await rpc('class_slots_for', { p_from: start, p_to: addGymDays(start, 1) })).toHaveLength(2)
+  })
+
+  it(`returns at most ${SLOT_LIST_MAX_DAYS} days per call`, async () => {
+    await asSuperuser()
+    const [{ today }] = await rows<{ today: string }>(`select public.gym_today()::text as today`)
+    await rows(
+      `insert into public.class_slots (starts_at, duration_minutes, capacity, name) values
+        (public.gym_time_to_instant($1::date, '10:00'), 60, 5, 'Dentro'), (public.gym_time_to_instant($2::date, '10:00'), 60, 5, 'Fuera')`,
+      [addGymDays(today, SLOT_LIST_MAX_DAYS - 1), addGymDays(today, SLOT_LIST_MAX_DAYS)],
+    )
+    await asPerson(ANA)
+    const list = await rpc('class_slots_for', { p_from: today, p_to: addGymDays(today, 90) })
+    expect(list.map((s) => s.name)).toEqual(['Dentro'])
+  })
+
+  it('adds a person; twice is refused, and a full class only with "add anyway"', async () => {
+    const slot = await slotNextWeek(0, '10:00', 1)
+    expect(await bookAs(ANA, slot, LUIS)).toMatchObject({ status: 'booked', forced: false, over_quota: false })
+    await expect(bookAs(BEN, slot, LUIS)).rejects.toThrow(/already_booked/)
+    await expect(bookAs(BEN, slot, EVA)).rejects.toThrow(/slot_full/)
+    expect(await bookAs(BEN, slot, EVA, true)).toMatchObject({ status: 'booked', forced: true })
+    const ana = await profileId('ana')
+    await asSuperuser()
+    expect(await rows('select client_id, forced, added_by from public.bookings order by queue_order')).toEqual([
+      { client_id: LUIS, forced: false, added_by: ana },
+      { client_id: EVA, forced: true, added_by: await profileId('ben') },
+    ])
+  })
+
+  it('warns, without refusing, when the person had used the classes of the week', async () => {
+    const slots = [await slotNextWeek(0, '10:00', 5), await slotNextWeek(2, '10:00', 5), await slotNextWeek(6, '23:00', 5)]
+    expect((await bookAs(ANA, slots[0], LUIS)).over_quota).toBe(false)
+    expect((await bookAs(ANA, slots[1], LUIS)).over_quota).toBe(false)
+    expect((await bookAs(ANA, slots[2], LUIS)).over_quota).toBe(true)
+    expect((await bookAs(ANA, slots[2], SARA)).over_quota).toBe(false)
+    expect((await bookAs(ANA, slots[1], SARA)).over_quota).toBe(true)
+    for (const slot of slots) expect((await bookAs(ANA, slot, PABLO)).over_quota).toBe(false)
+    const start = await nextWeekDay(2)
+    await asPerson(ANA)
+    expect(await rpc('staff_week_usage', { p_client_id: LUIS, p_week: start })).toEqual([
+      { week_start: expect.anything(), used: 3, quota: 2 },
+    ])
+    expect((await rpc('staff_week_usage', { p_client_id: PABLO, p_week: start }))[0]).toMatchObject({ used: 3, quota: null })
+    expect((await rpc('staff_week_usage', { p_client_id: MARTA, p_week: start }))[0]).toMatchObject({ used: 0, quota: 3 })
+  })
+
+  it('refuses people and classes that are not there, cancelled or over', async () => {
+    const slot = await slotNextWeek(0, '10:00')
+    const over = await slotIn(-120)
+    await expect(bookAs(ANA, slot, 'nadie')).rejects.toThrow(/client_not_found/)
+    await expect(bookAs(ANA, '00000000-0000-4000-8000-0000000000ff', LUIS)).rejects.toThrow(/slot_not_found/)
+    await expect(bookAs(ANA, over, LUIS)).rejects.toThrow(/slot_finished/)
+    const started = await slotIn(-10)
+    expect((await bookAs(ANA, started, LUIS)).status).toBe('booked')
+    await asPerson(ANA)
+    await rpc('staff_update_slot', { p_slot_id: slot, p_status: 'cancelled' })
+    await expect(bookAs(ANA, slot, LUIS)).rejects.toThrow(/slot_cancelled/)
+    await expect(rpc('staff_update_slot', { p_slot_id: slot, p_status: 'open' })).rejects.toThrow(/slot_cancelled/)
+  })
+
+  it('removing someone lets in the first of the waitlist, who is told', async () => {
+    const slot = await slotNextWeek(0, '10:00', 1)
+    const { booking_id } = await bookAs(ANA, slot, LUIS)
+    await waitlist(slot, EVA, MARTA)
+    await asPerson(BEN)
+    expect(await rpc('staff_remove_booking', { p_booking_id: booking_id })).toEqual([
+      { booking_id, slot_id: slot, client_id: LUIS, previous_status: 'booked', promoted: 1 },
+    ])
+    expect(await bookingsOf(slot)).toEqual([
+      { client_id: LUIS, status: 'removed', forced: false },
+      { client_id: EVA, status: 'booked', forced: false },
+      { client_id: MARTA, status: 'waitlisted', forced: false },
+    ])
+    expect(await notices()).toEqual([
+      { kind: 'removed', client_id: LUIS },
+      { kind: 'promoted', client_id: EVA },
+    ])
+    await asPerson(BEN)
+    await expect(rpc('staff_remove_booking', { p_booking_id: booking_id })).rejects.toThrow(/booking_not_found/)
+  })
+
+  it('removing someone from the waitlist lets nobody in, and the person can be added again', async () => {
+    const slot = await slotNextWeek(0, '10:00', 1)
+    await bookAs(ANA, slot, LUIS)
+    const [eva] = await waitlist(slot, EVA)
+    await asPerson(ANA)
+    expect((await rpc('staff_remove_booking', { p_booking_id: eva }))[0]).toMatchObject({ previous_status: 'waitlisted', promoted: 0 })
+    expect((await bookAs(ANA, slot, EVA, true)).forced).toBe(true)
+  })
+
+  it('the waitlist goes in order and skips who has no classes left that week', async () => {
+    const slot = await slotNextWeek(3, '10:00', 1)
+    await bookAs(ANA, await slotNextWeek(0, '10:00'), EVA)
+    await bookAs(ANA, await slotNextWeek(1, '10:00'), EVA)
+    const { booking_id } = await bookAs(ANA, slot, MARTA)
+    await waitlist(slot, EVA, LUIS, SARA)
+    await asPerson(ANA)
+    await rpc('staff_remove_booking', { p_booking_id: booking_id })
+    expect((await bookingsOf(slot)).map((b) => [b.client_id, b.status])).toEqual([
+      [MARTA, 'removed'],
+      [EVA, 'waitlisted'],
+      [LUIS, 'booked'],
+      [SARA, 'waitlisted'],
+    ])
+  })
+
+  it('more places let the waitlist in, in order; a closed class does not move it until it opens', async () => {
+    const slot = await slotNextWeek(0, '10:00', 1)
+    await bookAs(ANA, slot, LUIS)
+    await waitlist(slot, EVA, MARTA, SARA)
+    await asPerson(ANA)
+    expect(await rpc('staff_update_slot', { p_slot_id: slot, p_capacity: 3 })).toEqual([
+      { slot_id: slot, status: 'open', capacity: 3, promoted: 2, notified: 0 },
+    ])
+    expect((await bookingsOf(slot)).map((b) => b.status)).toEqual(['booked', 'booked', 'booked', 'waitlisted'])
+    await asPerson(ANA)
+    expect((await rpc('staff_update_slot', { p_slot_id: slot, p_status: 'closed', p_capacity: 4 }))[0].promoted).toBe(0)
+    expect((await rpc('staff_update_slot', { p_slot_id: slot, p_status: 'open' }))[0].promoted).toBe(1)
+    await asSuperuser()
+    expect(await rows('select edited from public.class_slots where id = $1', [slot])).toEqual([{ edited: true }])
+  })
+
+  it('a custom plan with absurd training days still moves the waitlist (kept within 7 a week)', async () => {
+    await asSuperuser()
+    await rows(`update public.clients set data = data || '{"trainingDays":1e12}' where id = $1`, [SARA])
+    const slot = await slotNextWeek(0, '10:00', 1)
+    await bookAs(ANA, slot, LUIS)
+    await waitlist(slot, SARA)
+    await asPerson(ANA)
+    expect(await rpc('staff_week_usage', { p_client_id: SARA, p_week: toGymDate(Date.now()) })).toMatchObject([{ quota: 7 }])
+    const [luis] = await rows<{ id: string }>('select id from public.bookings where slot_id = $1 and client_id = $2', [slot, LUIS])
+    expect((await rpc('staff_remove_booking', { p_booking_id: luis.id }))[0].promoted).toBe(1)
+  })
+
+  it('the waitlist stops moving people in shortly before the class', async () => {
+    const soon = await slotIn(BOOKING_DEFAULTS.promoteUntilMinutes - 5, 1)
+    await bookAs(ANA, soon, LUIS)
+    await waitlist(soon, EVA)
+    await asPerson(ANA)
+    expect((await rpc('staff_update_slot', { p_slot_id: soon, p_capacity: 2 }))[0].promoted).toBe(0)
+    const later = await slotIn(BOOKING_DEFAULTS.promoteUntilMinutes + 5, 1)
+    await bookAs(ANA, later, LUIS)
+    await waitlist(later, EVA)
+    await asPerson(ANA)
+    expect((await rpc('staff_update_slot', { p_slot_id: later, p_capacity: 2 }))[0].promoted).toBe(1)
+  })
+
+  it('moving someone books the other class and lets the waitlist in where they left', async () => {
+    const from = await slotNextWeek(0, '10:00', 1)
+    const to = await slotNextWeek(0, '18:00', 1)
+    const { booking_id } = await bookAs(ANA, from, LUIS)
+    await waitlist(from, EVA)
+    await asPerson(ANA)
+    const [moved] = await rpc('staff_move_booking', { p_booking_id: booking_id, p_to_slot_id: to })
+    expect(moved).toMatchObject({ status: 'booked', forced: false, over_quota: false, promoted: 1 })
+    await asSuperuser()
+    expect(await rows('select status, moved_to from public.bookings where id = $1', [booking_id])).toEqual([
+      { status: 'removed', moved_to: moved.booking_id },
+    ])
+    expect((await bookingsOf(to)).map((b) => b.client_id)).toEqual([LUIS])
+    expect((await bookingsOf(from)).map((b) => [b.client_id, b.status])).toEqual([
+      [LUIS, 'removed'],
+      [EVA, 'booked'],
+    ])
+    expect(await notices()).toEqual([
+      { kind: 'moved', client_id: LUIS },
+      { kind: 'promoted', client_id: EVA },
+    ])
+  })
+
+  it('moving into a full class asks first, and nobody moves twice into one class', async () => {
+    const from = await slotNextWeek(0, '10:00', 2)
+    const to = await slotNextWeek(0, '18:00', 1)
+    const luis = (await bookAs(ANA, from, LUIS)).booking_id
+    const eva = (await bookAs(ANA, from, EVA)).booking_id
+    await bookAs(ANA, to, MARTA)
+    await asPerson(ANA)
+    await expect(rpc('staff_move_booking', { p_booking_id: luis, p_to_slot_id: to })).rejects.toThrow(/slot_full/)
+    expect((await bookingsOf(from)).map((b) => b.status)).toEqual(['booked', 'booked'])
+    await asPerson(ANA)
+    expect((await rpc('staff_move_booking', { p_booking_id: luis, p_to_slot_id: to, p_force: true }))[0].forced).toBe(true)
+    await expect(rpc('staff_move_booking', { p_booking_id: eva, p_to_slot_id: from })).rejects.toThrow(/already_booked/)
+    await bookAs(ANA, to, EVA, true)
+    await asPerson(ANA)
+    await expect(rpc('staff_move_booking', { p_booking_id: eva, p_to_slot_id: to })).rejects.toThrow(/already_booked/)
+    await expect(rpc('staff_remove_booking', { p_booking_id: luis })).rejects.toThrow(/booking_not_found/)
+  })
+
+  it('a new time tells the people booked; cancelling the class cancels and tells everyone', async () => {
+    const slot = await slotNextWeek(0, '10:00', 1)
+    await bookAs(ANA, slot, LUIS)
+    await waitlist(slot, EVA)
+    await asPerson(ANA)
+    const [{ later }] = await rows<{ later: string }>(`select (starts_at + interval '1 hour')::text as later from public.class_slots where id = $1`, [slot])
+    expect((await rpc('staff_update_slot', { p_slot_id: slot, p_starts_at: later }))[0].notified).toBe(2)
+    expect((await rpc('staff_update_slot', { p_slot_id: slot, p_name: 'Otra' }))[0].notified).toBe(0)
+    expect(await rpc('staff_update_slot', { p_slot_id: slot, p_status: 'cancelled' })).toEqual([
+      { slot_id: slot, status: 'cancelled', capacity: 1, promoted: 0, notified: 2 },
+    ])
+    expect((await bookingsOf(slot)).map((b) => b.status)).toEqual(['slot_cancelled', 'slot_cancelled'])
+    expect((await notices()).map((n) => n.kind)).toEqual(['slot_changed', 'slot_changed', 'slot_cancelled', 'slot_cancelled'])
+  })
+
+  it('adds a class by hand, never one already over', async () => {
+    await asPerson(BEN)
+    const tomorrow = new Date(Math.ceil(Date.now() / 60_000) * 60_000 + 86_400_000).toISOString()
+    const id = await rpc('staff_create_slot', { p_starts_at: tomorrow, p_duration_minutes: 45, p_capacity: 6, p_name: '  Movilidad ' })
+    await asSuperuser()
+    expect(await rows('select name, capacity, template_id, edited from public.class_slots where id = $1', [id])).toEqual([
+      { name: 'Movilidad', capacity: 6, template_id: null, edited: true },
+    ])
+    await asPerson(BEN)
+    const past = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 3 * 3_600_000).toISOString()
+    await expect(rpc('staff_create_slot', { p_starts_at: past, p_duration_minutes: 60, p_capacity: 6, p_name: 'Tarde' })).rejects.toThrow(/slot_finished/)
+  })
+})
+
+describe('classes and bookings: the week of the gym', () => {
+  beforeEach(seedBookingClients)
+
+  const bookAt = async (local: string) => {
+    await asSuperuser()
+    const [day, time] = local.split(' ')
+    const [{ id }] = await rows<{ id: string }>(
+      `insert into public.class_slots (starts_at, duration_minutes, capacity, name)
+       values (public.gym_time_to_instant($1::date, $2::time), 60, 5, 'Funcional') returning id`,
+      [day, time],
+    )
+    await rows(`insert into public.bookings (slot_id, client_id, status) values ($1, $2, 'booked')`, [id, LUIS])
+    return id
+  }
+
+  const used = async (day: string) => {
+    await asPerson(ANA)
+    return (await rpc('staff_week_usage', { p_client_id: LUIS, p_week: day }))[0].used
+  }
+
+  it('Sunday 23:30 and Monday 00:30, gym time, are different weeks, in summer and in winter', async () => {
+    await bookAt('2026-03-29 23:30')
+    await bookAt('2026-03-30 00:30')
+    await bookAt('2026-11-01 23:30')
+    await bookAt('2026-11-02 00:30')
+    expect(await used('2026-03-29')).toBe(1)
+    expect(await used('2026-03-23')).toBe(1)
+    expect(await used('2026-03-30')).toBe(1)
+    expect(await used('2026-11-01')).toBe(1)
+    expect(await used('2026-11-08')).toBe(1)
+    await asSuperuser()
+    expect(await rows(`select gym_date::text from public.class_slots order by starts_at`)).toEqual(
+      ['2026-03-29', '2026-03-30', '2026-11-01', '2026-11-02'].map((gym_date) => ({ gym_date })),
+    )
+  })
+
+  it('a late cancellation counts while the rules say so; the waitlist, a removal or a cancelled class do not', async () => {
+    await bookAt('2026-06-10 10:00')
+    const setStatus = async (status: string) => {
+      await asSuperuser()
+      await rows('update public.bookings set status = $1 where client_id = $2', [status, LUIS])
+    }
+    expect(await used('2026-06-10')).toBe(1)
+    await setStatus('late_cancelled')
+    expect(await used('2026-06-10')).toBe(1)
+    await asSuperuser()
+    await rows('update public.booking_settings set late_cancel_counts = false')
+    expect(await used('2026-06-10')).toBe(0)
+    await asSuperuser()
+    await rows('update public.booking_settings set late_cancel_counts = true')
+    for (const status of ['waitlisted', 'removed', 'slot_cancelled', 'cancelled']) {
+      await setStatus(status)
+      expect(await used('2026-06-10'), status).toBe(0)
+    }
+  })
+
+  it('a late cancellation stops counting once the gym cancels that class', async () => {
+    const slot = await slotNextWeek(0, '10:00')
+    await bookAs(ANA, slot, LUIS)
+    await asSuperuser()
+    await rows(`update public.bookings set status = 'late_cancelled' where client_id = $1`, [LUIS])
+    const day = (await rows<{ d: string }>('select gym_date::text as d from public.class_slots where id = $1', [slot]))[0].d
+    expect(await used(day)).toBe(1)
+    await asPerson(ANA)
+    await rpc('staff_update_slot', { p_slot_id: slot, p_status: 'cancelled' })
+    expect(await used(day)).toBe(0)
+  })
+})
+
+describe('classes and bookings: who can do what', () => {
+  beforeEach(seedBookingClients)
+
+  it('nobody writes classes or bookings directly, not even an admin: only through the functions', async () => {
+    const slot = await slotNextWeek(0, '10:00')
+    await bookAs(ANA, slot, LUIS)
+    for (const who of [ADMIN, ANA]) {
+      await asPerson(who)
+      expect(await count('class_slots')).toBe(1)
+      expect(await count('bookings')).toBe(1)
+      await expect(rows(`insert into public.class_slots (starts_at, duration_minutes, capacity, name) values (now(), 60, 5, 'X')`)).rejects.toThrow(/permission denied/)
+      await expect(rows(`update public.class_slots set capacity = 99`)).rejects.toThrow(/permission denied/)
+      await expect(rows(`delete from public.class_slots`)).rejects.toThrow(/permission denied/)
+      await expect(rows(`insert into public.bookings (slot_id, client_id, status) values ($1, $2, 'booked')`, [slot, EVA])).rejects.toThrow(/permission denied/)
+      await expect(rows(`update public.bookings set status = 'booked'`)).rejects.toThrow(/permission denied/)
+      await expect(rows(`delete from public.bookings`)).rejects.toThrow(/permission denied/)
+      await expect(count('notification_outbox')).rejects.toThrow(/permission denied/)
+    }
+  })
+
+  it('the inner functions are not for the app', async () => {
+    await asPerson(ADMIN)
+    for (const call of [
+      `select public.ensure_class_slots(current_date, current_date + 1)`,
+      `select public.promote_waitlist(gen_random_uuid())`,
+      `select public.weekly_quota('c1')`,
+      `select public.week_usage('c1', current_date)`,
+      `select public.enqueue_notification('promoted', 'c1', null)`,
+      `select public.booking_rules()`,
+      `select public.gym_time_to_instant(current_date, '10:00')`,
+    ]) {
+      await expect(rows(call), call).rejects.toThrow(/permission denied/)
+    }
+  })
+
+  for (const [label, enter] of [
+    ['a signed-in stranger', () => asPerson(STRANGER)],
+    ['a deactivated coach', () => asPerson(FORMER)],
+    ['a coach still on a temporary password', () => asPerson(NEWBIE)],
+  ] as const) {
+    it(`${label} sees no class and can do nothing`, async () => {
+      const slot = await slotNextWeek(0, '10:00')
+      await bookAs(ANA, slot, LUIS)
+      await enter()
+      for (const table of ['booking_settings', 'class_templates', 'class_slots', 'bookings']) expect(await count(table), table).toBe(0)
+      const today = toGymDate(Date.now())
+      await expect(rpc('class_slots_for', { p_from: today, p_to: today })).rejects.toThrow(/not_allowed/)
+      await expect(rpc('staff_add_booking', { p_slot_id: slot, p_client_id: EVA })).rejects.toThrow(/not_allowed/)
+      await expect(rpc('staff_update_slot', { p_slot_id: slot, p_capacity: 9 })).rejects.toThrow(/not_allowed/)
+      await expect(rpc('staff_week_usage', { p_client_id: LUIS, p_week: today })).rejects.toThrow(/not_allowed/)
+      await expect(
+        rpc('staff_create_slot', { p_starts_at: new Date(Date.now() + 86_400_000).toISOString(), p_duration_minutes: 60, p_capacity: 5, p_name: 'X' }),
+      ).rejects.toThrow(/not_allowed/)
+    })
+  }
+
+  it('anonymous visitors cannot call any of it', async () => {
+    const slot = await slotNextWeek(0, '10:00')
+    const [booking] = await waitlist(slot, LUIS)
+    await asAnon()
+    const today = toGymDate(Date.now())
+    await expect(rpc('class_slots_for', { p_from: today, p_to: today })).rejects.toThrow(/permission denied/)
+    await expect(rpc('staff_add_booking', { p_slot_id: slot, p_client_id: EVA })).rejects.toThrow(/permission denied/)
+    await expect(rpc('staff_remove_booking', { p_booking_id: booking })).rejects.toThrow(/permission denied/)
+    await expect(rpc('staff_move_booking', { p_booking_id: booking, p_to_slot_id: slot })).rejects.toThrow(/permission denied/)
+    await expect(rpc('staff_week_usage', { p_client_id: LUIS, p_week: today })).rejects.toThrow(/permission denied/)
+  })
+})
+
+describe('classes and bookings: the last place and running the file again', () => {
+  beforeEach(seedBookingClients)
+
+  // PGlite is one connection, so two bookings cannot really run at the same time here. What is checked instead:
+  // a booking takes the row locks that make a second one wait (the person, then the class), the second one then
+  // finds the class full, and the unique index refuses two live bookings of one person whatever the code does.
+  // A test with two real sessions needs Postgres (plan: Supabase CLI on a test project, before publishing).
+  it('the last place goes to one person: the booking locks the person and the class until it ends', async () => {
+    const slot = await slotNextWeek(0, '10:00', 1)
+    await asPerson(ANA)
+    await db.exec('begin')
+    await rpc('staff_add_booking', { p_slot_id: slot, p_client_id: LUIS })
+    const [locks] = await rows<{ person: boolean; slot: boolean; other: boolean }>(
+      `select (select xmax::text from public.clients where id = $1) = pg_current_xact_id()::text as person,
+         (select xmax::text from public.class_slots where id = $2) = pg_current_xact_id()::text as slot,
+         (select xmax::text from public.clients where id = $3) = pg_current_xact_id()::text as other`,
+      [LUIS, slot, EVA],
+    )
+    await db.exec('commit')
+    expect(locks).toEqual({ person: true, slot: true, other: false })
+    await asPerson(BEN)
+    await expect(rpc('staff_add_booking', { p_slot_id: slot, p_client_id: EVA })).rejects.toThrow(/slot_full/)
+    expect((await bookingsOf(slot)).map((b) => b.client_id)).toEqual([LUIS])
+    await asSuperuser()
+    await expect(rows(`insert into public.bookings (slot_id, client_id, status) values ($1, $2, 'waitlisted')`, [slot, LUIS])).rejects.toThrow(
+      /bookings_one_active_idx/,
+    )
+  })
+
+  it('old notices go away by themselves after 30 days', async () => {
+    await asSuperuser()
+    await rows(`insert into public.notification_outbox (kind, client_id, created_at) values ('promoted', $1, now() - interval '31 days')`, [LUIS])
+    const slot = await slotNextWeek(0, '10:00', 1)
+    const { booking_id } = await bookAs(ANA, slot, LUIS)
+    await asPerson(ANA)
+    await rpc('staff_remove_booking', { p_booking_id: booking_id })
+    expect(await notices()).toEqual([{ kind: 'removed', client_id: LUIS }])
+  })
+
+  it('running the whole file again keeps the timetable, the rules, the classes and the bookings', async () => {
+    await asPerson(ADMIN)
+    await rows(`update public.booking_settings set horizon_days = 7, quota_plus = 5`)
+    await rows(`insert into public.class_templates (weekday, start_time, duration_minutes, capacity, name) values (3, '18:00', 60, 8, 'Fuerza')`)
+    const slot = await slotNextWeek(0, '10:00', 1)
+    await bookAs(ANA, slot, LUIS)
+    await waitlist(slot, EVA)
+    await asSuperuser()
+    const snapshot = async () => ({
+      settings: await rows('select * from public.booking_settings'),
+      templates: await rows('select * from public.class_templates'),
+      slots: await rows('select * from public.class_slots order by id'),
+      bookings: await rows('select * from public.bookings order by id'),
+    })
+    const before = await snapshot()
+    await db.exec(SCHEMA)
+    expect(await snapshot()).toEqual(before)
   })
 })

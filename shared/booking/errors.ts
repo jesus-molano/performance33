@@ -7,12 +7,14 @@ export const BOOKING_ERROR_MESSAGES = {
   slot_closed: 'Las reservas de esta clase están cerradas.',
   slot_cancelled: 'Esta clase se ha cancelado.',
   slot_started: 'Esta clase ya ha empezado.',
+  slot_finished: 'Esta clase ya ha terminado.',
   too_far: 'Todavía no puedes reservar esta clase.',
   already_booked: 'Ya estás apuntado a esta clase.',
   quota_reached: 'Ya has usado tus clases de esta semana.',
   slot_full: 'La clase está completa.',
   waitlist_closed: 'La clase está completa y ya no hay lista de espera.',
   booking_not_found: 'No encontramos esta reserva.',
+  client_not_found: 'No encontramos a este usuario.',
   unknown: 'Algo ha fallado. Inténtalo de nuevo.',
 } as const
 

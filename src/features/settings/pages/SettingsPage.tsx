@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import type { SettingsTab } from '@/lib/routes'
+import { ClassesSettingsPanel } from '@/features/classes'
 import { ScreensPanel } from '@/features/screens'
 import { TeamPanel } from '@/features/team'
 import { PageContainer, PageHeader } from '@/features/shell'
@@ -17,6 +18,7 @@ export interface SettingsPageProps {
 const PANELS: Record<SettingsTab, ComponentType> = {
   marca: BrandingPanel,
   biblioteca: LibraryPanel,
+  clases: ClassesSettingsPanel,
   pantallas: ScreensPanel,
   equipo: TeamPanel,
   datos: DataPanel,

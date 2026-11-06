@@ -1,4 +1,4 @@
-import { CircleAlert, CircleCheck, LoaderCircle, Settings, Users, type LucideIcon } from 'lucide-react'
+import { CalendarDays, CircleAlert, CircleCheck, LoaderCircle, Settings, Users, type LucideIcon } from 'lucide-react'
 import { TV_MAX_SECTIONS } from '@/config/app'
 import { paths, type RouteName } from '@/lib/routes'
 import type { SaveStatus } from '@/store'
@@ -14,6 +14,7 @@ export interface NavLinkItem {
 
 export const NAV_LINKS: readonly NavLinkItem[] = [
   { id: 'clients', label: 'Usuarios', icon: Users, href: paths.clients(), activeOn: ['clients', 'client', 'program'] },
+  { id: 'classes', label: 'Clases', icon: CalendarDays, href: paths.classes(), activeOn: ['classes'] },
   { id: 'settings', label: 'Ajustes', icon: Settings, href: paths.settings(), activeOn: ['settings'] },
 ]
 

@@ -1,8 +1,8 @@
 // How many classes a person may book per gym week, and how many they have left.
 
-import { BOOKING_DEFAULTS, type BookingPlanId, type BookingSettings, type BookingStatus } from './constants.ts'
+import { BOOKING_DEFAULTS, BOOKING_LIMITS, type BookingPlanId, type BookingSettings, type BookingStatus } from './constants.ts'
 
-/** Classes per week for that plan; null = no limit. */
+/** Classes per week for that plan; null = no limit. Training days are kept within 0..7, like weekly_quota in SQL. */
 export function weeklyQuotaFor(
   plan: BookingPlanId,
   trainingDays: number,
@@ -10,7 +10,7 @@ export function weeklyQuotaFor(
 ): number | null {
   const rule = settings.weeklyQuota[plan]
   if (rule === 'unlimited') return null
-  if (rule === 'training_days') return Math.max(0, Math.floor(trainingDays))
+  if (rule === 'training_days') return Math.min(BOOKING_LIMITS.weeklyQuota.max, Math.max(0, Math.floor(trainingDays)))
   return rule
 }
 

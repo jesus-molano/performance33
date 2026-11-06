@@ -25,7 +25,7 @@ export function BottomNav({ route }: { route: Route }) {
   const remote = useDisclosure()
   const phone = usePhoneScreen()
   useCloseOnPhoneChange(phone, remote.close)
-  const [clientsLink, settingsLink] = NAV_LINKS
+  const [clientsLink, classesLink, settingsLink] = NAV_LINKS
 
   return (
     <>
@@ -33,7 +33,7 @@ export function BottomNav({ route }: { route: Route }) {
         aria-label="Principal"
         className="fixed inset-x-0 bottom-0 z-30 flex bg-ink pb-[env(safe-area-inset-bottom)] text-ink-muted md:hidden"
       >
-        {[clientsLink, null, settingsLink].map((link) =>
+        {[clientsLink, classesLink, null, settingsLink].map((link) =>
           link ? (
             <a
               key={link.id}

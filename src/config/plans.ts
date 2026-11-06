@@ -3,18 +3,16 @@ import type { PlanId } from '@/types'
 export interface PlanMeta {
   id: PlanId
   label: string
-  /** Short description for selects/badges. */
-  description: string
   /** Default training days for this plan. */
   defaultDays: number
 }
 
 /** Ordered for selects and filters. */
 export const PLANS: PlanMeta[] = [
-  { id: 'standard', label: 'Standard', description: '2 días/semana', defaultDays: 2 },
-  { id: 'plus', label: 'Plus', description: '3 días/semana', defaultDays: 3 },
-  { id: 'elite', label: 'Elite', description: 'Ilimitado', defaultDays: 4 },
-  { id: 'custom', label: 'Personalizado', description: 'Días a medida', defaultDays: 1 },
+  { id: 'standard', label: 'Standard', defaultDays: 2 },
+  { id: 'plus', label: 'Plus', defaultDays: 3 },
+  { id: 'elite', label: 'Elite', defaultDays: 4 },
+  { id: 'custom', label: 'Personalizado', defaultDays: 1 },
 ]
 
 export const PLAN_BY_ID: Record<PlanId, PlanMeta> = {
