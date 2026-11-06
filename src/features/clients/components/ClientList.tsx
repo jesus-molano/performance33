@@ -1,11 +1,12 @@
 import { Card } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { CLIENT_LIST_COLUMN_TITLES, CLIENT_ROW_ACTIONS_WIDTH, CLIENT_ROW_COLUMNS } from '@/features/clients/config'
+import { placementsOf } from '@/features/clients/utils/screenPlacements'
 import type { ClientGridProps } from './ClientGrid'
 import { ClientRow } from './ClientRow'
 
 /** Lista view: same data as the cards, one compact row per client. */
-export function ClientList({ clients, pinnedCounts, onEdit }: ClientGridProps) {
+export function ClientList({ clients, pinnedCounts, placements, onEdit }: ClientGridProps) {
   return (
     <Card padding="none">
       <div aria-hidden className="hidden items-center gap-1 border-b border-line pr-2 xl:flex">
@@ -18,7 +19,7 @@ export function ClientList({ clients, pinnedCounts, onEdit }: ClientGridProps) {
       </div>
       <ul className="divide-y divide-line">
         {clients.map((client) => (
-          <ClientRow key={client.id} client={client} importantCount={pinnedCounts[client.id] ?? 0} onEdit={onEdit} />
+          <ClientRow key={client.id} client={client} importantCount={pinnedCounts[client.id] ?? 0} placements={placementsOf(placements, client.id)} onEdit={onEdit} />
         ))}
       </ul>
     </Card>

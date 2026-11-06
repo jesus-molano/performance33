@@ -8,13 +8,16 @@ import type { Client } from '@/types'
 import { CLIENT_ROW_ACTIONS_WIDTH, CLIENT_ROW_COLUMNS } from '@/features/clients/config'
 import { useClientEntry } from '@/features/clients/hooks/useClientEntry'
 import { elapsedWeeks } from '@/features/clients/utils/programSummary'
+import type { ClientPlacement } from '@/features/clients/utils/screenPlacements'
 import { ClientScreenButton } from './ClientScreenButton'
 import { ImportantBadge } from './ImportantBadge'
 import { ProgramProgressBar } from './ProgramProgressBar'
+import { ScreenPlacementBadge } from './ScreenPlacementBadge'
 
 export interface ClientRowProps {
   client: Client
   importantCount: number
+  placements: readonly ClientPlacement[]
   onEdit: (client: Client) => void
 }
 
@@ -31,7 +34,7 @@ function WeekProgress({ status }: { status: ProgramStatus }) {
 }
 
 /** One line per client on wide screens; below lg it stacks: name and plan, then status and progress. */
-export function ClientRow({ client, importantCount, onEdit }: ClientRowProps) {
+export function ClientRow({ client, importantCount, placements, onEdit }: ClientRowProps) {
   const { program, status, menu } = useClientEntry(client, onEdit)
   const plan = planLabel(client.plan, client.trainingDays)
 
@@ -47,8 +50,9 @@ export function ClientRow({ client, importantCount, onEdit }: ClientRowProps) {
         </div>
         <p className="hidden truncate text-sm text-fg-muted xl:block">{plan}</p>
         <div className="flex flex-wrap items-center gap-1.5 xl:contents">
-          <div>
+          <div className="flex flex-wrap items-center gap-1.5">
             <Badge tone={status.tone}>{status.label}</Badge>
+            <ScreenPlacementBadge placements={placements} />
           </div>
           <WeekProgress status={status} />
           <div className="flex flex-wrap items-center gap-1.5">

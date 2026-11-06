@@ -23,7 +23,7 @@ describe('describeTvPlacement', () => {
 
   it('puts an open window back on its TV', () => {
     expect(describeTvPlacement({ title: 'Pantalla 1', isOpen: true, display: lg, tvsDetected: true }).openLabel).toBe(
-      'Colocar Pantalla 1 en su tele («LG TV»)',
+      'Colocar Pantalla 1 en su sitio («LG TV»)',
     )
   })
 

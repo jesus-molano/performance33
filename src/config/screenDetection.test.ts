@@ -4,13 +4,13 @@ import { detectionNote } from './screenDetection'
 
 describe('detectionNote', () => {
   it('tells how to connect the TVs when there are none', () => {
-    expect(detectionNote('single', 0).title).toBe('No hay ninguna tele conectada: pulsa Win+K y elige Extender')
-    expect(detectionNote('ok', 0).title).toBe('No hay ninguna tele conectada: pulsa Win+K y elige Extender')
+    expect(detectionNote('single', 0).title).toBe('No hay ninguna pantalla conectada: pulsa Win+K y elige Extender')
+    expect(detectionNote('ok', 0).title).toBe('No hay ninguna pantalla conectada: pulsa Win+K y elige Extender')
   })
 
   it('counts the TVs found', () => {
-    expect(detectionNote('ok', 1).title).toBe('1 tele detectada')
-    expect(detectionNote('ok', 2).title).toBe('2 teles detectadas')
+    expect(detectionNote('ok', 1).title).toBe('1 pantalla detectada')
+    expect(detectionNote('ok', 2).title).toBe('2 pantallas detectadas')
   })
 
   it('offers a button only to ask for the permission', () => {

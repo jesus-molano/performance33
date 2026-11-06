@@ -39,11 +39,11 @@ export const SEND_COPY = {
   here: 'Ya está aquí',
   otherDay: (day: number) => `Ahora Día ${day} · cambiar`,
   last: 'Última',
-  online: 'En la tele',
+  online: 'Abierta',
   offline: 'Sin abrir',
   offlineNote: 'Se verá al abrirla',
   open: 'Abrir',
-  openLabel: (screenName: string) => `Abrir ${screenName} en su tele`,
+  openLabel: (screenName: string) => `Abrir ${screenName} en su sitio`,
   tileLabel: (where: string, occupant: string | null, name: string) =>
     `${where}: ${occupant ?? 'libre'}. Mandar a ${name} aquí`,
 } as const

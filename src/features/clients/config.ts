@@ -28,6 +28,11 @@ export const PLAN_FILTER_OPTIONS: ReadonlyArray<{ value: PlanFilter; label: stri
   ...PLANS.map((plan) => ({ value: plan.id, label: plan.label })),
 ]
 
+/** The same on phones, where the select shares its row with the chips: 'Todos' fits without being cut. */
+export const PLAN_FILTER_OPTIONS_SHORT: ReadonlyArray<{ value: PlanFilter; label: string }> = PLAN_FILTER_OPTIONS.map((option) =>
+  option.value === 'all' ? { ...option, label: 'Todos' } : option,
+)
+
 /** Quick choices for a new routine's length. */
 export const PROGRAM_WEEK_CHOICES = [3, 4, 5, 6] as const
 
@@ -37,6 +42,17 @@ export const CLIENT_SCREEN_COPY = {
   buttonLabel: (name: string) => `Mandar a ${name} a una pantalla`,
   dayGroup: '¿Qué día?',
   dayChip: (day: number) => `Día ${day}`,
+} as const
+
+/** Where a user shows on the screens now: badge in the list, line on their page, 'En pantalla' filter. */
+export const CLIENT_PLACEMENT_COPY = {
+  label: (where: string) => `Sale en ${where}`,
+  filter: 'En pantalla',
+  filterLabel: (count: number) => `En pantalla (${count})`,
+  filterTip: 'Ver solo quién sale ahora en una pantalla',
+  remove: 'Quitar de la pantalla',
+  removed: (name: string, where: string) => `${name} ya no sale en ${where}`,
+  failed: 'No se ha podido quitar de la pantalla. Revisa la conexión e inténtalo otra vez.',
 } as const
 
 export const CLIENT_TEXT = {

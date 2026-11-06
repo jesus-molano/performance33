@@ -5,6 +5,7 @@ import { formatFullName } from '@/lib/format'
 import { planLabel } from '@/lib/plans'
 import type { Client } from '@/types'
 import { useClientActions } from '@/features/clients/hooks/useClientActions'
+import { ClientScreenPlacement } from './ClientScreenPlacement'
 
 export interface ClientProfileHeaderProps {
   client: Client
@@ -33,6 +34,7 @@ export function ClientProfileHeader({ client, onEdit }: ClientProfileHeaderProps
             <Badge icon={CalendarDays}>{memberSince}</Badge>
           </span>
           {client.archived && <Badge tone="warning">Archivado</Badge>}
+          <ClientScreenPlacement client={client} />
         </div>
       </div>
       <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-start-1">

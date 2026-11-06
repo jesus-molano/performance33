@@ -15,7 +15,7 @@ export const TV_WINDOWS_COPY = {
   closeAll: 'Cerrar todas',
   closeAllLabel: 'Cerrar todas las pantallas de este portátil',
   broughtToast: 'Pantallas en el portátil',
-  sendBack: 'Devolver a sus teles',
+  sendBack: 'Devolver a su sitio',
   closedToast: 'Pantallas cerradas',
   reopen: 'Abrir otra vez',
   /** With several windows closed: one per click (the browser opens one window per click). */
@@ -23,8 +23,8 @@ export const TV_WINDOWS_COPY = {
   reopenPending: (count: number) => (count === 1 ? 'Falta 1 pantalla por abrir' : `Faltan ${count} pantallas por abrir`),
   /** Ajustes → Pantallas, when the TVs are seen: each TV already has its own screen. */
   addAdvanced: 'Añadir otra pantalla',
-  addAdvancedHint: 'No suele hacer falta: cada tele conectada ya tiene su pantalla.',
-  removeKeepsTv: 'Su tele está conectada: no se puede quitar',
+  addAdvancedHint: 'No suele hacer falta: cada pantalla conectada se añade sola.',
+  removeKeepsTv: 'Está conectada: no se puede quitar',
 } as const
 
 export const AUTO_FULLSCREEN_COPY = {
@@ -32,8 +32,8 @@ export const AUTO_FULLSCREEN_COPY = {
   on: 'Activada ✓',
   off: 'Sin activar',
   /** Coaches: nothing to do, one click on the TV is enough. */
-  offForCoaches: 'En cada tele, pulsa una vez «Pantalla completa».',
-  adminIntro: 'Para que las teles se pongan solas en pantalla completa, hazlo una vez en este portátil:',
+  offForCoaches: 'En cada pantalla, pulsa una vez «Pantalla completa».',
+  adminIntro: 'Para que las pantallas se pongan solas en pantalla completa, hazlo una vez en este portátil:',
   steps: [
     'Descarga y abre «activar-pantalla-completa.reg» y acepta.',
     'Reinicia Chrome: escribe chrome://restart en la barra de direcciones.',

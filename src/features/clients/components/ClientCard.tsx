@@ -5,17 +5,20 @@ import { planLabel } from '@/lib/plans'
 import { paths } from '@/lib/routes'
 import type { Client } from '@/types'
 import { useClientEntry } from '@/features/clients/hooks/useClientEntry'
+import type { ClientPlacement } from '@/features/clients/utils/screenPlacements'
 import { ClientScreenButton } from './ClientScreenButton'
 import { ImportantBadge } from './ImportantBadge'
 import { ProgramProgressBar } from './ProgramProgressBar'
+import { ScreenPlacementBadge } from './ScreenPlacementBadge'
 
 export interface ClientCardProps {
   client: Client
   importantCount: number
+  placements: readonly ClientPlacement[]
   onEdit: (client: Client) => void
 }
 
-export function ClientCard({ client, importantCount, onEdit }: ClientCardProps) {
+export function ClientCard({ client, importantCount, placements, onEdit }: ClientCardProps) {
   const { program, status, menu } = useClientEntry(client, onEdit)
 
   return (
@@ -31,6 +34,7 @@ export function ClientCard({ client, importantCount, onEdit }: ClientCardProps) 
         <div className="mt-auto flex flex-col gap-2.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge tone={status.tone}>{status.label}</Badge>
+            <ScreenPlacementBadge placements={placements} />
             <ImportantBadge count={importantCount} />
             {client.archived && <Badge>Archivado</Badge>}
           </div>

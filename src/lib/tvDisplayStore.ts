@@ -1,39 +1,55 @@
-// The TV chosen for each Pantalla on this computer (localStorage), shared by dashboards and TV windows.
+// The screen of each Pantalla on this computer (localStorage), shared by dashboards and TV windows: the one chosen by
+// hand, and the one each automatic Pantalla got.
 
 import { STORAGE_KEYS } from '@/config/app'
 import { readStorage, writeStorage } from './safeStorage'
 import { serializeTvDisplayMap, type TvDisplayMap } from './tvDisplays'
 
-const listeners = new Set<() => void>()
+type StoredMapKey = typeof STORAGE_KEYS.tvDisplays | typeof STORAGE_KEYS.tvDisplaysAuto
 
-export const readTvDisplaysRaw = (): string | null => readStorage(STORAGE_KEYS.tvDisplays)
-
-export function saveTvDisplays(map: TvDisplayMap): void {
-  writeStorage(STORAGE_KEYS.tvDisplays, serializeTvDisplayMap(map))
-  listeners.forEach((listener) => listener())
-}
-
-/** Changes from this window and from others (the storage event only fires in the others). */
-export function subscribeTvDisplays(listener: () => void): () => void {
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEYS.tvDisplays) listener()
+/** A map kept in localStorage: changes from this window and from others (the storage event only fires in the others). */
+function storedMap(key: StoredMapKey) {
+  const listeners = new Set<() => void>()
+  const read = (): string | null => readStorage(key)
+  return {
+    read,
+    save(map: TvDisplayMap): void {
+      const raw = serializeTvDisplayMap(map)
+      // Every window writes what it resolved: the same map again must not wake the others up.
+      if (raw === read()) return
+      writeStorage(key, raw)
+      listeners.forEach((listener) => listener())
+    },
+    subscribe(listener: () => void): () => void {
+      const onStorage = (event: StorageEvent) => {
+        if (event.key === key) listener()
+      }
+      listeners.add(listener)
+      window.addEventListener('storage', onStorage)
+      return () => {
+        listeners.delete(listener)
+        window.removeEventListener('storage', onStorage)
+      }
+    },
   }
-  listeners.add(listener)
-  window.addEventListener('storage', onStorage)
-  return () => {
-    listeners.delete(listener)
-    window.removeEventListener('storage', onStorage)
-  }
 }
 
-/** What the automatic Pantallas got in this window (memory only: a new window starts from left to right again). */
-let automatic: TvDisplayMap = {}
+const chosen = storedMap(STORAGE_KEYS.tvDisplays)
 
-export const readAutomaticTvDisplays = (): TvDisplayMap => automatic
+export const readTvDisplaysRaw = chosen.read
+export const saveTvDisplays = chosen.save
+export const subscribeTvDisplays = chosen.subscribe
 
-export function saveAutomaticTvDisplays(next: TvDisplayMap): void {
-  automatic = next
-}
+/**
+ * What the automatic Pantallas got (rememberTvDisplays). Shared by every window of this browser and kept on this
+ * computer: a TV window closed and opened again, or a dashboard reloaded, keeps the same screen instead of starting
+ * again from left to right (it could then get none, or another Pantalla's).
+ */
+const automatic = storedMap(STORAGE_KEYS.tvDisplaysAuto)
+
+export const readAutomaticTvDisplaysRaw = automatic.read
+export const saveAutomaticTvDisplays = automatic.save
+export const subscribeAutomaticTvDisplays = automatic.subscribe
 
 /** The gym's screen numbers as this window last read them (null until read): only those get a TV (resolveTvDisplays). */
 let knownScreens: readonly number[] | null = null

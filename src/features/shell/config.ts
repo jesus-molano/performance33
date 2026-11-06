@@ -19,12 +19,21 @@ export const NAV_LINKS: readonly NavLinkItem[] = [
 
 export const TV_LAUNCHER = {
   label: 'Pantallas',
-  hint: `Una ventana por tele · hasta ${TV_MAX_SECTIONS} personas en cada una`,
+  hint: `Una ventana por pantalla · hasta ${TV_MAX_SECTIONS} personas en cada una`,
   add: 'Añadir pantalla',
   isOpen: 'Abierta',
+  notOpen: 'Sin abrir',
   open: 'Abrir',
+  /** An open window: back to its place, fullscreen; 'Ver' brings it to the front when the screens cannot be seen. */
+  place: 'Colocar',
+  focus: 'Ver',
   nobody: 'Sin personas todavía',
   removeLabel: (title: string) => `Quitar ${title}`,
+  sections: 'Secciones',
+  sectionsLabel: (title: string) => `Secciones de ${title}`,
+  fewerSections: (title: string) => `Menos secciones en ${title}`,
+  moreSections: (title: string) => `Más secciones en ${title}`,
+  settings: 'Ajustes de pantallas',
 } as const
 
 export interface SaveStatusMeta {

@@ -19,14 +19,14 @@ export const LENGTH_HINT_MARGIN = 6
 export const CAPACITY_TEXTS = {
   refusals: {
     days: `Una rutina puede tener hasta ${MAX_DAYS_PER_PROGRAM} días. Elimina uno para añadir otro.`,
-    blocks: `Máximo ${MAX_BLOCKS_PER_DAY} bloques para que se lea bien en la tele`,
-    blockExercises: `Máximo ${MAX_EXERCISES_PER_BLOCK} ejercicios por bloque para que se lea bien en la tele`,
-    dayExercises: `Máximo ${MAX_EXERCISES_PER_DAY} ejercicios por día para que se lea bien en la tele`,
+    blocks: `Máximo ${MAX_BLOCKS_PER_DAY} bloques para que se lea bien en la pantalla`,
+    blockExercises: `Máximo ${MAX_EXERCISES_PER_BLOCK} ejercicios por bloque para que se lea bien en la pantalla`,
+    dayExercises: `Máximo ${MAX_EXERCISES_PER_DAY} ejercicios por día para que se lea bien en la pantalla`,
   },
   daysFull: `${MAX_DAYS_PER_PROGRAM} días, el máximo por rutina`,
   exercises: (count: number) => `${count} de ${MAX_EXERCISES_PER_DAY} ejercicios`,
   blocks: (count: number) => `${count} de ${MAX_BLOCKS_PER_DAY} bloques`,
-  overLimit: 'Este día tiene más de lo que se lee bien en la tele. Quita algo o pásalo a otro día.',
-  lengthHint: (length: number, max: number) => `${length}/${max} · más largo no se lee bien en la tele`,
+  overLimit: 'Este día tiene más de lo que se lee bien en la pantalla. Quita algo o pásalo a otro día.',
+  lengthHint: (length: number, max: number) => `${length}/${max} · más largo no se lee bien en la pantalla`,
   copiedExceptFull: (copied: string, skipped: string) => `Bloque copiado a ${copied}. En ${skipped} no cabía.`,
 } as const

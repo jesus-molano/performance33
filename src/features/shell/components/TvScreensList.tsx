@@ -1,43 +1,17 @@
-import { Monitor, Plus, Trash2 } from 'lucide-react'
+import { Plus, Settings } from 'lucide-react'
 import { ScreenDetectionNotice } from '@/components/ScreenDetectionNotice'
-import { IconButton } from '@/components/ui'
-import { cn } from '@/lib/cn'
+import { paths } from '@/lib/routes'
 import { TvWindowsActions } from '@/features/screens'
 import { TV_LAUNCHER } from '@/features/shell/config'
-import { useTvLauncher, type TvScreenEntry } from '@/features/shell/hooks/useTvLauncher'
+import { useTvLauncher } from '@/features/shell/hooks/useTvLauncher'
+import { TvScreenRow } from './TvScreenRow'
 
-interface TvScreenRowProps {
-  entry: TvScreenEntry
-  canRemove: boolean
-  onOpen: () => void
-  onRemove: () => void
-}
-
-function TvScreenRow({ entry, canRemove, onOpen, onRemove }: TvScreenRowProps) {
-  const { placement } = entry
-  return (
-    <li className="flex items-center gap-1">
-      <button type="button" onClick={onOpen} aria-label={placement.openLabel} className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-1.5 text-left hover:bg-fg/5">
-        <Monitor size={18} aria-hidden className="shrink-0 text-fg-muted" />
-        <span className="min-w-0 flex-1">
-          <span className="block text-md font-semibold text-fg">{entry.title}</span>
-          <span className="block truncate text-sm text-fg-muted">{entry.people}</span>
-          {placement.note && (
-            <span className={cn('block truncate text-sm', placement.disconnected ? 'font-medium text-red-700' : 'text-fg-subtle')}>{placement.note}</span>
-          )}
-        </span>
-        <span className={cn('shrink-0 text-sm font-medium', entry.isOpen ? 'text-emerald-700' : 'text-brand-strong')}>
-          {entry.isOpen ? TV_LAUNCHER.isOpen : TV_LAUNCHER.open}
-        </span>
-      </button>
-      {canRemove && <IconButton icon={Trash2} label={TV_LAUNCHER.removeLabel(entry.title)} onClick={onRemove} />}
-    </li>
-  )
-}
+const FOOT_ITEM = 'flex h-11 items-center gap-3 rounded-lg px-3 text-left text-md font-medium text-fg hover:bg-fg/5 disabled:opacity-40'
 
 /**
- * Content of the 'Pantallas' menu: each screen opens or goes back to its TV; 'Traer todas' / 'Cerrar todas' while some
- * are open; 'Añadir pantalla' (adds and opens the next) only when the TVs cannot be seen.
+ * Content of the 'Pantallas' menu: each screen opens or goes back to its place, with its sections at hand; 'Traer al
+ * portátil' / 'Cerrar todas' while some are open; 'Añadir pantalla' (adds and opens the next) only when the screens
+ * cannot be seen; 'Ajustes de pantallas' at the foot.
  */
 export function TvScreensList({ onDone }: { onDone: () => void }) {
   const launcher = useTvLauncher()
@@ -58,24 +32,22 @@ export function TvScreensList({ onDone }: { onDone: () => void }) {
             canRemove={launcher.canRemove(entry.screen)}
             onOpen={run(() => launcher.open(entry.screen))}
             onRemove={run(() => launcher.remove(entry.screen))}
+            onSections={(sections) => launcher.setSections(entry.screen, sections)}
           />
         ))}
       </ul>
       <TvWindowsActions onDone={onDone} className="px-3 py-2" />
+      <div className="my-1 h-px bg-line" aria-hidden />
       {launcher.showAdd && (
-        <>
-          <div className="my-1 h-px bg-line" aria-hidden />
-          <button
-            type="button"
-            onClick={run(launcher.add)}
-            disabled={!launcher.canAdd}
-            className="flex h-11 items-center gap-3 rounded-lg px-3 text-left text-md font-medium text-fg hover:bg-fg/5 disabled:opacity-40"
-          >
-            <Plus size={18} aria-hidden className="text-fg-muted" />
-            {TV_LAUNCHER.add}
-          </button>
-        </>
+        <button type="button" onClick={run(launcher.add)} disabled={!launcher.canAdd} className={FOOT_ITEM}>
+          <Plus size={18} aria-hidden className="text-fg-muted" />
+          {TV_LAUNCHER.add}
+        </button>
       )}
+      <a href={paths.settings('pantallas')} onClick={onDone} className={FOOT_ITEM}>
+        <Settings size={18} aria-hidden className="text-fg-muted" />
+        {TV_LAUNCHER.settings}
+      </a>
     </div>
   )
 }

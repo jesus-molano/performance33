@@ -16,6 +16,8 @@ export const STORAGE_KEYS = {
   screensCache: 'p33:screens:cache:v1',
   /** This computer only: which detected TV each Pantalla opens on. */
   tvDisplays: 'p33:tv:displays',
+  /** This computer only: the screen each automatic Pantalla got, shared by its windows (one opened again keeps it). */
+  tvDisplaysAuto: 'p33:tv:displays:auto',
 } as const
 
 /** Left by older versions (dataset with coach profiles, picked profile, team without passwords). Removed on start-up. */

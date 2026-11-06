@@ -17,7 +17,7 @@ export function WindowHint({ visible, theme, extra }: WindowHintProps) {
       <p className={cn('flex max-w-xl items-center gap-3 rounded-2xl px-4 py-3 text-sm leading-snug shadow-pop', theme.overlay)}>
         <MonitorUp size={20} aria-hidden className={cn('shrink-0', theme.accentText)} />
         <span>
-          <strong className="font-semibold">Arrastra esta ventana a la tele</strong> · F11 o doble clic para pantalla
+          <strong className="font-semibold">Arrastra esta ventana a su pantalla</strong> · F11 o doble clic para pantalla
           completa{extra ? ` · ${extra}` : ''}
         </span>
       </p>

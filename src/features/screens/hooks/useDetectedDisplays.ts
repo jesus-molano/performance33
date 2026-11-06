@@ -13,13 +13,13 @@ export interface DetectedDisplaysApi {
   choose: (screen: number, value: string) => void
 }
 
-/** 'Teles detectadas en este portátil': what this computer sees and which TV each screen opens on. */
+/** 'Pantallas detectadas en este portátil': what this computer sees and which TV each screen opens on. */
 export function useDetectedDisplays(screens: readonly ScreenView[]): DetectedDisplaysApi {
   const isMobile = useIsMobile()
-  const { detection, tvCount, choices, choose } = useTvDisplays()
+  const { detection, tvCount, choices, remembered, choose } = useTvDisplays()
   const rows = useMemo(
-    () => (detection.displays.length > 1 ? displayChoiceRows(screens, choices, detection.displays) : []),
-    [screens, choices, detection.displays],
+    () => (detection.displays.length > 1 ? displayChoiceRows(screens, choices, detection.displays, remembered) : []),
+    [screens, choices, detection.displays, remembered],
   )
   return { visible: !isMobile, detection, tvCount, rows, choose: (screen, value) => choose(screen, choiceFromValue(value)) }
 }

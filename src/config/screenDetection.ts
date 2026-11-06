@@ -1,4 +1,5 @@
-// What a coach reads about the TVs this computer can see (Ajustes → Pantallas, the Pantallas menu, TV windows).
+// What a coach reads about the screens this computer can see (Ajustes → Pantallas, the Pantallas menu, TV windows).
+// The coach UI says «pantalla» for a TV too; the laptop is «el portátil».
 
 import type { ScreenDetectionState } from '@/lib/screenDetails'
 
@@ -9,20 +10,20 @@ export interface DetectionNote {
   action?: string
 }
 
-const tvs = (count: number) => (count === 1 ? '1 tele detectada' : `${count} teles detectadas`)
+const tvs = (count: number) => (count === 1 ? '1 pantalla detectada' : `${count} pantallas detectadas`)
 
 export function detectionNote(state: ScreenDetectionState, tvCount: number): DetectionNote {
   switch (state) {
     case 'unsupported':
       return {
-        title: 'Este navegador no coloca las ventanas en las teles',
-        body: 'Abre cada pantalla, arrástrala a su tele y pulsa F11. Con Chrome o Edge se abren solas en su tele.',
+        title: 'Este navegador no coloca solas las ventanas',
+        body: 'Abre cada pantalla, arrástrala a su sitio y pulsa F11. Con Chrome o Edge se colocan solas.',
       }
     case 'needs-permission':
       return {
-        title: 'Deja que la app encuentre las teles',
+        title: 'Deja que la app encuentre las pantallas',
         body: 'El navegador te preguntará una sola vez si puede colocar ventanas: pulsa «Permitir».',
-        action: 'Buscar teles',
+        action: 'Buscar pantallas',
       }
     case 'denied':
       return {
@@ -31,36 +32,38 @@ export function detectionNote(state: ScreenDetectionState, tvCount: number): Det
       }
     case 'single':
       return {
-        title: 'No hay ninguna tele conectada: pulsa Win+K y elige Extender',
-        body: 'Con «Duplicar» la tele copia el portátil y no se puede usar como pantalla aparte.',
+        title: 'No hay ninguna pantalla conectada: pulsa Win+K y elige Extender',
+        body: 'Con «Duplicar» la pantalla copia el portátil y no se puede usar aparte.',
       }
     case 'ok':
       return tvCount
-        ? { title: tvs(tvCount), body: 'Cada pantalla se abre directamente en su tele.' }
-        : { title: 'No hay ninguna tele conectada: pulsa Win+K y elige Extender' }
+        ? { title: tvs(tvCount), body: 'Cada pantalla se abre sola en su sitio.' }
+        : { title: 'No hay ninguna pantalla conectada: pulsa Win+K y elige Extender' }
   }
 }
 
 export const SCREEN_DETECTION_COPY = {
   /** A screen the browser gives no name (the key keeps the old 'Pantalla externa N', so choices saved before still match). */
   unnamedScreen: (position: number) => `Pantalla externa ${position}`,
-  title: 'Teles detectadas en este portátil',
-  description: 'Elige en qué tele se abre cada pantalla. Se guarda solo en este ordenador.',
+  title: 'Pantallas detectadas en este portátil',
+  description: 'Elige dónde se abre cada pantalla. Se guarda solo en este ordenador.',
   opensOn: (name: string) => `${name} se abre en`,
   automatic: (label: string | null) => (label ? `Automática (${label})` : 'Automática (ninguna libre)'),
   mainScreen: 'este portátil',
   on: (label: string) => `En «${label}»`,
   open: (title: string) => `Abrir ${title}`,
   focus: (title: string) => `Ir a ${title}`,
-  placeOn: (title: string, label: string) => `Colocar ${title} en su tele («${label}»)`,
+  placeOn: (title: string, label: string) => `Colocar ${title} en su sitio («${label}»)`,
   openOn: (title: string, label: string) => `Abrir ${title} en «${label}»`,
   disconnected: (name: string) => `${name} desconectada`,
-  disconnectedToast: (name: string) => `${name} desconectada. Pulsa Win+K y vuelve a conectar la tele.`,
+  /** Next to its own title (the 'Pantallas' menu rows), where repeating the name says nothing. */
+  disconnectedShort: 'Desconectada',
+  disconnectedToast: (name: string) => `${name} desconectada. Pulsa Win+K y vuelve a conectarla.`,
 } as const
 
 export const TV_FULLSCREEN_COPY = {
   button: 'Pantalla completa',
-  hint: 'Pulsa una vez para que la rutina ocupe toda la tele.',
+  hint: 'Pulsa una vez para que la rutina ocupe toda la pantalla.',
   later: 'Ahora no',
 } as const
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DetectedDisplay } from './screenDetails'
 import { displaysOf, LAPTOP, tv } from './screenDetails.fakes'
-import { assignTvDisplay, lostTvScreens, parseTvDisplayMap, rememberTvDisplays, resolveTvDisplays, serializeTvDisplayMap, tvCandidates } from './tvDisplays'
+import { assignTvDisplay, canRememberTvDisplays, lostTvScreens, parseTvDisplayMap, rememberTvDisplays, resolveTvDisplays, serializeTvDisplayMap, tvCandidates } from './tvDisplays'
 
 const gym = displaysOf(LAPTOP, tv(3840, 'Derecha'), tv(1920, 'Izquierda'))
 const keysOf = (resolved: ReadonlyMap<number, DetectedDisplay>) => Object.fromEntries([...resolved].map(([screen, d]) => [screen, d.key]))
@@ -83,5 +83,38 @@ describe('lostTvScreens', () => {
     ])
     expect(lostTvScreens(before, new Map([[1, 'A']]))).toEqual([2])
     expect(lostTvScreens(before, before)).toEqual([])
+  })
+})
+
+describe('a TV window closed and opened again', () => {
+  // The right TV was connected first (Win+K one by one): Pantalla 1 got it, Pantalla 2 the left one that came later.
+  const rightOnly = displaysOf(LAPTOP, tv(3840, 'Derecha'))
+  const dashboard = () => {
+    const first = resolveTvDisplays({}, rightOnly, {}, [1, 2])
+    const remembered = rememberTvDisplays({}, first, {})
+    return rememberTvDisplays({}, resolveTvDisplays({}, gym, remembered, [1, 2]), remembered)
+  }
+
+  it('starting again from left to right, it would take the TV of another screen', () => {
+    expect(dashboard()).toEqual({ 1: 'Derecha', 2: 'Izquierda' })
+    expect(keysOf(resolveTvDisplays({}, gym, {}, null))).toEqual({ 1: 'Izquierda', 2: 'Derecha' })
+  })
+
+  it('with what the dashboard remembered, it gets the same TV, even before reading the screens', () => {
+    expect(keysOf(resolveTvDisplays({}, gym, dashboard(), null))).toEqual({ 1: 'Derecha', 2: 'Izquierda' })
+    expect(keysOf(resolveTvDisplays({}, gym, dashboard(), [1, 2]))).toEqual({ 1: 'Derecha', 2: 'Izquierda' })
+  })
+
+  it('keeps its TV while another one is off, instead of being left with none', () => {
+    const remembered = { 1: 'Izquierda', 2: 'Derecha' }
+    expect(keysOf(resolveTvDisplays({}, rightOnly, {}, null))).toEqual({ 1: 'Derecha' })
+    expect(keysOf(resolveTvDisplays({}, rightOnly, remembered, null))).toEqual({ 2: 'Derecha' })
+  })
+
+  it('a window writes down what it got only with the TVs seen and the screens read', () => {
+    expect(canRememberTvDisplays('ok', [1, 2])).toBe(true)
+    expect(canRememberTvDisplays('ok', null)).toBe(false)
+    expect(canRememberTvDisplays('needs-permission', [1, 2])).toBe(false)
+    expect(canRememberTvDisplays('single', [1, 2])).toBe(false)
   })
 })

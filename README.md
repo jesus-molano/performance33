@@ -1,7 +1,7 @@
 # Performance33 · Rutinas
 
 Panel para los monitores de Performance33: rutinas personalizadas por usuario, notas internas y
-pantallas para las teles del gimnasio. Se usa desde el ordenador del gimnasio y desde el móvil, la
+las pantallas del gimnasio. Se usa desde el ordenador del gimnasio y desde el móvil, la
 tablet o el ordenador de casa de cada monitor. Todo el equipo comparte los mismos datos en la nube.
 
 ## Probarlo en tu ordenador
@@ -58,7 +58,7 @@ En Supabase ve a **SQL Editor → New query**, pega el archivo `supabase/schema.
 Se puede volver a ejecutar sin romper nada.
 
 **Al actualizar la app**, ejecuta primero el `schema.sql` nuevo y después publica la web: la versión con las pantallas
-en la base de datos necesita sus tablas, y el aviso de qué teles están abiertas va por un canal privado que solo
+en la base de datos necesita sus tablas, y el aviso de qué pantallas están abiertas va por un canal privado que solo
 funciona con los permisos de este archivo. No hace falta tocar **Realtime → Settings → Allow public access**: los
 datos en directo de las tablas siguen protegidos por sus propios permisos.
 
@@ -226,40 +226,45 @@ con su nombre como texto libre.
 
 ## Las pantallas del gimnasio
 
-**Una ventana por tele.** Cada tele es una pantalla (Pantalla 1, Pantalla 2…) con su nombre y de 1 a 6 secciones,
-una persona en cada una. Se configuran en **Ajustes → Pantallas** (o en el menú **Pantallas**), y es lo mismo para
-todo el equipo. Más de 3 secciones en una tele de 27″ se lee pequeño a 3-4 m, y una rutina larga puede no caber
-entera: lo dice una franja abajo («+3 ejercicios más abajo, no caben»). Hasta 4 secciones van una al lado de otra, cada
-rutina de arriba abajo; con 5 o 6 se ponen en dos filas. Si una rutina es corta, la letra crece para llenar su sección.
+**Una ventana por pantalla.** Cada pantalla del gimnasio (Pantalla 1, Pantalla 2…) tiene su nombre y de 1 a 6
+secciones, una persona en cada una. Se configuran en **Ajustes → Pantallas**, y es lo mismo para todo el equipo. El
+menú **Pantallas** también cambia las secciones de cada una al momento («− 3 +»; si al quitar secciones
+sale alguien, el aviso tiene **Deshacer**, que lo deja como estaba aunque hayas pulsado − varias veces) y abajo lleva a **Ajustes de pantallas**. Más de 3 secciones en una pantalla
+de 27″ se lee pequeño a 3-4 m, y una rutina larga puede no caber entera: lo dice una franja abajo («+3 ejercicios más
+abajo, no caben»). Hasta 4 secciones van una al lado de otra, cada rutina de arriba abajo; con 5 o 6 se ponen en dos
+filas. Si una rutina es corta, la letra crece para llenar su sección.
 
-### Cada mañana: abrir las teles
+### Cada mañana: abrir las pantallas
 
-1. Enciende las teles y en el portátil pulsa **Win+K**: conecta cada tele y elige **Extender** (no «Duplicar»).
+1. Enciende las pantallas y en el portátil pulsa **Win+K**: conecta cada una y elige **Extender** (no «Duplicar»).
 2. Abre la app en Chrome o Edge, entra y abre el menú **Pantallas** de la barra lateral.
-3. La primera vez pulsa **Buscar teles** y, cuando el navegador pregunte, **Permitir**. Si sale «No hay ninguna tele
-   conectada», vuelve al paso 1. Cada tele conectada tiene su pantalla: con alguna pantalla ya abierta en este
-   portátil, si conectas una tele más, la app crea sola la pantalla que falta (y si apagas una, su pantalla se queda
-   como «desconectada», no se borra). En los ordenadores de los monitores no se crea ninguna sola, aunque tengan
-   otro monitor. Mientras se ven las teles, solo se puede quitar una pantalla cuya tele no esté conectada.
-4. Pulsa cada pantalla («Abrir Pantalla 1 en «tele»»): la ventana se abre ya en su tele y ocupa toda la tele. Con la
+3. La primera vez pulsa **Buscar pantallas** y, cuando el navegador pregunte, **Permitir**. Si sale «No hay ninguna
+   pantalla conectada», vuelve al paso 1. La pantalla del portátil no cuenta: cada pantalla conectada tiene su
+   Pantalla N. Con alguna ya abierta en este portátil, si conectas una más, la app la añade sola (y si apagas una, se
+   queda como «desconectada», no se borra). En los ordenadores de los monitores no se añade ninguna sola, aunque
+   tengan otro monitor. Mientras se ven las pantallas, solo se puede quitar una que no esté conectada.
+4. Pulsa cada pantalla («Abrir Pantalla 1 en «LG TV»»): la ventana se abre ya en su sitio y lo ocupa entero. Con la
    pantalla completa automática activada (abajo) se pone sola en pantalla completa; si no, pulsa allí una vez
    **Pantalla completa** (o la tecla F).
-5. Si una tele se coloca en la que no toca, en **Ajustes → Pantallas → Teles detectadas** elige en qué tele se abre
-   cada pantalla. Se guarda en ese portátil.
+5. Si una se coloca donde no toca, en **Ajustes → Pantallas → Pantallas detectadas** elige dónde se abre cada una. Se
+   guarda en ese portátil.
 
-En Firefox, o si el navegador no ve las teles, la ventana se abre en el portátil: arrástrala a su tele y pulsa F11.
-Solo entonces el menú **Pantallas** ofrece **Añadir pantalla** (en Ajustes → Pantallas sigue como opción avanzada).
-Arriba, «Pantallas 2/2» dice cuántas están abiertas; «1 sin abrir» quiere decir que esa ventana está cerrada, y
-«Pantalla 2 desconectada», que su tele se ha apagado o se ha caído Win+K.
+**Si cierras una ventana**, su pantalla sigue en el menú como «Sin abrir», con su sitio: **Abrir** la vuelve a poner
+allí, en pantalla completa. El portátil recuerda dónde va cada una, aunque cierres ventanas o recargues la página.
+
+En Firefox, o si el navegador no ve las pantallas, la ventana se abre en el portátil: arrástrala a su pantalla y pulsa
+F11. Solo entonces el menú **Pantallas** ofrece **Añadir pantalla** (en Ajustes → Pantallas sigue como opción
+avanzada). Arriba, «Pantallas 2/2» dice cuántas están abiertas; «1 sin abrir» quiere decir que esa ventana está
+cerrada, y «Pantalla 2 desconectada», que se ha apagado o se ha caído Win+K.
 
 Con alguna pantalla abierta, el menú **Pantallas** (y Ajustes → Pantallas) tiene dos botones:
 
-- **Traer al portátil**: todas las ventanas de las teles salen de pantalla completa y vienen al portátil, una al lado de
-  otra, para revisarlas. **Devolver a sus teles** (en el aviso) o **Colocar Pantalla N en su tele** las devuelve.
-- **Cerrar todas**: cierra las ventanas de las teles. **Abrir otra vez** (en el aviso) la vuelve a abrir; si eran
+- **Traer al portátil**: todas las ventanas salen de pantalla completa y vienen al portátil, una al lado de otra, para
+  revisarlas. **Devolver a su sitio** (en el aviso) o **Colocar** (en el menú) las devuelve.
+- **Cerrar todas**: cierra las ventanas de las pantallas. **Abrir otra vez** (en el aviso) la vuelve a abrir; si eran
   varias, el aviso las abre de una en una («Abrir Pantalla 1», luego «Abrir Pantalla 2»…), porque el navegador solo
   abre una ventana por clic. Si una ventana no se deja cerrar (no la abrió la app), dice «Cierra esta ventana con la
-  X»; **Seguir mostrándola** la deja en su tele, en pantalla completa.
+  X»; **Seguir mostrándola** la deja en su sitio, en pantalla completa.
 
 Funcionan aunque hayas recargado la página.
 
@@ -285,23 +290,26 @@ abre también `tools/teles/quitar-pantalla-completa-local.reg`.
 ### Mandar a alguien a una sección
 
 - En la ficha de cada usuario, cada día de su rutina tiene el botón **Pantalla** (en el móvil, **Mandar**). Púlsalo y
-  toca la sección: la persona aparece en la tele al momento. Si ya estaba en otra sección, sale de allí; si la sección
+  toca la sección: la persona aparece en la pantalla al momento. Si ya estaba en otra sección, sale de allí; si la sección
   tenía a otra persona, se sustituye.
 - El aviso dice a quién has mandado, qué día y a quién sustituye. **Deshacer** (o Ctrl+Z mientras se ve el aviso)
   lo deja como estaba, sin tocar lo que otro monitor haya cambiado después.
 - En la **lista de usuarios** cada persona tiene también su botón **Pantalla**: primero eliges el día (sale el que ya
-  tiene en la tele, o el Día 1 si no está en ninguna) y luego la sección. Si no tiene rutina, el botón sale gris («Sin rutina»).
+  tiene en pantalla, o el Día 1 si no está en ninguna) y luego la sección. Si no tiene rutina, el botón sale gris («Sin rutina»).
+- En la lista, quien sale ahora en una pantalla lleva la etiqueta **Pantalla 1 · Sección 2 · Día 3** (en el móvil, solo «Pantalla 1»),
+  y el botón **En pantalla** de arriba deja ver solo a esas personas. Se actualiza solo, mande quien mande y desde donde sea.
+- En la ficha de la persona sale lo mismo junto a su nombre, con **Quitar de la pantalla** (con **Deshacer**).
 - **Ctrl+clic** en **Pantalla** (o mantenerlo pulsado en el móvil) la manda directamente a la última sección que usaste
-  (desde la lista, con el día que ya tiene en la tele, o el Día 1).
-- Funciona igual desde el móvil, en cualquier red: solo hace falta que la ventana de la tele esté abierta en el portátil.
+  (desde la lista, con el día que ya tiene en pantalla, o el Día 1).
+- Funciona igual desde el móvil, en cualquier red: solo hace falta que la ventana de la pantalla esté abierta en el portátil.
 
-Desde el móvil, el Modo TV es una lista de personas para abrir la rutina de cada una como una página normal.
+Desde el móvil, **Pantallas** es una lista de personas para abrir la rutina de cada una como una página normal.
 
-Las ventanas de las teles comparten la sesión del navegador y solo guardan los datos que se pueden
+Las ventanas de las pantallas comparten la sesión del navegador y solo guardan los datos que se pueden
 ver en público: nunca notas, objetivos ni comentarios internos. Si se cierra la sesión, muestran
 «Inicia sesión» y se borra su copia.
 
-**Una vez abiertas, se valen solas.** Puedes cerrar el panel: la tele sigue en directo y muestra lo que cambie
+**Una vez abiertas, se valen solas.** Puedes cerrar el panel: la pantalla sigue en directo y muestra lo que cambie
 cualquier monitor desde su móvil. Solo necesita internet y que nadie cierre la sesión en ese navegador. Sin
 conexión sigue mostrando lo último que recibió.
 
@@ -318,7 +326,7 @@ molestias): en Europa son datos de categoría especial según el RGPD. Antes de 
   copias de vez en cuando desde **Ajustes → Datos** (solo administradores) y guárdalas en un sitio seguro:
   contienen datos privados.
 - Desactiva en **Ajustes → Equipo** a quien deje de trabajar en el gimnasio.
-- En el ordenador compartido, cierra sesión al acabar si no vas a dejar las teles funcionando.
+- En el ordenador compartido, cierra sesión al acabar si no vas a dejar las pantallas funcionando.
 
 En el ordenador del gimnasio, si se queda con la sesión abierta, quien pase por delante puede conectar su propia cuenta de Google en
 Mi perfil. Revisa de vez en cuando la marca «Google conectado» en Equipo.

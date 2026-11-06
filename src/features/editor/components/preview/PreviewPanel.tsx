@@ -28,7 +28,7 @@ export interface PreviewSheetProps extends Omit<PreviewContentProps, 'frameClass
 /** Same preview in a bottom sheet on tablets and phones. */
 export function PreviewSheet({ open, onClose, ...props }: PreviewSheetProps) {
   return (
-    <Modal open={open} onClose={onClose} size="sm" title="Vista previa" description="Así lo verá el usuario en la tele.">
+    <Modal open={open} onClose={onClose} size="sm" title="Vista previa" description="Así lo verá el usuario en la pantalla.">
       <div className="mx-auto max-w-xs pb-2">
         <PreviewContent {...props} />
       </div>

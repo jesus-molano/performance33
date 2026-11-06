@@ -8,7 +8,7 @@ import { useTimedFlag } from './useTimedFlag'
 export interface ScreenChrome extends FontScaleApi, FullscreenApi {
   /** Overlay controls visible (fade out when idle). */
   controlsVisible: boolean
-  /** One-off 'arrastra esta ventana a la tele' hint. */
+  /** One-off 'arrastra esta ventana a su pantalla' hint. */
   hintVisible: boolean
 }
 

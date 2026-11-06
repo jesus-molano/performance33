@@ -1,11 +1,12 @@
 import { useConfirm, useDisplayWindow, useToast, useTvDisplays } from '@/hooks'
+import { useToastStore } from '@/store'
 import { closeTvScreen } from '@/features/display/utils/tvScreenStore'
 import { canAddTvScreen, canRemoveTvScreen, nextTvScreen } from '@/features/display/utils/tvScreens'
 import { SCREENS_PANEL_COPY } from '@/features/screens/config/panel'
 import { TV_WINDOWS_COPY } from '@/features/screens/config/tvWindows'
 import type { ScreensStatus, ScreenView } from '@/features/screens/types'
 import { canRemoveWithTvs, followsDetectedTvs } from '@/features/screens/utils/autoScreens'
-import { occupiedBeyond } from '@/features/screens/utils/panel'
+import { mergeSectionsUndo, occupiedBeyond, type SectionsUndo } from '@/features/screens/utils/panel'
 import { defaultScreen } from '@/features/screens/utils/sections'
 import { useScreenActions } from './useScreenActions'
 import { useScreens } from './useScreens'
@@ -30,12 +31,26 @@ export interface ScreensPanelApi {
   open: (screen: ScreenView) => void
 }
 
+/**
+ * The 'Deshacer' still up after fewer sections, per screen: the next − on that screen replaces it with one that
+ * undoes both steps (the menu and Ajustes share it, so two quick clicks never leave two undos that fight).
+ */
+const pendingSectionsUndo = new Map<number, { toastId: string; undo: SectionsUndo }>()
+
+/** That screen's 'Deshacer' while its toast is still up. */
+const openSectionsUndo = (screen: number) => {
+  const pending = pendingSectionsUndo.get(screen)
+  if (pending && useToastStore.getState().toasts.some((t) => t.id === pending.toastId)) return pending
+  pendingSectionsUndo.delete(screen)
+  return null
+}
+
 /** Ajustes → Pantallas and the 'Pantallas' menu: the gym's screens, their name and sections, shared by the whole team. */
 export function useScreensPanel(): ScreensPanelApi {
   const { status, screens } = useScreens()
   const actions = useScreenActions()
   const confirm = useConfirm()
-  const { toast, toastUndoAction } = useToast()
+  const { toast, toastUndoAction, dismiss } = useToast()
   const { openTv } = useDisplayWindow()
   const ids = screens.map((screen) => screen.id)
   const { detection, displayFor } = useTvDisplays()
@@ -59,15 +74,21 @@ export function useScreensPanel(): ScreensPanelApi {
   const setSections = (screen: ScreenView, sections: number) => {
     const cleared = occupiedBeyond(screen, sections)
     warnIfFailed(actions.saveScreen({ ...screen, sections }))
+    // Nothing new emptied: a 'Deshacer' still up keeps undoing everything since its first step.
     if (!cleared.length) return
-    toastUndoAction({
-      message: SCREENS_PANEL_COPY.sectionsCleared(cleared.length),
+    const previous = openSectionsUndo(screen.id)
+    const undo = mergeSectionsUndo(previous?.undo ?? null, screen, cleared)
+    if (previous) dismiss(previous.toastId)
+    const toastId = toastUndoAction({
+      message: SCREENS_PANEL_COPY.sectionsCleared(undo.cleared.length),
       // The count comes back first, so the sections it emptied can be written again.
       onUndo: () => {
-        warnIfFailed(actions.saveScreen(screen))
-        warnIfFailed(actions.restore(cleared).saved)
+        pendingSectionsUndo.delete(screen.id)
+        warnIfFailed(actions.saveScreen(undo.original))
+        warnIfFailed(actions.restore(undo.cleared).saved)
       },
     })
+    pendingSectionsUndo.set(screen.id, { toastId, undo })
   }
 
   const remove = async (screen: ScreenView) => {

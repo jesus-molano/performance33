@@ -62,7 +62,7 @@ export const FULLSCREEN_PROMPT_MS = 15_000
  * it by hand (Esc, the button); otherwise the TV went away (Win+K, switched off) and it comes back by itself with its TV.
  */
 export const TV_MANUAL_EXIT_CHECK_MS = 1500
-/** 'Arrastra esta ventana a la tele' hint lifetime. */
+/** 'Arrastra esta ventana a su pantalla' hint lifetime. */
 export const WINDOW_HINT_MS = 7000
 /** After A+, how long the columns get to report their new size, and how long the note stays. */
 export const TV_SIZE_LIMIT_CHECK_MS = 400

@@ -28,7 +28,7 @@ export function BrandingPanel() {
         <SettingsSection title="Logotipos" description="Imágenes de hasta 1,5 MB.">
           <LogoUploadField
             label="Logo para fondo negro"
-            hint="Mejor en PNG con fondo transparente. Se usa en el menú y, en la tele, sobre una placa negra."
+            hint="Mejor en PNG con fondo transparente. Se usa en el menú y, en la pantalla, sobre una placa negra."
             value={branding.logoUrl}
             defaultValue={DEFAULT_BRANDING.logoUrl}
             onChange={(logoUrl) => update({ logoUrl })}
@@ -45,10 +45,10 @@ export function BrandingPanel() {
         </SettingsSection>
         <SettingsSection title="Colores">
           <div className="grid gap-5 sm:grid-cols-2">
-            <ColorField label="Color principal" hint="Sobre negro: el menú y la tele en tema oscuro." value={branding.primaryColor} onChange={(primaryColor) => update({ primaryColor })} onEditEnd={endEdit} warning={lowOnDark ? 'Poco contraste sobre negro: en el menú y en la tele oscura se usará un tono más claro.' : undefined} />
+            <ColorField label="Color principal" hint="Sobre negro: el menú y la pantalla en tema oscuro." value={branding.primaryColor} onChange={(primaryColor) => update({ primaryColor })} onEditEnd={endEdit} warning={lowOnDark ? 'Poco contraste sobre negro: en el menú y en la pantalla oscura se usará un tono más claro.' : undefined} />
             <ColorField
               label="Color de botones y textos"
-              hint="Sobre blanco: botones y enlaces del panel, y letras y detalles de la tele en blanco."
+              hint="Sobre blanco: botones y enlaces del panel, y letras y detalles de la pantalla en blanco."
               value={branding.accentColor}
               onChange={(accentColor) => update({ accentColor })}
               onEditEnd={endEdit}
@@ -56,7 +56,7 @@ export function BrandingPanel() {
             />
           </div>
         </SettingsSection>
-        <SettingsSection title="Pantalla del gimnasio" description="Fondo de las ventanas que se ven en la tele.">
+        <SettingsSection title="Pantalla del gimnasio" description="Fondo de las ventanas que se ven en las pantallas.">
           <SegmentedControl ariaLabel="Tema de la pantalla" options={DISPLAY_THEME_OPTIONS} value={branding.displayTheme} onChange={(displayTheme) => update({ displayTheme })} className="self-start" />
         </SettingsSection>
         <Button variant="ghost" leftIcon={RotateCcw} onClick={reset} className="self-start">

@@ -2,7 +2,7 @@
 
 export const MOBILE_SCREEN_TEXTS = {
   peopleTitle: 'Rutinas',
-  tvNote: 'El Modo TV es para el ordenador conectado a la tele. Desde aquí puedes ver la rutina de cada persona.',
+  tvNote: 'Las pantallas del gimnasio se abren desde el portátil. Desde aquí puedes ver la rutina de cada persona.',
   nobody: 'Todavía no hay nadie con rutina.',
   backToPanel: 'Volver al panel',
   back: 'Volver',

@@ -1,8 +1,9 @@
 // Which detected screen each Pantalla N opens on. Choices are kept per computer; without one, the TVs (every screen
-// but the main one) go to Pantalla 1, 2… from left to right, and each keeps the TV it got while the window runs.
+// but the main one) go to Pantalla 1, 2… from left to right, and each keeps the TV it got (shared by the windows of this
+// computer, see tvDisplayStore).
 
 import { TV_DEFAULT_SCREEN, TV_MAX_SCREENS } from '@/config/app'
-import type { DetectedDisplay } from './screenDetails'
+import type { DetectedDisplay, ScreenDetectionState } from './screenDetails'
 
 /** Pantalla number → key of the screen chosen for it on this computer. */
 export type TvDisplayMap = Readonly<Record<number, string>>
@@ -88,7 +89,7 @@ function screenNumbers(existing: readonly number[] | null): number[] {
 }
 
 /**
- * What the automatic Pantallas have now, added to what they had: kept while the window runs, as if chosen. A TV that
+ * What the automatic Pantallas have now, added to what they had: kept on this computer, as if chosen. A TV that
  * now belongs to another Pantalla is no longer remembered for the one that had it (a removed screen gives it up).
  */
 export function rememberTvDisplays(map: TvDisplayMap, resolved: ReadonlyMap<number, DetectedDisplay>, remembered: TvDisplayMap): TvDisplayMap {
@@ -103,6 +104,13 @@ export function rememberTvDisplays(map: TvDisplayMap, resolved: ReadonlyMap<numb
   }
   return next
 }
+
+/**
+ * What the automatic Pantallas got is written down only with the TVs seen and the gym's screens read: a window that
+ * has not read them yet (a TV window just opened) hands out TVs to every number, and would overwrite what the other
+ * windows agreed on.
+ */
+export const canRememberTvDisplays = (state: ScreenDetectionState, existing: readonly number[] | null): boolean => state === 'ok' && existing !== null
 
 /** Pantallas that had a TV before and have none now (Pantalla number → key of its screen, before and after). */
 export function lostTvScreens(before: ReadonlyMap<number, string>, after: ReadonlyMap<number, string>): number[] {

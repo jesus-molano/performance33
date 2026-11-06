@@ -35,19 +35,21 @@ export function ClientsPage() {
       <ClientToolbar
         filters={list.filters}
         archivedCount={list.archivedCount}
+        onScreenCount={list.onScreenCount}
         view={view}
         onViewChange={setView}
         onQueryChange={list.setQuery}
         onPlanChange={list.setPlan}
         onToggleArchived={list.toggleArchived}
+        onToggleOnScreen={list.toggleOnScreen}
       />
       {list.visible.length > 0 ? (
-        <ClientsView clients={list.visible} pinnedCounts={list.pinnedCounts} onEdit={form.openEdit} />
+        <ClientsView clients={list.visible} pinnedCounts={list.pinnedCounts} placements={list.placements} onEdit={form.openEdit} />
       ) : list.isFiltering ? (
         <EmptyState
           icon={SearchX}
           title="No hay usuarios con esos filtros"
-          description="Prueba con otro nombre o quita el filtro de plan."
+          description="Prueba con otro nombre o quita los filtros."
           action={<Button variant="secondary" onClick={list.clearFilters}>Quitar filtros</Button>}
         />
       ) : (
