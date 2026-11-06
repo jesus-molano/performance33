@@ -45,13 +45,17 @@ export function tvCandidates(displays: readonly DetectedDisplay[]): DetectedDisp
  * Screen of every Pantalla that has one now. A Pantalla whose chosen screen is not connected gets none (it is
  * 'desconectada'), instead of taking another TV's place. `remembered` (rememberTvDisplays) holds what the automatic ones
  * got before: each keeps its TV, and while it is missing nobody else takes it, nor does that Pantalla take one another
- * Pantalla has. A TV nobody had (a new one) is free for anyone.
+ * Pantalla has. A TV nobody had (a new one) is free for anyone. With `existing` (the gym's screens), only those get a
+ * TV: a removed Pantalla neither keeps nor reserves one, so its TV goes to a screen that has none, in number order.
  */
 export function resolveTvDisplays(
   map: TvDisplayMap,
   displays: readonly DetectedDisplay[],
   remembered: TvDisplayMap = {},
+  existing: readonly number[] | null = null,
 ): ReadonlyMap<number, DetectedDisplay> {
+  const numbers = screenNumbers(existing)
+  const exists = (screen: string) => numbers.includes(Number(screen))
   const result = new Map<number, DetectedDisplay>()
   const used = new Set<string>()
   const find = (key: string) => displays.find((d) => d.key === key)
@@ -59,29 +63,40 @@ export function resolveTvDisplays(
     result.set(screen, display)
     used.add(display.key)
   }
-  for (const [screen, key] of Object.entries(map)) {
+  for (const [screen, key] of Object.entries(map).filter(([screen]) => exists(screen))) {
     const display = find(key)
     if (display) take(Number(screen), display)
   }
-  const automatic = Object.entries(remembered).filter(([screen]) => map[Number(screen)] === undefined)
+  const automatic = Object.entries(remembered).filter(([screen]) => exists(screen) && map[Number(screen)] === undefined)
   for (const [screen, key] of automatic) {
     const display = used.has(key) ? undefined : find(key)
     if (display) take(Number(screen), display)
   }
   const reserved = new Set(automatic.map(([, key]) => key))
   const free = tvCandidates(displays).filter((display) => !used.has(display.key) && !reserved.has(display.key))
-  for (let screen = TV_DEFAULT_SCREEN; screen <= TV_MAX_SCREENS; screen++) {
+  for (const screen of numbers) {
     const next = map[screen] === undefined && !result.has(screen) ? free.shift() : undefined
     if (next) take(screen, next)
   }
   return result
 }
 
-/** What the automatic Pantallas have now, added to what they had: kept while the window runs, as if chosen. */
+/** Screen numbers that can get a TV: the gym's screens when known, else every number. */
+function screenNumbers(existing: readonly number[] | null): number[] {
+  if (existing) return [...new Set(existing)].filter(isScreenNumber).sort((a, b) => a - b)
+  return Array.from({ length: TV_MAX_SCREENS - TV_DEFAULT_SCREEN + 1 }, (_, i) => TV_DEFAULT_SCREEN + i)
+}
+
+/**
+ * What the automatic Pantallas have now, added to what they had: kept while the window runs, as if chosen. A TV that
+ * now belongs to another Pantalla is no longer remembered for the one that had it (a removed screen gives it up).
+ */
 export function rememberTvDisplays(map: TvDisplayMap, resolved: ReadonlyMap<number, DetectedDisplay>, remembered: TvDisplayMap): TvDisplayMap {
   const next: Record<number, string> = {}
+  const owners = new Map([...resolved].map(([screen, display]) => [display.key, screen]))
   for (const [screen, key] of Object.entries(remembered)) {
-    if (map[Number(screen)] === undefined) next[Number(screen)] = key
+    const owner = owners.get(key)
+    if (map[Number(screen)] === undefined && (owner === undefined || owner === Number(screen))) next[Number(screen)] = key
   }
   for (const [screen, display] of resolved) {
     if (map[screen] === undefined) next[screen] = display.key

@@ -1,0 +1,6 @@
+Windows Registry Editor Version 5.00
+
+; Solo para desarrollar Performance33 en este ordenador: permite también http://localhost:5173.
+; No lo uses en los portátiles del gimnasio. Se quita con quitar-pantalla-completa-local.reg.
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\AutomaticFullscreenAllowedForUrls]
+"2"="http://localhost:5173"

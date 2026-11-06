@@ -26,10 +26,11 @@ export function displayChoiceRows(
   choices: TvDisplayMap,
   displays: readonly DetectedDisplay[],
 ): DisplayChoiceRow[] {
+  const ids = screens.map((screen) => screen.id)
   const choosable = displays.map((display) => ({ value: display.key, label: displayLabel(display) }))
   return screens.map(({ id, name }) => {
     const chosen = choices[id]
-    const automatic = resolveTvDisplays(assignTvDisplay(choices, id, null), displays).get(id) ?? null
+    const automatic = resolveTvDisplays(assignTvDisplay(choices, id, null), displays, {}, ids).get(id) ?? null
     const missing = chosen !== undefined && !displays.some((display) => display.key === chosen)
     const options = [
       { value: AUTOMATIC_DISPLAY, label: SCREEN_DETECTION_COPY.automatic(automatic?.label ?? null) },

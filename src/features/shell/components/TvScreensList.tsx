@@ -55,7 +55,7 @@ export function TvScreensList({ onDone }: { onDone: () => void }) {
           <TvScreenRow
             key={entry.screen}
             entry={entry}
-            canRemove={launcher.canRemove}
+            canRemove={launcher.canRemove(entry.screen)}
             onOpen={run(() => launcher.open(entry.screen))}
             onRemove={run(() => launcher.remove(entry.screen))}
           />

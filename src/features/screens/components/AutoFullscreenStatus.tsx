@@ -30,11 +30,22 @@ function AutoFullscreenSetup() {
   )
 }
 
-/** 'Pantalla completa automática: Activada ✓ / Sin activar'. The how-to is for admins only; coaches just click once on the TV. */
+/**
+ * 'Pantalla completa automática: Activada ✓ / Sin activar'. The how-to is for admins only; coaches just click once on the
+ * TV. A browser that cannot do it (Firefox, Safari) only says to use Chrome.
+ */
 export function AutoFullscreenStatus() {
   const state = useAutoFullscreenPermission()
   const isAdmin = useIsAdmin()
   if (state === null) return null
+  if (state === 'unsupported') {
+    return (
+      <p className="border-t border-line pt-3 text-sm text-fg-muted">
+        <span className="font-medium text-fg">{AUTO_FULLSCREEN_COPY.label}: </span>
+        {AUTO_FULLSCREEN_COPY.unsupported}
+      </p>
+    )
+  }
   const on = state === 'granted'
   return (
     <div className="border-t border-line pt-3 text-sm">

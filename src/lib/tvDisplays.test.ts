@@ -60,6 +60,15 @@ describe('resolveTvDisplays', () => {
     expect(rememberTvDisplays({ 2: 'Izquierda' }, resolveTvDisplays({ 2: 'Izquierda' }, gym, remembered), remembered)).toEqual({ 1: 'Derecha' })
   })
 
+  it('gives the TVs only to the screens the gym has: a removed screen frees its TV for one without', () => {
+    const remembered = { 1: 'Izquierda', 2: 'Derecha' }
+    const resolved = resolveTvDisplays({}, gym, remembered, [2, 3])
+    expect(keysOf(resolved)).toEqual({ 2: 'Derecha', 3: 'Izquierda' })
+    expect(rememberTvDisplays({}, resolved, remembered)).toEqual({ 2: 'Derecha', 3: 'Izquierda' })
+    expect(keysOf(resolveTvDisplays({ 1: 'Derecha' }, gym, {}, [2, 3]))).toEqual({ 2: 'Izquierda', 3: 'Derecha' })
+    expect(keysOf(resolveTvDisplays({}, gym, {}, [3, 1]))).toEqual({ 1: 'Izquierda', 3: 'Derecha' })
+  })
+
   it('has nothing to place without TVs', () => {
     expect(resolveTvDisplays({ 1: 'Izquierda' }, []).size).toBe(0)
     expect(resolveTvDisplays({}, displaysOf(LAPTOP)).size).toBe(0)

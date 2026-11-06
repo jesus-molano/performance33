@@ -7,11 +7,13 @@ export interface ScreenSectionTileProps {
   screenName: string
   clientName: string
   online: boolean
+  /** Many tiles side by side: on phones the label is the number alone. */
+  narrow?: boolean
   onPick: () => void
 }
 
 /** One section of a screen in the picker: who it shows (first name) or 'Libre'. One tap sends there. */
-export function ScreenSectionTile({ tile, screenName, clientName, online, onPick }: ScreenSectionTileProps) {
+export function ScreenSectionTile({ tile, screenName, clientName, online, narrow = false, onPick }: ScreenSectionTileProps) {
   const where = SEND_COPY.where(screenName, tile.ref.section)
   return (
     <button
@@ -19,7 +21,7 @@ export function ScreenSectionTile({ tile, screenName, clientName, online, onPick
       onClick={onPick}
       aria-label={SEND_COPY.tileLabel(where, tile.occupant, clientName)}
       className={cn(
-        'relative flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border-2 px-2 py-2 text-center transition-colors',
+        'flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border-2 px-2 py-2 text-center transition-colors',
         'focus-visible:ring-3 focus-visible:ring-brand-strong/30 focus-visible:outline-none',
         tile.here
           ? 'border-brand-strong bg-brand-soft'
@@ -29,7 +31,16 @@ export function ScreenSectionTile({ tile, screenName, clientName, online, onPick
         !online && 'opacity-70',
       )}
     >
-      <span className="w-full truncate text-xs font-medium text-fg-muted">{SEND_COPY.section(tile.ref.section)}</span>
+      <span className="w-full truncate text-xs font-medium text-fg-muted">
+        {narrow ? (
+          <>
+            <span className="sm:hidden">{SEND_COPY.sectionShort(tile.ref.section)}</span>
+            <span className="hidden sm:inline">{SEND_COPY.section(tile.ref.section)}</span>
+          </>
+        ) : (
+          SEND_COPY.section(tile.ref.section)
+        )}
+      </span>
       <span className={cn('w-full truncate text-base font-semibold', tile.occupant ? 'text-fg' : 'text-fg-subtle')}>
         {tile.occupant ?? SEND_COPY.free}
       </span>
@@ -37,7 +48,7 @@ export function ScreenSectionTile({ tile, screenName, clientName, online, onPick
         <span className="text-xs font-medium text-brand-strong">{tile.here === 'same' ? SEND_COPY.here : SEND_COPY.otherDay(tile.shownDay)}</span>
       )}
       {tile.isLast && !tile.here && (
-        <span className="absolute top-1 right-1 rounded-full bg-ink px-1.5 text-[0.6875rem] font-semibold text-white">{SEND_COPY.last}</span>
+        <span className="max-w-full truncate rounded-full bg-ink px-1.5 text-[0.6875rem] font-semibold text-white">{SEND_COPY.last}</span>
       )}
     </button>
   )

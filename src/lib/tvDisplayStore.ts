@@ -34,3 +34,21 @@ export const readAutomaticTvDisplays = (): TvDisplayMap => automatic
 export function saveAutomaticTvDisplays(next: TvDisplayMap): void {
   automatic = next
 }
+
+/** The gym's screen numbers as this window last read them (null until read): only those get a TV (resolveTvDisplays). */
+let knownScreens: readonly number[] | null = null
+const knownListeners = new Set<() => void>()
+
+export const readKnownScreens = (): readonly number[] | null => knownScreens
+
+export function saveKnownScreens(ids: readonly number[] | null): void {
+  const next = ids ? [...new Set(ids)].sort((a, b) => a - b) : null
+  if (next?.join(',') === knownScreens?.join(',') && (next === null) === (knownScreens === null)) return
+  knownScreens = next
+  knownListeners.forEach((listener) => listener())
+}
+
+export function subscribeKnownScreens(listener: () => void): () => void {
+  knownListeners.add(listener)
+  return () => knownListeners.delete(listener)
+}

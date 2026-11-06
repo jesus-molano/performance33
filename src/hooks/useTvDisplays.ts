@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react'
 import type { DetectedDisplay } from '@/lib/screenDetails'
-import { readAutomaticTvDisplays, readTvDisplaysRaw, saveAutomaticTvDisplays, saveTvDisplays, subscribeTvDisplays } from '@/lib/tvDisplayStore'
+import {
+  readAutomaticTvDisplays,
+  readKnownScreens,
+  readTvDisplaysRaw,
+  saveAutomaticTvDisplays,
+  saveTvDisplays,
+  subscribeKnownScreens,
+  subscribeTvDisplays,
+} from '@/lib/tvDisplayStore'
 import { assignTvDisplay, parseTvDisplayMap, rememberTvDisplays, resolveTvDisplays, tvCandidates, type TvDisplayMap } from '@/lib/tvDisplays'
 import { useScreenDetails, type ScreenDetailsApi } from './useScreenDetails'
 
@@ -21,7 +29,12 @@ export function useTvDisplays(): TvDisplays {
   const detection = useScreenDetails()
   const raw = useSyncExternalStore(subscribeTvDisplays, readTvDisplaysRaw)
   const choices = useMemo(() => parseTvDisplayMap(raw), [raw])
-  const resolved = useMemo(() => resolveTvDisplays(choices, detection.displays, readAutomaticTvDisplays()), [choices, detection.displays])
+  // Only the gym's screens get a TV, once they were read (until then, every number).
+  const existing = useSyncExternalStore(subscribeKnownScreens, readKnownScreens)
+  const resolved = useMemo(
+    () => resolveTvDisplays(choices, detection.displays, readAutomaticTvDisplays(), existing),
+    [choices, detection.displays, existing],
+  )
   // A TV that goes away leaves its Pantalla 'desconectada': the others keep theirs (only while the TVs can be seen).
   useEffect(() => {
     if (detection.state === 'ok') saveAutomaticTvDisplays(rememberTvDisplays(choices, resolved, readAutomaticTvDisplays()))

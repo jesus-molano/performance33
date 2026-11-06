@@ -1,0 +1,6 @@
+Windows Registry Editor Version 5.00
+
+; Quita el permiso de pantalla completa automática de http://localhost:5173 (entrada "2").
+; También limpia los portátiles donde se usó la versión antigua de activar-pantalla-completa.reg.
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\AutomaticFullscreenAllowedForUrls]
+"2"=-

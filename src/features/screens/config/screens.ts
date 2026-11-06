@@ -15,3 +15,6 @@ export const SCREENS_PRESENCE_TOPIC = 'p33-screens-presence'
 
 /** Last section this device sent someone to ('N:M'), for Ctrl+clic and long press. */
 export const SCREENS_LAST_SEND_KEY = 'p33:screens:last-send:v1'
+
+/** In the 'Mandar a pantalla' picker, a screen with this many sections side by side takes the whole width. */
+export const PICKER_WIDE_COLUMNS = 4

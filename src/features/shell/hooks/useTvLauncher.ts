@@ -24,7 +24,8 @@ export interface TvLauncher {
   /** 'Añadir pantalla' is offered only when the TVs cannot be seen (each TV seen gets its screen by itself). */
   showAdd: boolean
   canAdd: boolean
-  canRemove: boolean
+  /** The last screen stays; with the TVs seen, so does a screen whose TV is connected. */
+  canRemove: (screen: number) => boolean
   open: (screen: number) => void
   add: () => void
   remove: (screen: number) => void

@@ -1,5 +1,6 @@
 // What the 'Mandar a pantalla' picker and the top bar status show. Pure: no React, no storage.
 
+import { PICKER_WIDE_COLUMNS } from '@/features/screens/config/screens'
 import type { ScreenView, SectionRef, SectionTarget } from '@/features/screens/types'
 import { defaultScreenName, gridFor, parseSectionId, sectionId } from './sections'
 
@@ -53,6 +54,9 @@ export function buildPickerScreens(
     }),
   }))
 }
+
+/** 4 or more sections side by side: the card takes the whole width of the picker, and the tiles say only the number on phones. */
+export const isWideScreen = (screen: Pick<PickerScreen, 'columns'>): boolean => screen.columns >= PICKER_WIDE_COLUMNS
 
 /** The last destination this device stored, while that screen still has that section. */
 export function resolveLastDestination(raw: string | null, views: readonly ScreenView[]): SectionRef | null {

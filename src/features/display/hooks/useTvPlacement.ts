@@ -1,4 +1,6 @@
+import { useCallback } from 'react'
 import { useAutoFullscreenPermission, type TvDisplays } from '@/hooks'
+import { currentWindowFrame, isWindowOn } from '@/features/display/utils/windowFrame'
 import type { FullscreenApi } from './useFullscreen'
 import { useFullscreenPrompt, type FullscreenPrompt } from './useFullscreenPrompt'
 import { useTvAutoFullscreen } from './useTvAutoFullscreen'
@@ -20,7 +22,9 @@ export function useTvPlacement(screen: number, fullscreen: FullscreenApi, tvDisp
   const canPlace = display !== null
   const permission = useAutoFullscreenPermission()
   const autoAllowed = permission === 'granted' && canPlace
-  const auto = useTvAutoFullscreen({ allowed: autoAllowed, enter: fullscreen.enterFullscreen })
+  const bounds = display?.bounds ?? null
+  const isOnTv = useCallback(() => bounds !== null && isWindowOn(currentWindowFrame(), bounds), [bounds])
+  const auto = useTvAutoFullscreen({ allowed: autoAllowed, enter: fullscreen.enterFullscreen, isOnTv })
   // Only with a TV for this screen: otherwise (no permission yet, one screen, Firefox) the fullscreen offer would fill
   // the laptop. Not while the browser is still saying whether it needs a click, nor when it does not.
   const needsClick = permission !== null && (!autoAllowed || auto.failed)
@@ -28,7 +32,7 @@ export function useTvPlacement(screen: number, fullscreen: FullscreenApi, tvDisp
   const laptop = tvDisplays.detection.displays.find((d) => d.isPrimary)?.area ?? null
   const control = useTvWindowControl({
     screen,
-    tvBounds: display?.bounds ?? null,
+    tvBounds: bounds,
     laptopArea: laptop,
     auto,
     autoAllowed,

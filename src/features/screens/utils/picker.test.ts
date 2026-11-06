@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SEND_COPY } from '@/features/screens/config/copy'
 import type { ScreenView, SectionContent } from '@/features/screens/types'
-import { buildPickerScreens, movedFromSection, replacedOccupant, resolveLastDestination, screenNameOf, summarizeScreens } from './picker'
+import { buildPickerScreens, isWideScreen, movedFromSection, replacedOccupant, resolveLastDestination, screenNameOf, summarizeScreens } from './picker'
 
 const shows = (clientId: string | null, day = 1): SectionContent => ({ clientId, day, assignedAt: clientId ? '2026-11-06T10:00:00.000Z' : '' })
 const view = (id: number, contents: SectionContent[], online = true, name = `Pantalla ${id}`): ScreenView => ({
@@ -106,5 +106,12 @@ describe('movedFromSection', () => {
     expect(movedFromSection(views, { screen: 2, section: 1 }, 'laura')).toEqual({ screen: 1, section: 1 })
     expect(movedFromSection(views, { screen: 1, section: 1 }, 'laura')).toBeNull()
     expect(movedFromSection(views, { screen: 1, section: 2 }, 'andres')).toBeNull()
+  })
+})
+
+describe('isWideScreen', () => {
+  it('is wide from 4 sections side by side (the card then takes the whole picker)', () => {
+    expect(isWideScreen({ columns: 4 })).toBe(true)
+    expect(isWideScreen({ columns: 3 })).toBe(false)
   })
 })

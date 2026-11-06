@@ -57,6 +57,11 @@ export const FONT_SCALE = { min: 0.7, max: 1.6, step: 0.1, initial: 1 } as const
 export const CONTROLS_IDLE_MS = 3000
 /** The 'Pantalla completa' bar of a TV window that just opened goes by itself after this (or when the window loses focus). */
 export const FULLSCREEN_PROMPT_MS = 15_000
+/**
+ * A TV window that left fullscreen without being told checks after this whether it is still on its TV: then a coach left
+ * it by hand (Esc, the button); otherwise the TV went away (Win+K, switched off) and it comes back by itself with its TV.
+ */
+export const TV_MANUAL_EXIT_CHECK_MS = 1500
 /** 'Arrastra esta ventana a la tele' hint lifetime. */
 export const WINDOW_HINT_MS = 7000
 /** After A+, how long the columns get to report their new size, and how long the note stays. */

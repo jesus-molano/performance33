@@ -1,11 +1,9 @@
-import { Cast } from 'lucide-react'
-import type { MouseEvent } from 'react'
-import { Button, type ButtonSize } from '@/components/ui'
-import { cn } from '@/lib/cn'
+import type { ButtonSize } from '@/components/ui'
 import { SEND_COPY } from '@/features/screens/config/copy'
-import { useLongPress } from '@/features/screens/hooks/useLongPress'
+import { useSendButton } from '@/features/screens/hooks/useSendButton'
 import { useSendToScreen, type SendToScreenInput } from '@/features/screens/hooks/useSendToScreen'
 import { ScreenPicker } from './ScreenPicker'
+import { SendButton } from './SendButton'
 
 export interface ScreenSendButtonProps extends SendToScreenInput {
   className?: string
@@ -13,36 +11,19 @@ export interface ScreenSendButtonProps extends SendToScreenInput {
   size?: ButtonSize
 }
 
-/**
- * 'Pantalla' on a day ('Mandar' on phones, so it does not look like the preview icon beside it): a click opens the picker; Ctrl+clic (or holding it on a phone) sends to
- * the last section used.
- */
+/** 'Pantalla' on a day of a routine: the picker of screens and sections, or straight to the last one (useSendButton). */
 export function ScreenSendButton({ className, size = 'sm', ...input }: ScreenSendButtonProps) {
   const send = useSendToScreen(input)
-  const longPress = useLongPress(send.sendToLast)
-
-  const onClick = (event: MouseEvent) => {
-    if (longPress.consumeClick()) return
-    if (event.ctrlKey || event.metaKey) send.sendToLast()
-    else send.openPicker()
-  }
-
+  const wiring = useSendButton(send)
   return (
     <>
-      <Button
+      <SendButton
+        wiring={wiring}
         size={size}
-        variant="secondary"
-        leftIcon={Cast}
-        onClick={onClick}
-        aria-label={SEND_COPY.buttonLabel(input.dayLabel)}
-        aria-haspopup="dialog"
+        ariaLabel={SEND_COPY.buttonLabel(input.dayLabel)}
         title={SEND_COPY.buttonTip(send.lastLabel)}
-        className={cn('touch-manipulation select-none [-webkit-touch-callout:none]', className)}
-        {...longPress.handlers}
-      >
-        <span className="sm:hidden">{SEND_COPY.buttonShort}</span>
-        <span className="hidden sm:inline">{SEND_COPY.button}</span>
-      </Button>
+        className={className}
+      />
       <ScreenPicker {...send.pickerProps} />
     </>
   )

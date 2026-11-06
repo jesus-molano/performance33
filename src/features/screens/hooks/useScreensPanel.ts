@@ -14,11 +14,12 @@ export interface ScreensPanelApi {
   status: ScreensStatus
   screens: ScreenView[]
   canAdd: boolean
-  canRemove: boolean
+  /** The last screen stays; with the TVs seen, so does every screen that has a TV now. */
+  canRemove: (screen: number) => boolean
   /** The browser sees the TVs: one screen per TV is created by itself, adding one by hand is an advanced option. */
   followsTvs: boolean
-  /** Why the remove button is off: the last screen, or a screen per connected TV. */
-  removeBlockedLabel: string
+  /** Why the remove button is off: the last screen, or its TV is connected. */
+  removeBlockedLabel: (screen: number) => string
   /** Adds the lowest free number for the whole gym; returns it, or null at the maximum. */
   add: () => number | null
   rename: (screen: ScreenView, name: string) => void
@@ -37,9 +38,9 @@ export function useScreensPanel(): ScreensPanelApi {
   const { toast, toastUndoAction } = useToast()
   const { openTv } = useDisplayWindow()
   const ids = screens.map((screen) => screen.id)
-  const { detection, tvCount } = useTvDisplays()
+  const { detection, displayFor } = useTvDisplays()
   const followsTvs = followsDetectedTvs(detection.state)
-  const keepsForTvs = !canRemoveWithTvs(ids.length, tvCount, followsTvs)
+  const keepsForTv = (screen: number) => !canRemoveWithTvs(displayFor(screen) !== null, followsTvs)
 
   const warnIfFailed = (saved: Promise<boolean>) => {
     void saved.then((ok) => {
@@ -85,9 +86,9 @@ export function useScreensPanel(): ScreensPanelApi {
     status,
     screens,
     canAdd: canAddTvScreen(ids),
-    canRemove: canRemoveTvScreen(ids) && !keepsForTvs,
+    canRemove: (screen) => canRemoveTvScreen(ids) && !keepsForTv(screen),
     followsTvs,
-    removeBlockedLabel: keepsForTvs && canRemoveTvScreen(ids) ? TV_WINDOWS_COPY.removeKeepsTv : SCREENS_PANEL_COPY.lastScreen,
+    removeBlockedLabel: (screen) => (canRemoveTvScreen(ids) && keepsForTv(screen) ? TV_WINDOWS_COPY.removeKeepsTv : SCREENS_PANEL_COPY.lastScreen),
     add,
     rename,
     setSections,

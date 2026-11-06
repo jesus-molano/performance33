@@ -33,6 +33,8 @@ export const SEND_COPY = {
   alreadyThere: (name: string, where: string) => `${name} ya está en ${where}`,
   failed: 'No se ha podido mandar a la pantalla. Revisa la conexión e inténtalo otra vez.',
   section: (section: number) => `Sección ${section}`,
+  /** Narrow tiles (4 or more side by side): the number alone; the whole place stays in the tile's label. */
+  sectionShort: (section: number) => `${section}`,
   free: 'Libre',
   here: 'Ya está aquí',
   otherDay: (day: number) => `Ahora Día ${day} · cambiar`,

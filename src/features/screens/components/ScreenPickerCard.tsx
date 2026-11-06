@@ -3,7 +3,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { SEND_COPY } from '@/features/screens/config/copy'
 import type { SectionRef } from '@/features/screens/types'
-import type { PickerScreen } from '@/features/screens/utils/picker'
+import { isWideScreen, type PickerScreen } from '@/features/screens/utils/picker'
 import { ScreenSectionTile } from './ScreenSectionTile'
 
 export interface ScreenPickerCardProps {
@@ -56,6 +56,7 @@ export function ScreenPickerCard({ screen, clientName, canOpen, onPick, onOpen }
             screenName={screen.name}
             clientName={clientName}
             online={screen.online}
+            narrow={isWideScreen(screen)}
             onPick={() => onPick(tile.ref)}
           />
         ))}

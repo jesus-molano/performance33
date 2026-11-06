@@ -1,30 +1,32 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useTvDisplays } from '@/hooks'
-import { TV_DEFAULT_SCREEN, TV_MAX_SCREENS } from '@/config/app'
-import { followsDetectedTvs, planMissingScreens } from '@/features/screens/utils/autoScreens'
+import { tvCandidates } from '@/lib/tvDisplays'
+import { createsScreensHere, followsDetectedTvs, planMissingScreens, unplacedTvCount } from '@/features/screens/utils/autoScreens'
 import { defaultScreen } from '@/features/screens/utils/sections'
 import { useScreenActions } from './useScreenActions'
+import { useBrowserScreenPresence } from './useScreenPresence'
 import { useScreens } from './useScreens'
 
-const SCREEN_NUMBERS = Array.from({ length: TV_MAX_SCREENS - TV_DEFAULT_SCREEN + 1 }, (_, i) => TV_DEFAULT_SCREEN + i)
-
 /**
- * One screen per TV this laptop sees: when it sees more TVs than the gym has screens, the missing ones are created
- * (Pantalla N, default sections), once the screens were read from the server. Never removes one.
+ * One screen per TV of the gym's TV laptop: when a TV has no screen, the missing ones are created (Pantalla N, default
+ * sections), once the screens were read from the server. Only where a TV window is already open in this browser, so a
+ * coach's computer with an extra monitor never adds screens for the whole gym. Never removes one.
  */
 export function useAutoTvScreens(): void {
   const { status, screens } = useScreens()
-  const { detection, tvCount, displayFor } = useTvDisplays()
+  const { detection, displayFor, choices } = useTvDisplays()
+  const openHere = useBrowserScreenPresence()
   const { ensureScreens } = useScreenActions()
   const tried = useRef(new Set<string>())
 
-  const following = followsDetectedTvs(detection.state)
+  const active = createsScreensHere(followsDetectedTvs(detection.state), openHere.size)
   const ids = useMemo(() => screens.map((s) => s.id), [screens])
-  const assigned = useMemo(() => SCREEN_NUMBERS.filter((n) => displayFor(n) !== null), [displayFor])
-  const plan = useMemo(
-    () => (following && status === 'ready' ? planMissingScreens(ids, tvCount, assigned) : []),
-    [following, status, ids, tvCount, assigned],
-  )
+  const plan = useMemo(() => {
+    if (!active || status !== 'ready') return []
+    const tvKeys = tvCandidates(detection.displays).map((d) => d.key)
+    const placed = ids.flatMap((id) => displayFor(id)?.key ?? [])
+    return planMissingScreens(ids, unplacedTvCount(tvKeys, placed), Object.keys(choices).map(Number))
+  }, [active, status, ids, detection.displays, displayFor, choices])
 
   useEffect(() => {
     const key = plan.join(',')

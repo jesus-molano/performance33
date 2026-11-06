@@ -3,7 +3,7 @@ import { Modal } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { SEND_COPY } from '@/features/screens/config/copy'
 import type { ScreensStatus, SectionRef } from '@/features/screens/types'
-import type { PickerScreen } from '@/features/screens/utils/picker'
+import { isWideScreen, type PickerScreen } from '@/features/screens/utils/picker'
 import { ScreenPickerCard } from './ScreenPickerCard'
 
 export interface ScreenPickerProps {
@@ -34,7 +34,7 @@ export function ScreenPicker({ open, onClose, clientName, dayLabel, status, scre
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          <div className={cn('grid gap-3', screens.length > 1 && 'md:grid-cols-2')}>
+          <div className={cn('grid gap-3', screens.length > 1 && !screens.some(isWideScreen) && 'md:grid-cols-2')}>
             {screens.map((screen) => (
               <ScreenPickerCard
                 key={screen.id}

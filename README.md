@@ -237,8 +237,10 @@ rutina de arriba abajo; con 5 o 6 se ponen en dos filas. Si una rutina es corta,
 1. Enciende las teles y en el portátil pulsa **Win+K**: conecta cada tele y elige **Extender** (no «Duplicar»).
 2. Abre la app en Chrome o Edge, entra y abre el menú **Pantallas** de la barra lateral.
 3. La primera vez pulsa **Buscar teles** y, cuando el navegador pregunte, **Permitir**. Si sale «No hay ninguna tele
-   conectada», vuelve al paso 1. Cada tele conectada tiene ya su pantalla: si conectas una tele más, la app crea
-   sola la pantalla que falta (y si apagas una, su pantalla se queda como «desconectada», no se borra).
+   conectada», vuelve al paso 1. Cada tele conectada tiene su pantalla: con alguna pantalla ya abierta en este
+   portátil, si conectas una tele más, la app crea sola la pantalla que falta (y si apagas una, su pantalla se queda
+   como «desconectada», no se borra). En los ordenadores de los monitores no se crea ninguna sola, aunque tengan
+   otro monitor. Mientras se ven las teles, solo se puede quitar una pantalla cuya tele no esté conectada.
 4. Pulsa cada pantalla («Abrir Pantalla 1 en «tele»»): la ventana se abre ya en su tele y ocupa toda la tele. Con la
    pantalla completa automática activada (abajo) se pone sola en pantalla completa; si no, pulsa allí una vez
    **Pantalla completa** (o la tecla F).
@@ -252,24 +254,33 @@ Arriba, «Pantallas 2/2» dice cuántas están abiertas; «1 sin abrir» quiere 
 
 Con alguna pantalla abierta, el menú **Pantallas** (y Ajustes → Pantallas) tiene dos botones:
 
-- **Traer todas**: todas las ventanas de las teles salen de pantalla completa y vienen al portátil, una al lado de
+- **Traer al portátil**: todas las ventanas de las teles salen de pantalla completa y vienen al portátil, una al lado de
   otra, para revisarlas. **Devolver a sus teles** (en el aviso) o **Colocar Pantalla N en su tele** las devuelve.
-- **Cerrar todas**: cierra las ventanas de las teles. **Abrir otra vez** (en el aviso) las vuelve a abrir. Si una
-  ventana no se deja cerrar (no la abrió la app), dice «Cierra esta ventana con la X».
+- **Cerrar todas**: cierra las ventanas de las teles. **Abrir otra vez** (en el aviso) la vuelve a abrir; si eran
+  varias, el aviso las abre de una en una («Abrir Pantalla 1», luego «Abrir Pantalla 2»…), porque el navegador solo
+  abre una ventana por clic. Si una ventana no se deja cerrar (no la abrió la app), dice «Cierra esta ventana con la
+  X»; **Seguir mostrándola** la deja en su tele, en pantalla completa.
 
 Funcionan aunque hayas recargado la página.
 
 ### Pantalla completa automática (una vez por portátil, lo hace un admin)
 
 Chrome solo deja que una ventana se ponga sola en pantalla completa en las direcciones que permite una regla del
-portátil. **Ajustes → Pantallas** dice «Pantalla completa automática: Activada ✓» o «Sin activar»; si no lo está,
-un admin ve allí los dos archivos para descargar (están en `public/teles/`):
+portátil. **Ajustes → Pantallas** dice «Pantalla completa automática: Activada ✓» o «Sin activar» (en Firefox o
+Safari, «Este navegador no puede: usa Chrome»); si no lo está, un admin ve allí los dos archivos para descargar (están
+en `public/teles/`: son públicos y no tienen nada secreto; solo se enseñan a los admins porque instalarlos pide
+permiso de administrador de Windows):
 
 1. Descarga y abre **activar-pantalla-completa.reg** y acepta (Windows pide permiso de administrador).
 2. Reinicia Chrome: escribe `chrome://restart` en la barra de direcciones.
 
-**quitar-pantalla-completa.reg** lo deshace. La regla vale para `https://performance33.vercel.app` y
-`http://localhost:5173`; si la app cambia de dirección, cambia también los dos archivos.
+**quitar-pantalla-completa.reg** lo deshace. La regla vale solo para `https://performance33.vercel.app`; si la app
+cambia de dirección, cambia también los dos archivos. Usan la entrada «1» de esa lista de Chrome y quitar solo borra
+esa: si el informático del gimnasio ya usa la «1» para otra dirección, cambia el número en los dos archivos.
+
+Para desarrollar en tu ordenador, `tools/teles/` tiene los mismos archivos para `http://localhost:5173` (entrada «2»).
+No los uses en los portátiles del gimnasio. Si un portátil instaló la versión antigua de activar (con localhost),
+abre también `tools/teles/quitar-pantalla-completa-local.reg`.
 
 ### Mandar a alguien a una sección
 
@@ -278,10 +289,10 @@ un admin ve allí los dos archivos para descargar (están en `public/teles/`):
   tenía a otra persona, se sustituye.
 - El aviso dice a quién has mandado, qué día y a quién sustituye. **Deshacer** (o Ctrl+Z mientras se ve el aviso)
   lo deja como estaba, sin tocar lo que otro monitor haya cambiado después.
-- En la **lista de usuarios** cada persona tiene también su botón **Pantalla**: primero eliges el día (sale el Día 1)
-  y luego la sección. Si no tiene rutina, el botón sale gris («Sin rutina»).
+- En la **lista de usuarios** cada persona tiene también su botón **Pantalla**: primero eliges el día (sale el que ya
+  tiene en la tele, o el Día 1 si no está en ninguna) y luego la sección. Si no tiene rutina, el botón sale gris («Sin rutina»).
 - **Ctrl+clic** en **Pantalla** (o mantenerlo pulsado en el móvil) la manda directamente a la última sección que usaste
-  (desde la lista, con el Día 1).
+  (desde la lista, con el día que ya tiene en la tele, o el Día 1).
 - Funciona igual desde el móvil, en cualquier red: solo hace falta que la ventana de la tele esté abierta en el portátil.
 
 Desde el móvil, el Modo TV es una lista de personas para abrir la rutina de cada una como una página normal.

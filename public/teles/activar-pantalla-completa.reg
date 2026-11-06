@@ -1,7 +1,8 @@
 Windows Registry Editor Version 5.00
 
 ; Performance33: deja que las ventanas de las teles se pongan en pantalla completa solas.
-; Solo afecta a esta app. Se quita con quitar-pantalla-completa.reg.
+; Solo para https://performance33.vercel.app. Usa la entrada "1" de esta lista de Chrome:
+; si tu informático ya puso otra dirección en el "1", cambia el número por uno libre (y en el de quitar).
+; Se quita con quitar-pantalla-completa.reg.
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\AutomaticFullscreenAllowedForUrls]
 "1"="https://performance33.vercel.app"
-"2"="http://localhost:5173"

@@ -40,8 +40,8 @@ export function ScreensPanel() {
         <ScreenCard
           key={screen.id}
           screen={screen}
-          canRemove={panel.canRemove}
-          removeBlockedLabel={panel.removeBlockedLabel}
+          canRemove={panel.canRemove(screen.id)}
+          removeBlockedLabel={panel.removeBlockedLabel(screen.id)}
           onRename={panel.rename}
           onSectionsChange={panel.setSections}
           onRemove={(target) => void panel.remove(target)}

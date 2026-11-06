@@ -2,6 +2,7 @@
 // (re)connected, on focus, back on the network or the tab, and every CLOUD_REFETCH_INTERVAL_MS.
 
 import { CLOUD_REFETCH_INTERVAL_MS, CLOUD_REFETCH_MIN_GAP_MS, CLOUD_REFETCH_RETRY_MS, SAVE_RETRY_DELAYS_MS } from '@/config/app'
+import { saveKnownScreens } from '@/lib/tvDisplayStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { screensService } from '@/features/screens/services/instance'
 import type { ScreensSnapshot } from '@/features/screens/types'
@@ -137,3 +138,6 @@ useSessionStore.subscribe((session, previous) => {
   screensService.cache?.clear()
   resetScreensState()
 })
+
+// The TVs of this computer go only to the gym's screens (useTvDisplays), in this window as soon as they are read.
+useScreensStore.subscribe((state) => saveKnownScreens(state.status === 'idle' ? null : state.screens.map((screen) => screen.id)))
