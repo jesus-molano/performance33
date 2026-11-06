@@ -12,7 +12,7 @@ export function Sidebar({ route }: { route: Route }) {
   const { tagline, iconUrl } = useBranding()
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-18 shrink-0 flex-col bg-ink text-white md:flex lg:w-64">
+    <aside className="sticky top-0 z-30 hidden h-dvh w-18 shrink-0 flex-col bg-ink text-white md:flex lg:w-64">
       <a href={paths.clients()} aria-label="Ir a usuarios" className="flex h-24 items-center overflow-hidden px-3 lg:px-6">
         {iconUrl && <img src={iconUrl} alt="" className="size-11 rounded-xl object-cover lg:hidden" />}
         <BrandLogo className={cn('h-16', iconUrl && 'hidden lg:block')} />
