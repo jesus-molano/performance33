@@ -70,8 +70,9 @@ export function slotState(slot: SlotSnapshot, now: Instant, rules: SlotRules = B
 }
 
 /**
- * The class "Rellenar con la siguiente clase" uses: the one under way (from `leadMinutes` before it starts;
- * if several, the latest to start), otherwise the next one later today in the gym. Cancelled ones never count.
+ * The class "Rellenar con la siguiente clase" uses: the one under way (from `leadMinutes` before it starts; if several,
+ * the latest to start) until its last `leadMinutes`. From then on, the next one later today, so its people can go to
+ * the screens while the current class finishes; with none left today, still the one finishing. Cancelled ones never count.
  */
 export function pickFillSlot<T extends SlotTiming & { status: SlotStatus }>(
   slots: readonly T[],
@@ -79,19 +80,19 @@ export function pickFillSlot<T extends SlotTiming & { status: SlotStatus }>(
   leadMinutes: number = FILL_LEAD_MINUTES,
 ): T | null {
   const nowMs = toMs(now)
+  const lead = leadMinutes * MINUTE_MS
   const today = toGymDate(nowMs)
   const live = slots.filter((slot) => slot.status !== 'cancelled')
   const byStart = (a: T, b: T) => slotStartMs(a) - slotStartMs(b)
+  const latest = (list: T[]) => list.sort(byStart)[list.length - 1] ?? null
 
-  const underWay = live
-    .filter((slot) => nowMs >= slotStartMs(slot) - leadMinutes * MINUTE_MS && nowMs < slotEndMs(slot))
-    .sort(byStart)
-  if (underWay.length > 0) return underWay[underWay.length - 1]
+  const current = latest(live.filter((slot) => nowMs >= slotStartMs(slot) - lead && nowMs < slotEndMs(slot) - lead))
+  if (current) return current
 
-  const laterToday = live
-    .filter((slot) => slotStartMs(slot) > nowMs && toGymDate(slotStartMs(slot)) === today)
-    .sort(byStart)
-  return laterToday[0] ?? null
+  const laterToday = live.filter((slot) => slotStartMs(slot) > nowMs && toGymDate(slotStartMs(slot)) === today).sort(byStart)
+  if (laterToday.length > 0) return laterToday[0]
+
+  return latest(live.filter((slot) => nowMs >= slotStartMs(slot) && nowMs < slotEndMs(slot)))
 }
 
 /**

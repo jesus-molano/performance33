@@ -386,8 +386,8 @@ abre también `tools/teles/quitar-pantalla-completa-local.reg`.
   pantallas en menos de 10 minutos, se entiende que fue un error y no cuenta. Al día siguiente **le toca** el día
   siguiente de su rutina (después del último, otra vez el Día 1); si ya entrenó hoy, el mismo. Con una rutina nueva
   empieza en el Día 1. La ficha lo dice en la rutina actual: «Le toca: Día 3 · Pierna».
-- En el menú **Pantallas** (y en el móvil) **Rellenar con la clase de 18:00** usa la clase en curso (desde 15 minutos
-  antes) o la siguiente de hoy: sus apuntados entran en las **secciones libres**, en orden de llegada y con el día que
+- En el menú **Pantallas** (y en el móvil) **Rellenar con la clase de 18:00** usa la clase en curso (desde 10 minutos antes de empezar; en sus
+  últimos 10 minutos ya pasa a la siguiente) o la siguiente de hoy: sus apuntados entran en las **secciones libres**, en orden de llegada y con el día que
   les toca. No quita a nadie ni mueve a quien ya sale. Una sección con alguien archivado cuenta como libre. El aviso
   dice, por ejemplo, «6 en pantalla · No caben: Ana, Luis · Sin rutina: Marta», con **Deshacer**.
 - **Vaciar pantallas** deja todas las secciones libres, con **Deshacer** («Pantallas vaciadas»).

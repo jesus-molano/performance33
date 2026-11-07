@@ -69,9 +69,20 @@ describe('pickFillSlot', () => {
     expect(pickFillSlot(day, at('2026-11-10T09:20:00Z'))?.id).toBe('2026-11-10T09:00:00Z')
   })
 
-  it('takes a class from 15 min before it starts, even while the previous one ends', () => {
-    expect(pickFillSlot(day, at('2026-11-10T08:44:00Z'))?.id).toBe('2026-11-10T09:00:00Z')
-    expect(pickFillSlot(day, at('2026-11-10T09:45:00Z'))?.id).toBe('2026-11-10T10:00:00Z')
+  it('takes a class from 10 min before it starts, even while the previous one ends', () => {
+    expect(pickFillSlot(day, at('2026-11-10T08:50:00Z'))?.id).toBe('2026-11-10T09:00:00Z')
+    expect(pickFillSlot(day, at('2026-11-10T09:50:00Z'))?.id).toBe('2026-11-10T10:00:00Z')
+  })
+
+  it('moves on to the next class in the last 10 min of the current one, even with a gap between them', () => {
+    const gap = [slot('2026-11-10T09:00:00Z'), slot('2026-11-10T11:00:00Z')]
+    expect(pickFillSlot(gap, at('2026-11-10T09:49:00Z'))?.id).toBe('2026-11-10T09:00:00Z')
+    expect(pickFillSlot(gap, at('2026-11-10T09:50:00Z'))?.id).toBe('2026-11-10T11:00:00Z')
+  })
+
+  it('keeps the last class of the day until it ends', () => {
+    expect(pickFillSlot(day, at('2026-11-10T18:55:00Z'))?.id).toBe('2026-11-10T18:00:00Z')
+    expect(pickFillSlot(day, at('2026-11-10T19:00:00Z'))).toBeNull()
   })
 
   it('otherwise takes the next one today, skipping cancelled ones', () => {

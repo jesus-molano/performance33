@@ -78,10 +78,10 @@ describe('sessionSlotFor', () => {
   })
   const booked = (slotId: string, status = 'booked') => ({ slotId, clientId: 'laura', status })
 
-  it('is the class under way, or starting within 15 minutes, that the person has a place in', () => {
+  it('is the class under way, or starting within 10 minutes, that the person has a place in', () => {
     expect(sessionSlotFor([slot('now', -30)], [booked('now')], 'laura', NOW)).toBe('now')
-    expect(sessionSlotFor([slot('soon', 15)], [booked('soon')], 'laura', NOW)).toBe('soon')
-    expect(sessionSlotFor([slot('later', 16)], [booked('later')], 'laura', NOW)).toBeNull()
+    expect(sessionSlotFor([slot('soon', 10)], [booked('soon')], 'laura', NOW)).toBe('soon')
+    expect(sessionSlotFor([slot('later', 11)], [booked('later')], 'laura', NOW)).toBeNull()
     expect(sessionSlotFor([slot('over', -60)], [booked('over')], 'laura', NOW)).toBeNull()
   })
 

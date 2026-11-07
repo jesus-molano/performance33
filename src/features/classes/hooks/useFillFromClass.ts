@@ -43,7 +43,7 @@ function useSendBookings(): { send: (bookings: readonly Booking[], slotId: strin
 
 const NOTHING = () => undefined
 
-/** The class under way (from 15 minutes before) or the next one today. */
+/** The class under way (from 10 minutes before) or the next one today. */
 export function useFillFromClass(): FillFromClass {
   const now = useClassesClock()
   const { status, data } = useClassDay(toGymDate(now))

@@ -48,8 +48,8 @@ export const BOOKING_LIMITS = {
 /** `class_slots_for` returns at most this many days per call. */
 export const SLOT_LIST_MAX_DAYS = 42
 
-/** "Rellenar con la siguiente clase" picks a class from this many minutes before it starts. */
-export const FILL_LEAD_MINUTES = 15
+/** "Rellenar con la siguiente clase": a class counts from this many minutes before it starts, and the next one takes over this many minutes before the current one ends. */
+export const FILL_LEAD_MINUTES = 10
 
 export const BOOKING_STATUSES = ['booked', 'waitlisted', 'cancelled', 'late_cancelled', 'removed', 'slot_cancelled'] as const
 export type BookingStatus = (typeof BOOKING_STATUSES)[number]

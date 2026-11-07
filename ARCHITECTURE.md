@@ -275,14 +275,14 @@ A two-line name costs a full row: only about 20 lines fit at 28 px, which is why
 - Plans: `PLANS` (id, label, defaultDays; descriptions come from the booking rules, `usePlanDescriptions`), `PLAN_BY_ID`, `TRAINING_DAY_OPTIONS`, `planLabel(plan, days?)`, `formatTrainingDays`.
 - Bookings (`@shared/booking`): `GYM_TIME_ZONE` ('Atlantic/Canary'), `BOOKING_DEFAULTS` {weeklyQuota (standard 2, plus 3, elite 'unlimited',
   custom 'training_days'), horizonDays 14, cancelUntilMinutes 120, lateCancelCounts, waitlistEnabled, promoteUntilMinutes 30}, `BOOKING_LIMITS`,
-  `FILL_LEAD_MINUTES` (15), `BOOKING_STATUSES`, `ACTIVE_BOOKING_STATUSES`, `SLOT_STATUSES`, `BookingPlanId` (same ids as `PlanId`).
+  `FILL_LEAD_MINUTES` (10), `BOOKING_STATUSES`, `ACTIVE_BOOKING_STATUSES`, `SLOT_STATUSES`, `BookingPlanId` (same ids as `PlanId`).
   Errors: `BookingErrorCode`, `BOOKING_ERROR_MESSAGES`, `toBookingErrorCode(raised)`, `bookingErrorMessage(raised)` (the RPCs raise the bare code).
   Gym time (EU summer-time rule computed by hand, checked against Intl in the tests): `toGymDate`, `gymMinutesOfDay`, `gymTimeToMs(date, minutes)`
   (repeated hour → first one, missing hour → one later), `parseGymTime('HH:MM')`, `addGymDays`, `diffGymDays`, `gymWeekday` (1 = Monday), `gymMonday`,
   `gymWeekDates`, `gymWeekOf(instant) → {monday, startsAt, endsAt}` (Monday 00:00 to next Monday 00:00, gym time), `isSameGymWeek`.
   Quotas: `weeklyQuotaFor(plan, trainingDays, settings?)` (null = no limit), `countsTowardQuota` (booked, and late_cancelled when it counts), `quotaUsed`, `quotaLeft`, `hasQuotaLeft`.
   Classes: `spotsLeft`, `slotState(slot, now) → cancelled | finished | started | closed | too_far | open | waitlist | full`, `isLateCancel`,
-  `waitlistOpenAt`, `isTooFar`, `pickFillSlot(slots, now)` (the class under way from 15 min before, else the next one today in the gym).
+  `waitlistOpenAt`, `isTooFar`, `pickFillSlot(slots, now)` (the class under way from 10 min before it starts until its last 10 min, then the next one today in the gym; the last class of the day until it ends).
 - Misc: `cn`, `pickColor`, `readableTextOn`, `AVATAR_COLORS`, `fileToDataUrl` (logo upload ≤ 1,5 MB), `DEFAULT_BRANDING`,
   persistence `downloadBackup(data)`, `readBackupFile(file) → Promise<AppData>`, timings in `config/app.ts`.
 

@@ -1863,7 +1863,7 @@ describe('training sessions: what each one keeps and who sees them', () => {
     expect(await recorded()).toEqual([])
   })
 
-  it('keeps the class she holds a place in now, from 15 minutes before it starts', async () => {
+  it('keeps the class she holds a place in now, from 10 minutes before it starts', async () => {
     const slot = await bookLaura(10)
     await bookLaura(120)
     await show(1)
@@ -1887,7 +1887,7 @@ describe('training sessions: what each one keeps and who sees them', () => {
     expect(await recorded()).toEqual([])
   })
 
-  it('uses the limits of the app: 10 minutes to undo, 15 before a class', () => {
+  it('uses the limits of the app: 10 minutes to undo, 10 before a class', () => {
     expect(SESSION_UNDO_MINUTES).toBe(10)
     expect(SCHEMA).toContain(`t.created_at > now() - interval '${SESSION_UNDO_MINUTES} minutes'`)
     expect(SCHEMA).toContain(`now() >= s.starts_at - interval '${FILL_LEAD_MINUTES} minutes'`)

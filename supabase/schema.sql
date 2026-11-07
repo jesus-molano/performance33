@@ -1523,7 +1523,7 @@ $$;
 drop trigger if exists stamp_row on public.training_sessions;
 create trigger stamp_row before insert or update on public.training_sessions for each row execute function public.stamp_row();
 
--- La clase en la que esa persona tiene plaza ahora: desde FILL_LEAD_MINUTES = 15 min antes hasta que termina
+-- La clase en la que esa persona tiene plaza ahora: desde FILL_LEAD_MINUTES = 10 min antes hasta que termina
 -- (sessionSlotFor en shared/routine/sessionRule.ts).
 create or replace function public.session_slot(p_client_id text)
 returns uuid
@@ -1536,7 +1536,7 @@ as $$
   from public.bookings b
   join public.class_slots s on s.id = b.slot_id
   where b.client_id = p_client_id and b.status = 'booked' and s.status <> 'cancelled'
-    and now() >= s.starts_at - interval '15 minutes'
+    and now() >= s.starts_at - interval '10 minutes'
     and now() < s.starts_at + make_interval(mins => s.duration_minutes)
   order by s.starts_at desc
   limit 1
