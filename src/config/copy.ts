@@ -2,7 +2,7 @@
 
 export const COPY = {
   undo: 'Deshacer',
-  popupBlocked: 'Chrome ha bloqueado la ventana. Para que no vuelva a pasar: Ajustes → Pantallas.',
+  popupBlocked: 'Se ha bloqueado la ventana. Desactiva el bloqueador de anuncios en esta web (o mira Ajustes → Pantallas).',
   openScreen: 'Abrir pantalla',
   screenWaitsForSave: 'Aún no se ha guardado todo. Inténtalo cuando vuelva la conexión.',
   undoEndsOnScreen: 'Al volver ya no podrás deshacer los cambios de antes.',
