@@ -30,6 +30,8 @@ export const TV_WINDOWS_COPY = {
 export const AUTO_FULLSCREEN_COPY = {
   label: 'Pantalla completa automática',
   on: 'Activada ✓',
+  /** Admins, when it is already on: open the how-to again. */
+  reinstall: 'Chrome bloquea las ventanas o hay que volver a instalarlo',
   off: 'Sin activar',
   /** Coaches: nothing to do, one click on the TV is enough. */
   offForCoaches: 'En cada pantalla, pulsa una vez «Pantalla completa».',

@@ -54,6 +54,15 @@ export function AutoFullscreenStatus() {
         <span className={on ? 'font-semibold text-emerald-700' : 'text-fg-muted'}>{on ? AUTO_FULLSCREEN_COPY.on : AUTO_FULLSCREEN_COPY.off}</span>
       </p>
       {!on && (isAdmin ? <AutoFullscreenSetup /> : <p className="mt-0.5 text-fg-muted">{AUTO_FULLSCREEN_COPY.offForCoaches}</p>)}
+      {on && isAdmin && (
+        // Already on: the file can still be needed again (a newer version, or Chrome blocking the windows).
+        <details className="mt-1">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center font-medium text-brand-strong md:min-h-0">
+            {AUTO_FULLSCREEN_COPY.reinstall}
+          </summary>
+          <AutoFullscreenSetup />
+        </details>
+      )}
     </div>
   )
 }
