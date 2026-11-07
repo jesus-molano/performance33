@@ -32,6 +32,9 @@ export const FILL_COPY = {
     [headline(plan), plan.notFitted.length ? `No caben: ${list(plan.notFitted)}` : '', plan.noRoutine.length ? `Sin rutina: ${list(plan.noRoutine)}` : '']
       .filter(Boolean)
       .join(' · '),
+  /** Chrome refused the windows: the fix is the file in Ajustes → Pantallas (or allowing pop-ups for this site). */
+  windowsBlocked: (count: number) =>
+    `Chrome no dejó abrir ${count === 1 ? '1 pantalla' : `${count} pantallas`}: permite las ventanas emergentes (Ajustes → Pantallas)`,
   cleared: 'Pantallas vaciadas',
   alreadyEmpty: 'Las pantallas ya están vacías.',
 } as const

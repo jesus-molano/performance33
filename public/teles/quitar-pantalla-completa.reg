@@ -1,6 +1,9 @@
 Windows Registry Editor Version 5.00
 
-; Performance33: quita el permiso de pantalla completa automática.
-; Solo borra la entrada "1" de esta app: las demás direcciones de la lista se quedan.
+; Performance33: quita los permisos de ventanas y de pantalla completa automática.
+; Solo borra la entrada "1" de esta app: las demás direcciones de cada lista se quedan.
 [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\AutomaticFullscreenAllowedForUrls]
+"1"=-
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\PopupsAllowedForUrls]
 "1"=-

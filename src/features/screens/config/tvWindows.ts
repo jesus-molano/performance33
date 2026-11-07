@@ -33,7 +33,8 @@ export const AUTO_FULLSCREEN_COPY = {
   off: 'Sin activar',
   /** Coaches: nothing to do, one click on the TV is enough. */
   offForCoaches: 'En cada pantalla, pulsa una vez «Pantalla completa».',
-  adminIntro: 'Para que las pantallas se pongan solas en pantalla completa, hazlo una vez en este portátil:',
+  adminIntro:
+    'Para que las pantallas se abran sin que Chrome las bloquee y se pongan solas en pantalla completa, hazlo una vez en este portátil (si ya lo hiciste antes, repítelo: ahora también desbloquea las ventanas):',
   steps: [
     'Descarga y abre «activar-pantalla-completa.reg» y acepta.',
     'Reinicia Chrome: escribe chrome://restart en la barra de direcciones.',
